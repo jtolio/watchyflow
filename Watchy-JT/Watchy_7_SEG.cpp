@@ -1,6 +1,6 @@
 #include "Watchy_7_SEG.h"
 
-#define DARKMODE true
+#define DARKMODE false
 
 const uint8_t BATTERY_SEGMENT_WIDTH = 7;
 const uint8_t BATTERY_SEGMENT_HEIGHT = 11;
@@ -31,11 +31,7 @@ void Watchy7SEG::drawTime(){
     display.setFont(&DSEG7_Classic_Bold_53);
     display.setCursor(5, 53+5);
     int displayHour;
-    if(HOUR_12_24==12){
-      displayHour = ((currentTime.Hour+11)%12)+1;
-    } else {
-      displayHour = currentTime.Hour;
-    }
+    displayHour = ((currentTime.Hour+11)%12)+1;
     if(displayHour < 10){
         display.print("0");
     }

@@ -359,7 +359,8 @@ void Watchy::showAbout() {
   display.setCursor(0, 20);
 
   display.print("LibVer: ");
-  display.println(WATCHY_LIB_VER);
+  display.print(WATCHY_LIB_VER);
+  display.println("-jt");
 
   display.print("Rev: v");
   display.println(getBoardRevision());
