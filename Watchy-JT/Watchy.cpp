@@ -720,14 +720,13 @@ weatherData Watchy::_getWeatherData(String cityID, String lat, String lon, Strin
       if (httpResponseCode == 200) {
         String payload             = http.getString();
         JSONVar responseObject     = JSON.parse(payload);
-        currentWeather.temperature = int(responseObject["main"]["temp"]);
+        currentWeather.weatherTemperature = int(responseObject["main"]["temp"]);
         currentWeather.weatherConditionCode =
             int(responseObject["weather"][0]["id"]);
         currentWeather.weatherDescription =
 		        JSONVar::stringify(responseObject["weather"][0]["main"]);
-	      currentWeather.external = true;
-		        breakTime((time_t)(int)responseObject["sys"]["sunrise"], currentWeather.sunrise);
-		        breakTime((time_t)(int)responseObject["sys"]["sunset"], currentWeather.sunset);
+        breakTime((time_t)(int)responseObject["sys"]["sunrise"], currentWeather.sunrise);
+        breakTime((time_t)(int)responseObject["sys"]["sunset"], currentWeather.sunset);
         // sync NTP during weather API call and use timezone of lat & lon
         gmtOffset = int(responseObject["timezone"]);
         syncNTP(gmtOffset);
@@ -739,14 +738,13 @@ weatherData Watchy::_getWeatherData(String cityID, String lat, String lon, Strin
       WiFi.mode(WIFI_OFF);
       btStop();
     } else { // No WiFi, use internal temperature sensor
-      uint8_t temperature = sensor.readTemperature(); // celsius
-      if (!currentWeather.isMetric) {
-        temperature = temperature * 9. / 5. + 32.; // fahrenheit
-      }
-      currentWeather.temperature          = temperature;
-      currentWeather.weatherConditionCode = 800;
-      currentWeather.external             = false;
+      currentWeather.weatherConditionCode = -1;
     }
+    uint8_t temperature = sensor.readTemperature(); // celsius
+    if (!currentWeather.isMetric) {
+      temperature = temperature * 9. / 5. + 32.; // fahrenheit
+    }
+    currentWeather.sensorTemperature          = temperature;
     weatherIntervalCounter = 0;
   } else {
     weatherIntervalCounter++;

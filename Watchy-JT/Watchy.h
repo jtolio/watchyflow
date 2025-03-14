@@ -36,11 +36,11 @@
 #endif
 
 typedef struct weatherData {
-  int8_t temperature;
-  int16_t weatherConditionCode;
+  int8_t weatherTemperature;
+  int8_t sensorTemperature;
+  int16_t weatherConditionCode;  // negative means the weather api failed.
   bool isMetric;
   String weatherDescription;
-  bool external;
   tmElements_t sunrise;
   tmElements_t sunset;
 } weatherData;

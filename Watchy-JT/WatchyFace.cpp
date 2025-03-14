@@ -1,4 +1,4 @@
-#include "Watchy_7_SEG.h"
+#include "WatchyFace.h"
 
 #define DARKMODE false
 
@@ -8,12 +8,11 @@ const uint8_t BATTERY_SEGMENT_SPACING = 9;
 const uint8_t WEATHER_ICON_WIDTH = 48;
 const uint8_t WEATHER_ICON_HEIGHT = 32;
 
-void Watchy7SEG::drawWatchFace(){
+void WatchyFace::drawWatchFace(){
     display.fillScreen(DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);
     display.setTextColor(DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
     drawTime();
     drawDate();
-    drawSteps();
     drawWeather();
     drawBattery();
     display.drawBitmap(116, 75, WIFI_CONFIGURED ? wifi : wifioff, 26, 18, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
@@ -27,7 +26,7 @@ void Watchy7SEG::drawWatchFace(){
     #endif
 }
 
-void Watchy7SEG::drawTime(){
+void WatchyFace::drawTime(){
     display.setFont(&DSEG7_Classic_Bold_53);
     display.setCursor(5, 53+5);
     int displayHour;
@@ -43,7 +42,7 @@ void Watchy7SEG::drawTime(){
     display.println(currentTime.Minute);
 }
 
-void Watchy7SEG::drawDate(){
+void WatchyFace::drawDate(){
     display.setFont(&Seven_Segment10pt7b);
 
     int16_t  x1, y1;
@@ -71,17 +70,7 @@ void Watchy7SEG::drawDate(){
     display.setCursor(5, 150);
     display.println(tmYearToCalendar(currentTime.Year));// offset from 1970, since year is stored in uint8_t
 }
-void Watchy7SEG::drawSteps(){
-    // reset step counter at midnight
-    if (currentTime.Hour == 0 && currentTime.Minute == 0){
-      sensor.resetStepCounter();
-    }
-    uint32_t stepCount = sensor.getCounter();
-    display.drawBitmap(10, 165, steps, 19, 23, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    display.setCursor(35, 190);
-    display.println(stepCount);
-}
-void Watchy7SEG::drawBattery(){
+void WatchyFace::drawBattery(){
     display.drawBitmap(158, 73, battery, 37, 21, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
     display.fillRect(163, 78, 27, BATTERY_SEGMENT_HEIGHT, DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);//clear battery segments
     int8_t batteryLevel = 0;
@@ -104,29 +93,29 @@ void Watchy7SEG::drawBattery(){
     }
 }
 
-void Watchy7SEG::drawWeather(){
+void WatchyFace::drawWeather(){
 
     weatherData currentWeather = getWeatherData();
 
-    int8_t temperature = currentWeather.temperature;
+    int8_t weatherTemperature = currentWeather.weatherTemperature;
     int16_t weatherConditionCode = currentWeather.weatherConditionCode;
 
-    display.setFont(&DSEG7_Classic_Regular_39);
-    int16_t  x1, y1;
-    uint16_t w, h;
-    display.getTextBounds(String(temperature), 0, 0, &x1, &y1, &w, &h);
-    if(159 - w - x1 > 87){
-        display.setCursor(159 - w - x1, 150);
-    }else{
-        display.setFont(&DSEG7_Classic_Bold_25);
-        display.getTextBounds(String(temperature), 0, 0, &x1, &y1, &w, &h);
-        display.setCursor(159 - w - x1, 136);
-    }
-    display.println(temperature);
-    display.drawBitmap(165, 110, currentWeather.isMetric ? celsius : fahrenheit, 26, 20, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    const unsigned char* weatherIcon;
+    if (weatherConditionCode >= 0) {
+      display.setFont(&DSEG7_Classic_Regular_39);
+      int16_t  x1, y1;
+      uint16_t w, h;
+      display.getTextBounds(String(weatherTemperature), 0, 0, &x1, &y1, &w, &h);
+      if(159 - w - x1 > 87){
+          display.setCursor(159 - w - x1, 150);
+      }else{
+          display.setFont(&DSEG7_Classic_Bold_25);
+          display.getTextBounds(String(weatherTemperature), 0, 0, &x1, &y1, &w, &h);
+          display.setCursor(159 - w - x1, 136);
+      }
+      display.println(weatherTemperature);
+      display.drawBitmap(165, 110, currentWeather.isMetric ? celsius : fahrenheit, 26, 20, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
+      const unsigned char* weatherIcon = 0;
 
-    if(WIFI_CONFIGURED){
       //https://openweathermap.org/weather-conditions
       if(weatherConditionCode > 801){//Cloudy
         weatherIcon = cloudy;
@@ -144,11 +133,14 @@ void Watchy7SEG::drawWeather(){
         weatherIcon = drizzle;
       }else if(weatherConditionCode >=200){//Thunderstorm
         weatherIcon = thunderstorm;
-      }else 
-      return;
-    }else{
-      weatherIcon = chip;
+      }
+
+      if (weatherIcon != 0) {
+        display.drawBitmap(145, 158, weatherIcon, WEATHER_ICON_WIDTH, WEATHER_ICON_HEIGHT, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
+      }
     }
-    
-    display.drawBitmap(145, 158, weatherIcon, WEATHER_ICON_WIDTH, WEATHER_ICON_HEIGHT, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
+
+    display.setFont(&DSEG7_Classic_Bold_25);
+    display.setCursor(35, 190);
+    display.println(currentWeather.sensorTemperature);
 }
