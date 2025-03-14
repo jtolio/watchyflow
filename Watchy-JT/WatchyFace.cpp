@@ -15,19 +15,19 @@ void WatchyFace::drawWatchFace(){
     drawDate();
     drawWeather();
     drawBattery();
-    display.drawBitmap(116, 75, WIFI_CONFIGURED ? wifi : wifioff, 26, 18, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    if(BLE_CONFIGURED){
-        display.drawBitmap(100, 73, bluetooth, 13, 21, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    }
+    // display.drawBitmap(116, 75, WIFI_CONFIGURED ? wifi : wifioff, 26, 18, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
+    // if(BLE_CONFIGURED){
+    //    display.drawBitmap(100, 73, bluetooth, 13, 21, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
+    // }
     #ifdef ARDUINO_ESP32S3_DEV
-    if(USB_PLUGGED_IN){
-      display.drawBitmap(140, 75, charge, 16, 18, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    }
+    // if(USB_PLUGGED_IN){
+    //  display.drawBitmap(140, 75, charge, 16, 18, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
+    // }
     #endif
 }
 
 void WatchyFace::drawTime(){
-    display.setFont(&DSEG7_Classic_Bold_53);
+    display.setFont(&DSEG7_Classic_Bold_25);
     display.setCursor(5, 53+5);
     int displayHour;
     displayHour = ((currentTime.Hour+11)%12)+1;
@@ -48,11 +48,8 @@ void WatchyFace::drawDate(){
     int16_t  x1, y1;
     uint16_t w, h;
 
-    String dayOfWeek = dayStr(currentTime.Wday);
+    String dayOfWeek = dayShortStr(currentTime.Wday);
     display.getTextBounds(dayOfWeek, 5, 85, &x1, &y1, &w, &h);
-    if(currentTime.Wday == 4){
-        w = w - 5;
-    }
     display.setCursor(85 - w, 85);
     display.println(dayOfWeek);
 
@@ -67,8 +64,6 @@ void WatchyFace::drawDate(){
     display.print("0");
     }
     display.println(currentTime.Day);
-    display.setCursor(5, 150);
-    display.println(tmYearToCalendar(currentTime.Year));// offset from 1970, since year is stored in uint8_t
 }
 void WatchyFace::drawBattery(){
     display.drawBitmap(158, 73, battery, 37, 21, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
@@ -100,18 +95,14 @@ void WatchyFace::drawWeather(){
     int8_t weatherTemperature = currentWeather.weatherTemperature;
     int16_t weatherConditionCode = currentWeather.weatherConditionCode;
 
+    display.setFont(&DSEG7_Classic_Bold_25);
+
     if (weatherConditionCode >= 0) {
-      display.setFont(&DSEG7_Classic_Regular_39);
       int16_t  x1, y1;
       uint16_t w, h;
+      display.setFont(&DSEG7_Classic_Bold_25);
       display.getTextBounds(String(weatherTemperature), 0, 0, &x1, &y1, &w, &h);
-      if(159 - w - x1 > 87){
-          display.setCursor(159 - w - x1, 150);
-      }else{
-          display.setFont(&DSEG7_Classic_Bold_25);
-          display.getTextBounds(String(weatherTemperature), 0, 0, &x1, &y1, &w, &h);
-          display.setCursor(159 - w - x1, 136);
-      }
+      display.setCursor(159 - w - x1, 136);
       display.println(weatherTemperature);
       display.drawBitmap(165, 110, currentWeather.isMetric ? celsius : fahrenheit, 26, 20, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
       const unsigned char* weatherIcon = 0;
@@ -140,7 +131,6 @@ void WatchyFace::drawWeather(){
       }
     }
 
-    display.setFont(&DSEG7_Classic_Bold_25);
     display.setCursor(35, 190);
     display.println(currentWeather.sensorTemperature);
 }
