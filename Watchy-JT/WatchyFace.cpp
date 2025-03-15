@@ -8,66 +8,85 @@ const uint8_t BATTERY_SEGMENT_SPACING = 9;
 const uint8_t WEATHER_ICON_WIDTH = 48;
 const uint8_t WEATHER_ICON_HEIGHT = 32;
 
-void WatchyFace::drawWatchFace(){
+void WatchyFace::drawWatchFace() {
     display.fillScreen(DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);
     display.setTextColor(DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    drawTime();
-    drawDate();
+    // 200, 200
+
+    drawTime(10, 5);
+    drawBattery(200-5, 5);
+    int16_t dateW = (int16_t)drawDate(5, 25+5+5);
     drawWeather();
-    drawBattery();
-    // display.drawBitmap(116, 75, WIFI_CONFIGURED ? wifi : wifioff, 26, 18, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    // if(BLE_CONFIGURED){
-    //    display.drawBitmap(100, 73, bluetooth, 13, 21, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    // }
-    #ifdef ARDUINO_ESP32S3_DEV
-    // if(USB_PLUGGED_IN){
-    //  display.drawBitmap(140, 75, charge, 16, 18, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    // }
-    #endif
+    drawCal(5 + dateW + 5, 25+5+5);
 }
 
-void WatchyFace::drawTime(){
+void WatchyFace::drawTime(int16_t x0, int16_t y0) {
     display.setFont(&DSEG7_Classic_Bold_25);
-    display.setCursor(5, 53+5);
-    int displayHour;
-    displayHour = ((currentTime.Hour+11)%12)+1;
-    if(displayHour < 10){
-        display.print("0");
+
+    String timeStr = "";
+    int displayHour = ((currentTime.Hour+11)%12)+1;
+    if (displayHour < 10){
+      timeStr += "0";
     }
-    display.print(displayHour);
-    display.print(":");
-    if(currentTime.Minute < 10){
-        display.print("0");
+    timeStr += String(displayHour) + ":";
+    if (currentTime.Minute < 10){
+      timeStr += "0";
     }
-    display.println(currentTime.Minute);
+    timeStr += String(currentTime.Minute);
+
+    int16_t x1, y1;
+    uint16_t w, h;
+    display.getTextBounds(timeStr, 0, 0, &x1, &y1, &w, &h);
+
+    display.setCursor(x0 - x1, y0 - y1);
+    display.print(timeStr);
 }
 
-void WatchyFace::drawDate(){
+uint16_t WatchyFace::drawDate(int16_t x0, int16_t y0) {
+
+    int16_t  dayx1, monx1, numx1, dayy1, mony1, numy1;
+    uint16_t dayW, dayH;
+    uint16_t monW, monH;
+    uint16_t numW, numH;
+    uint16_t maxW;
+
     display.setFont(&Seven_Segment10pt7b);
-
-    int16_t  x1, y1;
-    uint16_t w, h;
-
     String dayOfWeek = dayShortStr(currentTime.Wday);
-    display.getTextBounds(dayOfWeek, 5, 85, &x1, &y1, &w, &h);
-    display.setCursor(85 - w, 85);
-    display.println(dayOfWeek);
-
+    display.getTextBounds(dayOfWeek, 0, 0, &dayx1, &dayy1, &dayW, &dayH);
     String month = monthShortStr(currentTime.Month);
-    display.getTextBounds(month, 60, 110, &x1, &y1, &w, &h);
-    display.setCursor(85 - w, 110);
+    display.getTextBounds(month, 0, 0, &monx1, &mony1, &monW, &monH);
+
+    //display.setFont(&DSEG7_Classic_Bold_25);
+    String dayNum = String(currentTime.Day);
+    if (currentTime.Day < 10) {
+      dayNum = String("0") + dayNum;
+    }
+    display.getTextBounds(dayNum, 0, 0, &numx1, &numy1, &numW, &numH);
+
+    maxW = dayW;
+    if (maxW < monW) {
+      maxW = monW;
+    }
+    if (maxW < numW) {
+      maxW = numW;
+    }
+
+    display.setFont(&Seven_Segment10pt7b);
+    display.setCursor(x0 + (maxW - dayW) - dayx1, y0 - dayy1);
+    display.println(dayOfWeek);
+    display.setCursor(x0 + (maxW - monW) - monx1, y0 - mony1 + dayH + 2);
     display.println(month);
 
-    display.setFont(&DSEG7_Classic_Bold_25);
-    display.setCursor(5, 120);
-    if(currentTime.Day < 10){
-    display.print("0");
-    }
-    display.println(currentTime.Day);
+    //display.setFont(&DSEG7_Classic_Bold_25);
+    display.setCursor(x0 + (maxW - numW) - numx1, y0 - numy1 + dayH + monH + 6);
+    display.println(dayNum);
+
+    return maxW;
 }
-void WatchyFace::drawBattery(){
-    display.drawBitmap(158, 73, battery, 37, 21, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    display.fillRect(163, 78, 27, BATTERY_SEGMENT_HEIGHT, DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);//clear battery segments
+
+void WatchyFace::drawBattery(int16_t x1, int16_t y0) {    
+    display.drawBitmap(x1 - 37, y0, battery, 37, 21, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
+    display.fillRect(x1 - 32, y0 + 5, 27, BATTERY_SEGMENT_HEIGHT, DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);
     int8_t batteryLevel = 0;
     float VBAT = getBatteryVoltage();
     if(VBAT > 4.0){
@@ -84,27 +103,28 @@ void WatchyFace::drawBattery(){
     }
 
     for(int8_t batterySegments = 0; batterySegments < batteryLevel; batterySegments++){
-        display.fillRect(163 + (batterySegments * BATTERY_SEGMENT_SPACING), 78, BATTERY_SEGMENT_WIDTH, BATTERY_SEGMENT_HEIGHT, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
+        display.fillRect(x1 - 32 + (batterySegments * BATTERY_SEGMENT_SPACING), y0 + 5, BATTERY_SEGMENT_WIDTH, BATTERY_SEGMENT_HEIGHT, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
     }
 }
 
-void WatchyFace::drawWeather(){
-
+void WatchyFace::drawWeather() {
     weatherData currentWeather = getWeatherData();
 
     int8_t weatherTemperature = currentWeather.weatherTemperature;
     int16_t weatherConditionCode = currentWeather.weatherConditionCode;
 
-    display.setFont(&DSEG7_Classic_Bold_25);
-
-    if (weatherConditionCode >= 0) {
+    if (weatherConditionCode < 0) {
+      display.drawBitmap(200-5-37-5-26, 5, WIFI_CONFIGURED ? wifi : wifioff, 26, 18, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
+    } else {
       int16_t  x1, y1;
       uint16_t w, h;
-      display.setFont(&DSEG7_Classic_Bold_25);
-      display.getTextBounds(String(weatherTemperature), 0, 0, &x1, &y1, &w, &h);
-      display.setCursor(159 - w - x1, 136);
-      display.println(weatherTemperature);
-      display.drawBitmap(165, 110, currentWeather.isMetric ? celsius : fahrenheit, 26, 20, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
+      display.setFont(&Seven_Segment10pt7b);
+      String weatherStr = String(weatherTemperature) + (currentWeather.isMetric ? "C" : "F");
+      display.getTextBounds(weatherStr, 0, 0, &x1, &y1, &w, &h);
+      display.setCursor(200-5-37-5 - w - x1, 5 - y1 + 9 - (h/2));
+      display.println(weatherStr);
+
+      /*
       const unsigned char* weatherIcon = 0;
 
       //https://openweathermap.org/weather-conditions
@@ -129,8 +149,10 @@ void WatchyFace::drawWeather(){
       if (weatherIcon != 0) {
         display.drawBitmap(145, 158, weatherIcon, WEATHER_ICON_WIDTH, WEATHER_ICON_HEIGHT, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
       }
+      */
     }
+}
 
-    display.setCursor(35, 190);
-    display.println(currentWeather.sensorTemperature);
+void WatchyFace::drawCal(int16_t x0, int16_t y0) {
+  display.drawRect(x0, y0, 200-5-x0, 200 - 5 - y0, DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
 }
