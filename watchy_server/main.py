@@ -4,8 +4,10 @@ import argparse
 import datetime
 import json
 import logging
+import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
+import dateutil.parser
 import icalendar
 from pytz import timezone
 import recurring_ical_events
@@ -17,20 +19,28 @@ TIMEZONE = timezone("US/Eastern")
 class CalHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
-        prefix = "/account/"
-        if not self.path.startswith(prefix):
+        url = urllib.parse.urlparse(self.path)
+        query = urllib.parse.parse_qs(url.query)
+        prefix = "/v0/account/"
+        if not url.path.startswith(prefix):
             self.send_response(404)
             self.end_headers()
             return
 
-        key = self.path[len(prefix) :]
+        key = url.path[len(prefix):]
         if key not in self.server.cals:
             self.send_response(404)
             self.end_headers()
             return
 
+        when = (query.get("time") or ["now"])[-1]
+        if when == "now":
+            when = datetime.datetime.now()
+        else:
+            when = dateutil.parser.parse(when)
+
         all_events = []
-        start = datetime.datetime.now() - datetime.timedelta(hours=1)
+        start = when - datetime.timedelta(hours=1)
         end = start + datetime.timedelta(hours=7)
 
         for cal_url in self.server.cals[key]:
@@ -45,7 +55,7 @@ class CalHandler(BaseHTTPRequestHandler):
                         skip = True
                         break
                 if skip: continue
-                status = "CONFIRMED"
+                status = ""
                 if "status" in event:
                     status = event["STATUS"]
                 all_events.append({
@@ -54,6 +64,9 @@ class CalHandler(BaseHTTPRequestHandler):
                         "status": status,
                         "summary": event["SUMMARY"],
                     })
+
+        all_events.sort(key=lambda event: (
+            event["start"], event["end"], event["summary"]))
 
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
