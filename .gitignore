@@ -1,3 +1,5 @@
 /Watchy-JT/settings.h
 /watchy_server/.venv/
 /watchy_server/cals.json
+__pycache__
+/watchy_server/.coverage

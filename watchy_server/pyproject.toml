@@ -1,13 +1,24 @@
 [project]
 name = "watchy-server"
 version = "0.1.0"
-description = "Add your description here"
+description = "Helper server for calendar processing on embedded devices"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "icalendar>=6.1.1",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
     "python-dateutil>=2.9.0.post0",
     "pytz>=2025.1",
     "recurring-ical-events>=3.6.0",
     "requests>=2.32.3",
 ]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+]
+
+[tool.pytest]
+testpaths = ["test_*.py"]
