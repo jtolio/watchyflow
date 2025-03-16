@@ -111,9 +111,8 @@ void WatchyFace::drawWatchFace() {
   LayoutColumns elTop(5, elTopElems, elTopStretch);
 
   LayoutText elDateWords(dayOfWeekStr + ", " + monthStr + " " + dayOfMonthStr, &Seven_Segment10pt7b, color);
-  elDateWords.setRotation(3);
-
-  LayoutElement *elDateElems[] = {&elDateWords, &elFill};
+  LayoutRotate elDateRotated(&elDateWords, 3);
+  LayoutElement *elDateElems[] = {&elDateRotated, &elFill};
   bool elDateStretch[] = {false, true};
   LayoutRows elDate(2, elDateElems, elDateStretch);
 

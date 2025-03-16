@@ -32,8 +32,6 @@ class LayoutText : public LayoutElement {
 public:
   LayoutText(String text, const GFXfont *font, uint16_t color);
 
-  void setRotation(uint8_t r) { rotation_ = r; }
-
   void size(uint16_t availableWidth, uint16_t availableHeight,
             uint16_t *width, uint16_t *height) override;
   void draw(int16_t x0, int16_t y0,
@@ -43,7 +41,6 @@ private:
   String text_;
   const GFXfont *font_;
   uint16_t color_;
-  uint8_t rotation_;
 };
 
 class LayoutColumns : public LayoutElement {
@@ -130,6 +127,22 @@ public:
   }
 private:
   uint16_t size_;
+};
+
+class LayoutRotate : public LayoutElement {
+public:
+  LayoutRotate(LayoutElement *child, uint8_t rotate)
+    : child_(child), rotate_(rotate) {}
+
+  void size(uint16_t availableWidth, uint16_t availableHeight,
+            uint16_t *width, uint16_t *height) override;
+
+  void draw(int16_t x0, int16_t y0,
+            uint16_t availableWidth, uint16_t availableHeight,
+            uint16_t *width, uint16_t *height) override;
+private:
+  LayoutElement *child_;
+  uint8_t rotate_;
 };
 
 #endif

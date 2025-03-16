@@ -20,19 +20,13 @@ void LayoutBitmap::draw(int16_t x0, int16_t y0,
 }
 
 LayoutText::LayoutText(String text, const GFXfont *font, uint16_t color)
-  : text_(text), font_(font), color_(color), rotation_(0) {}
+  : text_(text), font_(font), color_(color) {}
 
 void LayoutText::size(uint16_t availableWidth, uint16_t availableHeight,
                       uint16_t *width, uint16_t *height) {
   int16_t x1, y1;
   Watchy::Watchy::display.setFont(font_);
   Watchy::Watchy::display.getTextBounds(text_, 0, 0, &x1, &y1, width, height);
-  uint16_t swap;
-  if (rotation_ == 1 || rotation_ == 3) {
-    swap = *width;
-    *width = *height;
-    *height = swap;
-  }
 }
 
 void LayoutText::draw(int16_t x0, int16_t y0,
@@ -44,7 +38,38 @@ void LayoutText::draw(int16_t x0, int16_t y0,
   Watchy::Watchy::display.getTextBounds(text_, 0, 0, &x1, &y1, width, height);
   Watchy::Watchy::display.setTextColor(color_);
 
-  switch (rotation_) {
+  Watchy::Watchy::display.setCursor(x0 - x1, y0 - y1);
+  Watchy::Watchy::display.print(text_);
+}
+
+void LayoutRotate::size(uint16_t availableWidth, uint16_t availableHeight,
+                        uint16_t *width, uint16_t *height) {
+  uint16_t swap;
+  if (rotate_ == 1 || rotate_ == 3) {
+    swap = availableWidth;
+    availableWidth = availableHeight;
+    availableHeight = swap;
+  }
+  child_->size(availableWidth, availableHeight, width, height);
+  if (rotate_ == 1 || rotate_ == 3) {
+    swap = *width;
+    *width = *height;
+    *height = swap;
+  }
+}
+
+void LayoutRotate::draw(int16_t x0, int16_t y0,
+                        uint16_t availableWidth, uint16_t availableHeight,
+                        uint16_t *width, uint16_t *height) {
+  uint16_t swap;
+  if (rotate_ == 1 || rotate_ == 3) {
+    swap = availableWidth;
+    availableWidth = availableHeight;
+    availableHeight = swap;
+  }
+  child_->size(availableWidth, availableHeight, width, height);
+
+  switch (rotate_) {
     default:
       break;
     case 1:
@@ -69,10 +94,15 @@ void LayoutText::draw(int16_t x0, int16_t y0,
       break;
   }
 
-  Watchy::Watchy::display.setRotation(rotation_);
-  Watchy::Watchy::display.setCursor(x0 - x1, y0 - y1);
-  Watchy::Watchy::display.print(text_);
-  Watchy::Watchy::display.setRotation(0);
+  uint8_t currentRotation = Watchy::Watchy::display.getRotation();
+  Watchy::Watchy::display.setRotation((currentRotation + rotate_) % 4);
+  child_->draw(x0, y0, availableWidth, availableHeight, width, height);
+  Watchy::Watchy::display.setRotation(currentRotation);
+  if (rotate_ == 1 || rotate_ == 3) {
+    swap = *width;
+    *width = *height;
+    *height = swap;
+  }
 }
 
 LayoutColumns::LayoutColumns(uint16_t columnCount, LayoutElement *columns[],
