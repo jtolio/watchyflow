@@ -60,11 +60,20 @@ class CalendarProcessor:
         return dt.isoformat()
 
     def event_to_dict(self, event):
-        return {
-            "start": self.convert_time(event["DTSTART"].dt),
-            "end": self.convert_time(event["DTEND"].dt),
+        start = event["DTSTART"].dt
+        end = event["DTEND"].dt
+        rv = {
+            "start": self.convert_time(start),
+            "end": self.convert_time(end),
             "summary": event["SUMMARY"],
+            "day": False,
         }
+        if not hasattr(start, "astimezone") or not hasattr(end, "astimezone"):
+            rv["day"] = True
+        else:
+            rv["start-unix"] = start.timestamp()
+            rv["end-unix"] = end.timestamp()
+        return rv
 
     def has_required_fields(self, event):
         for required in ("DTSTART", "DTEND", "SUMMARY"):
