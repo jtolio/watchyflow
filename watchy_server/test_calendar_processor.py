@@ -144,7 +144,7 @@ class TestCalendarProcessor(unittest.TestCase):
 
         # Call the method
         start_time = datetime.datetime.now()
-        result = self.processor.get_events(
+        result, _ = self.processor.get_events(
             ["http://example.com/calendar.ics"], start_time
         )
 
