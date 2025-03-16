@@ -46,9 +46,12 @@ void Watchy::init(String datetime) {
     switch (guiState) {
     case WATCHFACE_STATE:
       showWatchFace(true); // partial updates on tick
+      if (currentTime.Minute == 59) {
+        hourlyUpdate();
+      }
+      // The RTC wakes us up once per minute
       if (settings.vibrateOClock) {
         if (currentTime.Minute == 0) {
-          // The RTC wakes us up once per minute
           vibMotor(75, 4);
         }
       }
@@ -83,7 +86,7 @@ void Watchy::init(String datetime) {
     #ifdef ARDUINO_ESP32S3_DEV
     pinMode(USB_DET_PIN, INPUT);
     USB_PLUGGED_IN = (digitalRead(USB_DET_PIN) == 1);
-    #endif    
+    #endif
     gmtOffset = settings.gmtOffset;
     RTC.read(currentTime);
     RTC.read(bootTime);
@@ -379,15 +382,15 @@ void Watchy::showAbout() {
   //int seconds = (totalSeconds % 60);
   int minutes = (totalSeconds % 3600) / 60;
   int hours = (totalSeconds % 86400) / 3600;
-  int days = (totalSeconds % (86400 * 30)) / 86400; 
+  int days = (totalSeconds % (86400 * 30)) / 86400;
   display.print(days);
   display.print("d");
   display.print(hours);
   display.print("h");
   display.print(minutes);
-  display.println("m");  
+  display.println("m");
   #endif
-  
+
   if(WIFI_CONFIGURED){
     display.print("SSID: ");
     display.println(lastSSID);
@@ -434,7 +437,7 @@ void Watchy::setTime() {
   uint8_t hour   = currentTime.Hour;
   uint8_t day    = currentTime.Day;
   uint8_t month  = currentTime.Month;
-  uint8_t year   = currentTime.Year;  
+  uint8_t year   = currentTime.Year;
   #else
   int8_t minute = currentTime.Minute;
   int8_t hour   = currentTime.Hour;
@@ -685,6 +688,8 @@ void Watchy::drawWatchFace() {
   }
   display.println(currentTime.Minute);
 }
+
+void Watchy::hourlyUpdate() {}
 
 weatherData Watchy::getWeatherData() {
   return _getWeatherData(settings.cityID, settings.lat, settings.lon,

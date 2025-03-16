@@ -67,11 +67,11 @@ void Watchy32KRTC::set(tmElements_t tm) {
   struct timeval tv;
   tv.tv_sec = mktime(&timeInfo);
   tv.tv_usec = 0;
-  
+
   // Set the time using settimeofday
   if (settimeofday(&tv, NULL) != 0) {
       // Error setting the time
-  }  
+  }
 }
 
 uint8_t Watchy32KRTC::temperature() {

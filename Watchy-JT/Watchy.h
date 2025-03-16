@@ -30,7 +30,7 @@
   #include "hal/rtc_io_types.h"
   #include "driver/rtc_io.h"
   #define uS_TO_S_FACTOR 1000000ULL  //Conversion factor for micro seconds to seconds
-  #define ADC_VOLTAGE_DIVIDER ((360.0f+100.0f)/360.0f) //Voltage divider at battery ADC  
+  #define ADC_VOLTAGE_DIVIDER ((360.0f+100.0f)/360.0f) //Voltage divider at battery ADC
 #else
   #include "WatchyRTC.h"
 #endif
@@ -101,6 +101,7 @@ public:
   void showWatchFace(bool partialRefresh);
   virtual void drawWatchFace(); // override this method for different watch
                                 // faces
+  virtual void hourlyUpdate(); // called after the watchface update on minute 59.
 
 private:
   void _bmaConfig();
@@ -110,7 +111,7 @@ private:
   static uint16_t _writeRegister(uint8_t address, uint8_t reg, uint8_t *data,
                                  uint16_t len);
   weatherData _getWeatherData(String cityID, String lat, String lon, String units, String lang,
-                             String url, String apiKey, uint8_t updateInterval);                                 
+                             String url, String apiKey, uint8_t updateInterval);
 };
 
 extern RTC_DATA_ATTR int guiState;
