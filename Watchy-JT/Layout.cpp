@@ -1,5 +1,7 @@
 #include "Layout.h"
 
+#define SCREEN_SIZE 200
+
 LayoutBitmap::LayoutBitmap(const uint8_t *bitmap, uint16_t w, uint16_t h, uint16_t color)
   : bitmap_(bitmap), w_(w), h_(h), color_(color) {}
 
@@ -18,27 +20,59 @@ void LayoutBitmap::draw(int16_t x0, int16_t y0,
 }
 
 LayoutText::LayoutText(String text, const GFXfont *font, uint16_t color)
-  : text_(text), font_(font), color_(color) {}
+  : text_(text), font_(font), color_(color), rotation_(0) {}
 
 void LayoutText::size(uint16_t availableWidth, uint16_t availableHeight,
                       uint16_t *width, uint16_t *height) {
   int16_t x1, y1;
   Watchy::Watchy::display.setFont(font_);
   Watchy::Watchy::display.getTextBounds(text_, 0, 0, &x1, &y1, width, height);
+  uint16_t swap;
+  if (rotation_ == 1 || rotation_ == 3) {
+    swap = *width;
+    *width = *height;
+    *height = swap;
+  }
 }
 
 void LayoutText::draw(int16_t x0, int16_t y0,
                       uint16_t availableWidth, uint16_t availableHeight,
                       uint16_t *width, uint16_t *height) {
   int16_t x1, y1;
-  uint16_t w, h;
+  uint16_t swap;
   Watchy::Watchy::display.setFont(font_);
-  Watchy::Watchy::display.getTextBounds(text_, 0, 0, &x1, &y1, &w, &h);
-  Watchy::Watchy::display.setCursor(x0 - x1, y0 - y1);
+  Watchy::Watchy::display.getTextBounds(text_, 0, 0, &x1, &y1, width, height);
   Watchy::Watchy::display.setTextColor(color_);
+
+  switch (rotation_) {
+    default:
+      break;
+    case 1:
+      swap = *width;
+      *width = *height;
+      *height = swap;
+      swap = x0;
+      x0 = y0;
+      y0 = SCREEN_SIZE - swap - *width;
+      break;
+    case 2:
+      x0 = SCREEN_SIZE - x0 - *height;
+      y0 = SCREEN_SIZE - y0 - *width;
+      break;
+    case 3:
+      swap = *width;
+      *width = *height;
+      *height = swap;
+      swap = y0;
+      y0 = x0;
+      x0 = SCREEN_SIZE - swap - *height;
+      break;
+  }
+
+  Watchy::Watchy::display.setRotation(rotation_);
+  Watchy::Watchy::display.setCursor(x0 - x1, y0 - y1);
   Watchy::Watchy::display.print(text_);
-  *width = w;
-  *height = h;
+  Watchy::Watchy::display.setRotation(0);
 }
 
 LayoutColumns::LayoutColumns(uint16_t columnCount, LayoutElement *columns[],

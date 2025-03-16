@@ -35,6 +35,7 @@ void Watchy::init(String datetime) {
   RTC.init();
   // Init the display since is almost sure we will use it
   display.epd2.initWatchy();
+  display.cp437(true);
 
   switch (wakeup_reason) {
   #ifdef ARDUINO_ESP32S3_DEV

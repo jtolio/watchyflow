@@ -110,25 +110,12 @@ void WatchyFace::drawWatchFace() {
   bool elTopStretch[] = {false, true, false, false, false};
   LayoutColumns elTop(5, elTopElems, elTopStretch);
 
-  LayoutText elDayOfWeek(dayOfWeekStr, &Seven_Segment10pt7b, color);
-  LayoutText elMonth(monthStr, &Seven_Segment10pt7b, color);
-  LayoutText elDayOfMonth(dayOfMonthStr, &Seven_Segment10pt7b, color);
+  LayoutText elDateWords(dayOfWeekStr + ", " + monthStr + " " + dayOfMonthStr, &Seven_Segment10pt7b, color);
+  elDateWords.setRotation(3);
 
-  LayoutElement *elDayOfWeekRightElems[] = {&elFill, &elDayOfWeek};
-  bool elDayOfWeekRightStretch[] = {true, false};
-  LayoutColumns elDayOfWeekRight(2, elDayOfWeekRightElems, elDayOfWeekRightStretch);
-
-  LayoutElement *elMonthRightElems[] = {&elFill, &elMonth};
-  bool elMonthRightStretch[] = {true, false};
-  LayoutColumns elMonthRight(2, elMonthRightElems, elMonthRightStretch);
-
-  LayoutElement *elDayOfMonthRightElems[] = {&elFill, &elDayOfMonth};
-  bool elDayOfMonthRightStretch[] = {true, false};
-  LayoutColumns elDayOfMonthRight(2, elDayOfMonthRightElems, elDayOfMonthRightStretch);
-
-  LayoutElement *elDateElems[] = {&elDayOfWeekRight, &elPad, &elMonthRight, &elPad, &elDayOfMonthRight, &elFill};
-  bool elDateStretch[] = {false, false, false, false, false, true};
-  LayoutRows elDate(6, elDateElems, elDateStretch);
+  LayoutElement *elDateElems[] = {&elDateWords, &elFill};
+  bool elDateStretch[] = {false, true};
+  LayoutRows elDate(2, elDateElems, elDateStretch);
 
   LayoutFill elCalendar;
 
