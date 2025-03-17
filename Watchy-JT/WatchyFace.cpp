@@ -85,7 +85,7 @@ void WatchyFace::drawWatchFace() {
   }
 
   LayoutFill elFill;
-  LayoutSpacer elPad(5);
+  LayoutSpacer elSpacer(5);
 
   LayoutText elTime(timeStr, &DSEG7_Classic_Bold_25, color);
 
@@ -106,7 +106,7 @@ void WatchyFace::drawWatchFace() {
   bool elBatteryCenteredStretch[] = {true, false, true};
   LayoutRows elBatteryCentered(3, elBatteryCenteredElems, elBatteryCenteredStretch);
 
-  LayoutElement *elTopElems[] = {&elTime, &elFill, &elTempOrWifiCentered, &elPad, &elBatteryCentered};
+  LayoutElement *elTopElems[] = {&elTime, &elFill, &elTempOrWifiCentered, &elSpacer, &elBatteryCentered};
   bool elTopStretch[] = {false, true, false, false, false};
   LayoutColumns elTop(5, elTopElems, elTopStretch);
 
@@ -117,12 +117,13 @@ void WatchyFace::drawWatchFace() {
   LayoutRows elDate(2, elDateElems, elDateStretch);
 
   LayoutFill elCalendar;
+  LayoutBorder elCalendarBorder(&elCalendar, true, false, false, true, color);
 
-  LayoutElement *elMainElems[] = {&elDate, &elCalendar};
-  bool elMainStretch[] = {false, true};
-  LayoutColumns elMain(2, elMainElems, elMainStretch);
+  LayoutElement *elMainElems[] = {&elDate, &elSpacer, &elCalendarBorder};
+  bool elMainStretch[] = {false, false, true};
+  LayoutColumns elMain(3, elMainElems, elMainStretch);
 
-  LayoutElement *elScreenElems[] = {&elTop, &elPad, &elMain};
+  LayoutElement *elScreenElems[] = {&elTop, &elSpacer, &elMain};
   bool elScreenStretch[] = {false, false, true};
   LayoutRows elScreen(3, elScreenElems, elScreenStretch);
 

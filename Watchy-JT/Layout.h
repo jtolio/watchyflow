@@ -94,6 +94,11 @@ public:
   LayoutPad(LayoutElement *child, int16_t padTop, int16_t padRight,
             int16_t padBottom, int16_t padLeft);
 
+  int16_t padTop() { return padTop_; }
+  int16_t padRight() { return padRight_; }
+  int16_t padBottom() { return padBottom_; }
+  int16_t padLeft() { return padLeft_; }
+
   void size(uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override;
 
@@ -143,6 +148,23 @@ public:
 private:
   LayoutElement *child_;
   uint8_t rotate_;
+};
+
+class LayoutBorder : public LayoutElement {
+public:
+  LayoutBorder(LayoutElement *child, bool top, bool right,
+            bool bottom, bool left, uint16_t color);
+
+  void size(uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override;
+
+  void draw(int16_t x0, int16_t y0,
+            uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override;
+
+private:
+  LayoutPad pad_;
+  uint16_t color_;
 };
 
 #endif

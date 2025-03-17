@@ -1,7 +1,5 @@
 #include "Layout.h"
 
-#define SCREEN_SIZE 200
-
 LayoutBitmap::LayoutBitmap(const uint8_t *bitmap, uint16_t w, uint16_t h, uint16_t color)
   : bitmap_(bitmap), w_(w), h_(h), color_(color) {}
 
@@ -77,11 +75,11 @@ void LayoutRotate::draw(int16_t x0, int16_t y0,
       *height = swap;
       swap = x0;
       x0 = y0;
-      y0 = SCREEN_SIZE - swap - *width;
+      y0 = Watchy::Watchy::display.width() - swap - *width;
       break;
     case 2:
-      x0 = SCREEN_SIZE - x0 - *height;
-      y0 = SCREEN_SIZE - y0 - *width;
+      x0 = Watchy::Watchy::display.width() - x0 - *height;
+      y0 = Watchy::Watchy::display.height() - y0 - *width;
       break;
     case 3:
       swap = *width;
@@ -89,7 +87,7 @@ void LayoutRotate::draw(int16_t x0, int16_t y0,
       *height = swap;
       swap = y0;
       y0 = x0;
-      x0 = SCREEN_SIZE - swap - *height;
+      x0 = Watchy::Watchy::display.height() - swap - *height;
       break;
   }
 
@@ -286,4 +284,33 @@ void LayoutPad::draw(int16_t x0, int16_t y0,
                width, height);
   *width += padLeft_ + padRight_;
   *height += padTop_ + padBottom_;
+}
+
+LayoutBorder::LayoutBorder(LayoutElement *child,
+                           bool top, bool right, bool bottom, bool left,
+                           uint16_t color)
+  : pad_(child, top ? 1 : 0, right ? 1 : 0, bottom ? 1 : 0, left ? 1 : 0),
+    color_(color) {}
+
+void LayoutBorder::size(uint16_t targetWidth, uint16_t targetHeight,
+                     uint16_t *width, uint16_t *height) {
+  pad_.size(targetWidth, targetHeight, width, height);
+}
+
+void LayoutBorder::draw(int16_t x0, int16_t y0,
+                     uint16_t targetWidth, uint16_t targetHeight,
+                     uint16_t *width, uint16_t *height) {
+  pad_.draw(x0, y0, targetWidth, targetHeight, width, height);
+  if (pad_.padTop() > 0) {
+    Watchy::Watchy::display.drawFastHLine(x0, y0, *width, color_);
+  }
+  if (pad_.padBottom() > 0) {
+    Watchy::Watchy::display.drawFastHLine(x0, y0 + *height - 1, *width, color_);
+  }
+  if (pad_.padLeft() > 0) {
+    Watchy::Watchy::display.drawFastVLine(x0, y0, *height, color_);
+  }
+  if (pad_.padRight() > 0) {
+    Watchy::Watchy::display.drawFastVLine(x0 + *width - 1, y0, *height, color_);
+  }
 }
