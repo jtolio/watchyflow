@@ -5,14 +5,14 @@
 LayoutBitmap::LayoutBitmap(const uint8_t *bitmap, uint16_t w, uint16_t h, uint16_t color)
   : bitmap_(bitmap), w_(w), h_(h), color_(color) {}
 
-void LayoutBitmap::size(uint16_t availableWidth, uint16_t availableHeight,
+void LayoutBitmap::size(uint16_t targetWidth, uint16_t targetHeight,
                         uint16_t *width, uint16_t *height) {
   *width = w_;
   *height = h_;
 }
 
 void LayoutBitmap::draw(int16_t x0, int16_t y0,
-                        uint16_t availableWidth, uint16_t availableHeight,
+                        uint16_t targetWidth, uint16_t targetHeight,
                         uint16_t *width, uint16_t *height) {
   Watchy::Watchy::display.drawBitmap(x0, y0, bitmap_, w_, h_, color_);
   *width = w_;
@@ -22,7 +22,7 @@ void LayoutBitmap::draw(int16_t x0, int16_t y0,
 LayoutText::LayoutText(String text, const GFXfont *font, uint16_t color)
   : text_(text), font_(font), color_(color) {}
 
-void LayoutText::size(uint16_t availableWidth, uint16_t availableHeight,
+void LayoutText::size(uint16_t targetWidth, uint16_t targetHeight,
                       uint16_t *width, uint16_t *height) {
   int16_t x1, y1;
   Watchy::Watchy::display.setFont(font_);
@@ -30,27 +30,26 @@ void LayoutText::size(uint16_t availableWidth, uint16_t availableHeight,
 }
 
 void LayoutText::draw(int16_t x0, int16_t y0,
-                      uint16_t availableWidth, uint16_t availableHeight,
+                      uint16_t targetWidth, uint16_t targetHeight,
                       uint16_t *width, uint16_t *height) {
   int16_t x1, y1;
   uint16_t swap;
   Watchy::Watchy::display.setFont(font_);
   Watchy::Watchy::display.getTextBounds(text_, 0, 0, &x1, &y1, width, height);
   Watchy::Watchy::display.setTextColor(color_);
-
   Watchy::Watchy::display.setCursor(x0 - x1, y0 - y1);
   Watchy::Watchy::display.print(text_);
 }
 
-void LayoutRotate::size(uint16_t availableWidth, uint16_t availableHeight,
+void LayoutRotate::size(uint16_t targetWidth, uint16_t targetHeight,
                         uint16_t *width, uint16_t *height) {
   uint16_t swap;
   if (rotate_ == 1 || rotate_ == 3) {
-    swap = availableWidth;
-    availableWidth = availableHeight;
-    availableHeight = swap;
+    swap = targetWidth;
+    targetWidth = targetHeight;
+    targetHeight = swap;
   }
-  child_->size(availableWidth, availableHeight, width, height);
+  child_->size(targetWidth, targetHeight, width, height);
   if (rotate_ == 1 || rotate_ == 3) {
     swap = *width;
     *width = *height;
@@ -59,15 +58,15 @@ void LayoutRotate::size(uint16_t availableWidth, uint16_t availableHeight,
 }
 
 void LayoutRotate::draw(int16_t x0, int16_t y0,
-                        uint16_t availableWidth, uint16_t availableHeight,
+                        uint16_t targetWidth, uint16_t targetHeight,
                         uint16_t *width, uint16_t *height) {
   uint16_t swap;
   if (rotate_ == 1 || rotate_ == 3) {
-    swap = availableWidth;
-    availableWidth = availableHeight;
-    availableHeight = swap;
+    swap = targetWidth;
+    targetWidth = targetHeight;
+    targetHeight = swap;
   }
-  child_->size(availableWidth, availableHeight, width, height);
+  child_->size(targetWidth, targetHeight, width, height);
 
   switch (rotate_) {
     default:
@@ -96,7 +95,7 @@ void LayoutRotate::draw(int16_t x0, int16_t y0,
 
   uint8_t currentRotation = Watchy::Watchy::display.getRotation();
   Watchy::Watchy::display.setRotation((currentRotation + rotate_) % 4);
-  child_->draw(x0, y0, availableWidth, availableHeight, width, height);
+  child_->draw(x0, y0, targetWidth, targetHeight, width, height);
   Watchy::Watchy::display.setRotation(currentRotation);
   if (rotate_ == 1 || rotate_ == 3) {
     swap = *width;
@@ -109,9 +108,9 @@ LayoutColumns::LayoutColumns(uint16_t columnCount, LayoutElement *columns[],
                              bool hstretch[])
   : columnCount_(columnCount), columns_(columns), hstretch_(hstretch) {}
 
-void LayoutColumns::size(uint16_t availableWidth, uint16_t availableHeight,
+void LayoutColumns::size(uint16_t targetWidth, uint16_t targetHeight,
                          uint16_t *width, uint16_t *height) {
-  *height = availableHeight;
+  *height = targetHeight;
   *width = 0;
   bool canStretch = false;
 
@@ -120,7 +119,7 @@ void LayoutColumns::size(uint16_t availableWidth, uint16_t availableHeight,
       canStretch = true;
     }
     uint16_t columnWidth, columnHeight;
-    columns_[i]->size(0, availableHeight,
+    columns_[i]->size(0, targetHeight,
                       &columnWidth, &columnHeight);
     if (columnHeight > *height) {
       *height = columnHeight;
@@ -128,23 +127,23 @@ void LayoutColumns::size(uint16_t availableWidth, uint16_t availableHeight,
     *width += columnWidth;
   }
 
-  if (*width < availableWidth && canStretch) {
-    *width = availableWidth;
+  if (*width < targetWidth && canStretch) {
+    *width = targetWidth;
   }
 }
 
 void LayoutColumns::draw(int16_t x0, int16_t y0,
-                         uint16_t availableWidth, uint16_t availableHeight,
+                         uint16_t targetWidth, uint16_t targetHeight,
                          uint16_t *width, uint16_t *height) {
   uint16_t fixedWidth = 0;
   uint16_t splits = 0;
 
   for (uint16_t i = 0; i < columnCount_; i++) {
     uint16_t subwidth, subheight;
-    columns_[i]->size(0, availableHeight,
+    columns_[i]->size(0, targetHeight,
                       &subwidth, &subheight);
-    if (subheight > availableHeight) {
-      availableHeight = subheight;
+    if (subheight > targetHeight) {
+      targetHeight = subheight;
     }
     if (hstretch_[i]) {
       splits++;
@@ -154,22 +153,22 @@ void LayoutColumns::draw(int16_t x0, int16_t y0,
   }
 
   uint16_t remainingWidth = 0;
-  if (availableWidth > fixedWidth) {
-    remainingWidth = availableWidth - fixedWidth;
+  if (targetWidth > fixedWidth) {
+    remainingWidth = targetWidth - fixedWidth;
   }
 
   *width = 0;
   *height = 0;
   for (uint16_t i = 0; i < columnCount_; i++) {
-    uint16_t subAvailableWidth = 0;
+    uint16_t subTargetWidth = 0;
     if (hstretch_[i]) {
-      subAvailableWidth = remainingWidth / splits;
-      remainingWidth -= subAvailableWidth;
+      subTargetWidth = remainingWidth / splits;
+      remainingWidth -= subTargetWidth;
       splits--;
     }
     uint16_t subwidth, subheight;
     columns_[i]->draw(x0 + *width, y0,
-                      subAvailableWidth, availableHeight,
+                      subTargetWidth, targetHeight,
                       &subwidth, &subheight);
     *width += subwidth;
     if (subheight > *height) {
@@ -182,9 +181,9 @@ LayoutRows::LayoutRows(uint16_t rowCount, LayoutElement *rows[],
                        bool vstretch[])
   : rowCount_(rowCount), rows_(rows), vstretch_(vstretch) {}
 
-void LayoutRows::size(uint16_t availableWidth, uint16_t availableHeight,
+void LayoutRows::size(uint16_t targetWidth, uint16_t targetHeight,
                       uint16_t *width, uint16_t *height) {
-  *width = availableWidth;
+  *width = targetWidth;
   *height = 0;
   bool canStretch = false;
 
@@ -193,7 +192,7 @@ void LayoutRows::size(uint16_t availableWidth, uint16_t availableHeight,
       canStretch = true;
     }
     uint16_t rowWidth, rowHeight;
-    rows_[i]->size(availableWidth, 0,
+    rows_[i]->size(targetWidth, 0,
                    &rowWidth, &rowHeight);
     if (rowWidth > *width) {
       *width = rowWidth;
@@ -201,23 +200,23 @@ void LayoutRows::size(uint16_t availableWidth, uint16_t availableHeight,
     *height += rowHeight;
   }
 
-  if (*height < availableHeight && canStretch) {
-    *height = availableHeight;
+  if (*height < targetHeight && canStretch) {
+    *height = targetHeight;
   }
 }
 
 void LayoutRows::draw(int16_t x0, int16_t y0,
-                      uint16_t availableWidth, uint16_t availableHeight,
+                      uint16_t targetWidth, uint16_t targetHeight,
                       uint16_t *width, uint16_t *height) {
   uint16_t fixedHeight = 0;
   uint16_t splits = 0;
 
   for (uint16_t i = 0; i < rowCount_; i++) {
     uint16_t subwidth, subheight;
-    rows_[i]->size(availableWidth, 0,
+    rows_[i]->size(targetWidth, 0,
                    &subwidth, &subheight);
-    if (subwidth > availableWidth) {
-      availableWidth = subwidth;
+    if (subwidth > targetWidth) {
+      targetWidth = subwidth;
     }
     if (vstretch_[i]) {
       splits++;
@@ -227,22 +226,22 @@ void LayoutRows::draw(int16_t x0, int16_t y0,
   }
 
   uint16_t remainingHeight = 0;
-  if (availableHeight > fixedHeight) {
-    remainingHeight = availableHeight - fixedHeight;
+  if (targetHeight > fixedHeight) {
+    remainingHeight = targetHeight - fixedHeight;
   }
 
   *width = 0;
   *height = 0;
   for (uint16_t i = 0; i < rowCount_; i++) {
-    uint16_t subAvailableHeight = 0;
+    uint16_t subTargetHeight = 0;
     if (vstretch_[i]) {
-      subAvailableHeight = remainingHeight / splits;
-      remainingHeight -= subAvailableHeight;
+      subTargetHeight = remainingHeight / splits;
+      remainingHeight -= subTargetHeight;
       splits--;
     }
     uint16_t subwidth, subheight;
     rows_[i]->draw(x0, y0 + *height,
-                   availableWidth, subAvailableHeight,
+                   targetWidth, subTargetHeight,
                    &subwidth, &subheight);
     *height += subheight;
     if (subwidth > *width) {
@@ -251,39 +250,39 @@ void LayoutRows::draw(int16_t x0, int16_t y0,
   }
 }
 
-LayoutPadChild::LayoutPadChild(LayoutElement *child,
-                             int16_t padTop, int16_t padRight,
-                             int16_t padBottom, int16_t padLeft)
+LayoutPad::LayoutPad(LayoutElement *child,
+                     int16_t padTop, int16_t padRight,
+                     int16_t padBottom, int16_t padLeft)
   : child_(child), padTop_(padTop), padRight_(padRight),
     padBottom_(padBottom), padLeft_(padLeft) {}
 
-void LayoutPadChild::size(uint16_t availableWidth, uint16_t availableHeight,
-                         uint16_t *width, uint16_t *height) {
-  int16_t signedAvailableWidth = (int16_t)availableWidth;
-  int16_t signedAvailableHeight = (int16_t)availableHeight;
-  signedAvailableWidth -= (padLeft_ + padRight_);
-  signedAvailableHeight -= (padTop_ + padBottom_);
-  availableWidth = (signedAvailableWidth < 0) ?
-      0 : (uint16_t)signedAvailableWidth;
-  availableHeight = (signedAvailableHeight < 0) ?
-      0 : (uint16_t)signedAvailableHeight;
-  child_->size(availableWidth, availableHeight, width, height);
+void LayoutPad::size(uint16_t targetWidth, uint16_t targetHeight,
+                     uint16_t *width, uint16_t *height) {
+  int16_t signedTargetWidth = (int16_t)targetWidth;
+  int16_t signedTargetHeight = (int16_t)targetHeight;
+  signedTargetWidth -= (padLeft_ + padRight_);
+  signedTargetHeight -= (padTop_ + padBottom_);
+  targetWidth = (signedTargetWidth < 0) ?
+      0 : (uint16_t)signedTargetWidth;
+  targetHeight = (signedTargetHeight < 0) ?
+      0 : (uint16_t)signedTargetHeight;
+  child_->size(targetWidth, targetHeight, width, height);
   *width += padLeft_ + padRight_;
   *height += padTop_ + padBottom_;
 }
 
-void LayoutPadChild::draw(int16_t x0, int16_t y0,
-                         uint16_t availableWidth, uint16_t availableHeight,
-                         uint16_t *width, uint16_t *height) {
-  int16_t signedAvailableWidth = (int16_t)availableWidth;
-  int16_t signedAvailableHeight = (int16_t)availableHeight;
-  signedAvailableWidth -= (padLeft_ + padRight_);
-  signedAvailableHeight -= (padTop_ + padBottom_);
-  availableWidth = (signedAvailableWidth < 0) ?
-      0 : (uint16_t)signedAvailableWidth;
-  availableHeight = (signedAvailableHeight < 0) ?
-      0 : (uint16_t)signedAvailableHeight;
-  child_->draw(x0 + padLeft_, y0 + padTop_, availableWidth, availableHeight,
+void LayoutPad::draw(int16_t x0, int16_t y0,
+                     uint16_t targetWidth, uint16_t targetHeight,
+                     uint16_t *width, uint16_t *height) {
+  int16_t signedTargetWidth = (int16_t)targetWidth;
+  int16_t signedTargetHeight = (int16_t)targetHeight;
+  signedTargetWidth -= (padLeft_ + padRight_);
+  signedTargetHeight -= (padTop_ + padBottom_);
+  targetWidth = (signedTargetWidth < 0) ?
+      0 : (uint16_t)signedTargetWidth;
+  targetHeight = (signedTargetHeight < 0) ?
+      0 : (uint16_t)signedTargetHeight;
+  child_->draw(x0 + padLeft_, y0 + padTop_, targetWidth, targetHeight,
                width, height);
   *width += padLeft_ + padRight_;
   *height += padTop_ + padBottom_;

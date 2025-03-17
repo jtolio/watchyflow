@@ -14,14 +14,14 @@ class LayoutBattery : public LayoutElement {
 public:
   explicit LayoutBattery(float vbat) : vbat_(vbat) {}
 
-  void size(uint16_t availableWidth, uint16_t availableHeight,
+  void size(uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
     *width = 37;
     *height = 21;
   }
 
   void draw(int16_t x0, int16_t y0,
-            uint16_t availableWidth, uint16_t availableHeight,
+            uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
     *width = 37;
     *height = 21;
@@ -85,7 +85,7 @@ void WatchyFace::drawWatchFace() {
   }
 
   LayoutFill elFill;
-  LayoutPad elPad(5);
+  LayoutSpacer elPad(5);
 
   LayoutText elTime(timeStr, &DSEG7_Classic_Bold_25, color);
 
@@ -126,7 +126,7 @@ void WatchyFace::drawWatchFace() {
   bool elScreenStretch[] = {false, false, true};
   LayoutRows elScreen(3, elScreenElems, elScreenStretch);
 
-  LayoutPadChild elPaddedScreen(&elScreen, 5, 5, 5, 5);
+  LayoutPad elPaddedScreen(&elScreen, 5, 5, 5, 5);
 
   uint16_t w, h;
   elPaddedScreen.draw(0, 0, 200, 200, &w, &h);
