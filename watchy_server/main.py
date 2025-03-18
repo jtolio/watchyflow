@@ -71,8 +71,8 @@ class CalendarProcessor:
         if not hasattr(start, "astimezone") or not hasattr(end, "astimezone"):
             rv["day"] = True
         else:
-            rv["start-unix"] = start.timestamp()
-            rv["end-unix"] = end.timestamp()
+            rv["start-unix"] = int(start.timestamp())
+            rv["end-unix"] = int(end.timestamp())
         return rv
 
     def has_required_fields(self, event):

@@ -11,7 +11,8 @@
 class WatchyFace : public Watchy{
     using Watchy::Watchy;
 public:
-    void drawWatchFace();
+    void hourlyUpdate() override;
+    void drawWatchFace() override;
 };
 
 #endif

@@ -89,6 +89,22 @@ public:
   }
 };
 
+class LayoutCenter : public LayoutElement {
+public:
+  explicit LayoutCenter(LayoutElement *child)
+    : child_(child)
+  {}
+
+  void size(uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override;
+  void draw(int16_t x0, int16_t y0,
+            uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override;
+
+private:
+  LayoutElement *child_;
+};
+
 class LayoutPad : public LayoutElement {
 public:
   LayoutPad(LayoutElement *child, int16_t padTop, int16_t padRight,

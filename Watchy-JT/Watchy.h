@@ -120,5 +120,6 @@ extern RTC_DATA_ATTR BMA423 sensor;
 extern RTC_DATA_ATTR bool WIFI_CONFIGURED;
 extern RTC_DATA_ATTR bool BLE_CONFIGURED;
 extern RTC_DATA_ATTR bool USB_PLUGGED_IN;
+extern RTC_DATA_ATTR long gmtOffset;
 
 #endif

@@ -31,7 +31,6 @@ void LayoutText::draw(int16_t x0, int16_t y0,
                       uint16_t targetWidth, uint16_t targetHeight,
                       uint16_t *width, uint16_t *height) {
   int16_t x1, y1;
-  uint16_t swap;
   Watchy::Watchy::display.setFont(font_);
   Watchy::Watchy::display.getTextBounds(text_, 0, 0, &x1, &y1, width, height);
   Watchy::Watchy::display.setTextColor(color_);
@@ -245,6 +244,42 @@ void LayoutRows::draw(int16_t x0, int16_t y0,
     if (subwidth > *width) {
       *width = subwidth;
     }
+  }
+}
+
+void LayoutCenter::size(uint16_t targetWidth, uint16_t targetHeight,
+                        uint16_t *width, uint16_t *height) {
+  child_->size(targetWidth, targetHeight, width, height);
+  if (*width < targetWidth) {
+    *width = targetWidth;
+  }
+  if (*height < targetHeight) {
+    *height = targetHeight;
+  }
+}
+
+void LayoutCenter::draw(int16_t x0, int16_t y0,
+                        uint16_t targetWidth, uint16_t targetHeight,
+                        uint16_t *width, uint16_t *height) {
+  int16_t x0_offset = 0, y0_offset = 0;
+
+  child_->size(targetWidth, targetHeight, width, height);
+  if (*width < targetWidth) {
+    x0_offset = (targetWidth - *width) / 2;
+  }
+  if (*height < targetHeight) {
+    y0_offset = (targetHeight - *height) / 2;
+  }
+
+  child_->draw(x0 + x0_offset, y0 + y0_offset, *width, *height, width, height);
+
+  *width += x0_offset;
+  *height += y0_offset;
+  if (*width < targetWidth) {
+    *width = targetWidth;
+  }
+  if (*height < targetHeight) {
+    *height = targetHeight;
   }
 }
 
