@@ -13,6 +13,7 @@ const uint8_t WEATHER_ICON_HEIGHT = 32;
 
 RTC_DATA_ATTR dayEventsData calendarDay;
 RTC_DATA_ATTR eventsData calendar[MAX_CALENDAR_COLUMNS];
+RTC_DATA_ATTR alarmsData alarms;
 RTC_DATA_ATTR uint8_t activeCalendarColumns;
 RTC_DATA_ATTR time_t lastCalendarFetch;
 RTC_DATA_ATTR char calendarError[32];
@@ -26,6 +27,7 @@ void zeroError() {
 void WatchyFace::deviceReset() {
   activeCalendarColumns = 1;
   reset(&calendar[0]);
+  reset(&alarms);
   reset(&calendarDay);
   lastCalendarFetch = 0;
   zeroError();
@@ -39,8 +41,8 @@ void WatchyFace::postDraw() {
   if (!connectWiFi()) { return; }
 
   HTTPClient http;
-  http.setConnectTimeout(1000*3);
-  http.setTimeout(1000*5);
+  http.setConnectTimeout(1000*10);
+  http.setTimeout(1000*10);
   String calQueryURL = "http://mini2011.lan:8082/v0/account/{calendarAccountKey}";
   calQueryURL.replace("{calendarAccountKey}", settings.calendarAccountKey);
   http.begin(calQueryURL.c_str());
@@ -78,6 +80,7 @@ void WatchyFace::parseCalendar(String payload) {
     reset(&calendar[i]);
   }
   reset(&calendarDay);
+  reset(&alarms);
 
   JSONVar events = parsed["events"];
   for (int i = 0; i  < events.length(); i++) {
@@ -94,9 +97,9 @@ void WatchyFace::parseCalendar(String payload) {
     if (column >= activeCalendarColumns) {
       continue;
     }
-    String start = event["start"];
-    String end = event["end"];
-    if (allDay || column < 0) {
+    if (allDay) {
+      String start = event["start"];
+      String end = event["end"];
       addEvent(&calendarDay, summary, start, end);
       continue;
     }
@@ -104,7 +107,14 @@ void WatchyFace::parseCalendar(String payload) {
     if (!event.hasOwnProperty("end-unix")) { continue; }
     time_t startUnix = (time_t)(long)event["start-unix"];
     time_t endUnix = (time_t)(long)event["end-unix"];
-    addEvent(&calendar[column], summary, startUnix, endUnix);
+
+    if (summary.indexOf(String("[WATCHY ALARM]")) >= 0) {
+      summary.replace(String("[WATCHY ALARM]"), String(""));
+      summary.trim();
+      addAlarm(&alarms, summary, startUnix);
+    } else {
+      addEvent(&calendar[column], summary, startUnix, endUnix);
+    }
   }
 }
 
@@ -178,7 +188,7 @@ void WatchyFace::drawWatchFace() {
   elCalColElems[0] = &elCalHourBar;
   elCalColStretch[0] = false;
   for (int i = 0; i < activeCalendarColumns; i++) {
-    elCals[i] = CalendarColumn(&calendar[i], currentTime, color);
+    elCals[i] = CalendarColumn(&calendar[i], this, color);
     elCalColElems[i+1] = &elCals[i];
     elCalColStretch[i+1] = true;
   }
@@ -195,9 +205,11 @@ void WatchyFace::drawWatchFace() {
   bool elMainStretch[] = {false, false, true};
   LayoutColumns elMain(3, elMainElems, elMainStretch);
 
-  LayoutElement *elScreenElems[] = {&elTop, &elSpacer, &elMain};
-  bool elScreenStretch[] = {false, false, true};
-  LayoutRows elScreen(3, elScreenElems, elScreenStretch);
+  CalendarAlarms elAlarms(&alarms, this, color);
+
+  LayoutElement *elScreenElems[] = {&elTop, &elSpacer, &elMain, &elAlarms};
+  bool elScreenStretch[] = {false, false, true, false};
+  LayoutRows elScreen(4, elScreenElems, elScreenStretch);
 
   LayoutPad elPaddedScreen(&elScreen, 5, 5, 5, 5);
 
