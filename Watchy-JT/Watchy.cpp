@@ -47,15 +47,13 @@ void Watchy::init(String datetime) {
     switch (guiState) {
     case WATCHFACE_STATE:
       showWatchFace(true); // partial updates on tick
-      if (currentTime.Minute == 59) {
-        hourlyUpdate();
-      }
       // The RTC wakes us up once per minute
       if (settings.vibrateOClock) {
         if (currentTime.Minute == 0) {
           vibMotor(75, 4);
         }
       }
+      postDraw();
       break;
     case MAIN_MENU_STATE:
       // Return to watchface if in menu for more than one tick
@@ -91,8 +89,10 @@ void Watchy::init(String datetime) {
     gmtOffset = settings.gmtOffset;
     RTC.read(currentTime);
     RTC.read(bootTime);
+    deviceReset();
     showWatchFace(false); // full update on reset
     vibMotor(75, 4);
+    postDraw();
     // For some reason, seems to be enabled on first boot
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
     break;
@@ -690,7 +690,8 @@ void Watchy::drawWatchFace() {
   display.println(currentTime.Minute);
 }
 
-void Watchy::hourlyUpdate() {}
+void Watchy::postDraw() {}
+void Watchy::deviceReset() {}
 
 weatherData Watchy::getWeatherData() {
   return _getWeatherData(settings.cityID, settings.lat, settings.lon,

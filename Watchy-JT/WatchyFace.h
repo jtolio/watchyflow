@@ -8,11 +8,14 @@
 #include "DSEG7_Classic_Regular_39.h"
 #include "icons.h"
 
-class WatchyFace : public Watchy{
-    using Watchy::Watchy;
+class WatchyFace : public Watchy {
+  using Watchy::Watchy;
 public:
-    void hourlyUpdate() override;
-    void drawWatchFace() override;
+  void deviceReset() override;
+  void postDraw() override;
+  void drawWatchFace() override;
+private:
+  void parseCalendar(String payload);
 };
 
 #endif

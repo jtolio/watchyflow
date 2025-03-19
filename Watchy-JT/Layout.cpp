@@ -22,6 +22,11 @@ LayoutText::LayoutText(String text, const GFXfont *font, uint16_t color)
 
 void LayoutText::size(uint16_t targetWidth, uint16_t targetHeight,
                       uint16_t *width, uint16_t *height) {
+  if (text_.length() <= 0) {
+    *width = 0;
+    *height = 0;
+    return;
+  }
   int16_t x1, y1;
   Watchy::Watchy::display.setFont(font_);
   Watchy::Watchy::display.getTextBounds(text_, 0, 0, &x1, &y1, width, height);
@@ -30,6 +35,11 @@ void LayoutText::size(uint16_t targetWidth, uint16_t targetHeight,
 void LayoutText::draw(int16_t x0, int16_t y0,
                       uint16_t targetWidth, uint16_t targetHeight,
                       uint16_t *width, uint16_t *height) {
+  if (text_.length() <= 0) {
+    *width = 0;
+    *height = 0;
+    return;
+  }
   int16_t x1, y1;
   Watchy::Watchy::display.setFont(font_);
   Watchy::Watchy::display.getTextBounds(text_, 0, 0, &x1, &y1, width, height);

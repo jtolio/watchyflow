@@ -9,6 +9,7 @@ import argparse
 import datetime
 import json
 import logging
+import time
 import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -23,13 +24,26 @@ TIMEZONE = timezone("US/Eastern")
 
 class CalendarProcessor:
 
-    def __init__(self, user_emails=None):
+    calendar_cache = {}
+
+    def __init__(self, user_emails=None, excluded_events=None):
         self.user_emails = [email.lower() for email in (user_emails or [])]
+        self.excluded_events = set(excluded_events or [])
 
     def fetch_calendar(self, url):
+        cached = CalendarProcessor.calendar_cache.get(url, {})
+        ts = cached.get("ts", 0)
+        if ts + 50*60 > time.time():
+            return cached["ical"]
+
         resp = requests.get(url)
         resp.raise_for_status()
-        return icalendar.Calendar.from_ical(resp.content)
+        rv = icalendar.Calendar.from_ical(resp.content)
+        CalendarProcessor.calendar_cache[url] = {
+            "ts": time.time(),
+            "ical": rv,
+        }
+        return rv
 
     def is_event_declined_by_user(self, event):
         if "ATTENDEE" not in event or not self.user_emails:
@@ -109,6 +123,8 @@ class CalendarProcessor:
 
                     if event["end"] <= event["start"]:
                         continue
+                    if event["summary"] in self.excluded_events:
+                        continue
 
                     event_id = len(all_events)
                     all_events.append(event)
@@ -142,7 +158,8 @@ class CalendarProcessor:
                 if column >= 0:
                     free_columns.append(column)
                 continue
-            if len(timestamp) == len("0000-00-00"):
+            if (len(timestamp) == len("0000-00-00") or
+                    "[WATCHY ALARM]" in all_events[event_id]["summary"]):
                 all_events[event_id]["column"] = -1
                 continue
             if free_columns:
@@ -154,7 +171,12 @@ class CalendarProcessor:
             continue
 
         all_events.sort(
-            key=lambda event: (event["start"], event["end"], event["column"], event["summary"])
+            key=lambda event: (
+                event["start"],
+                event["end"],
+                event["column"],
+                event["summary"],
+            )
         )
 
         return all_events, next_column
@@ -177,6 +199,11 @@ class CalHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
+        account = self.server.cals[key]
+        emails = account.get("identities", [])
+        ical_urls = account.get("ical-urls", [])
+        excluded_events = account.get("excluded-events", [])
+
         when = (query.get("time") or ["now"])[-1]
         if when == "now":
             when = datetime.datetime.now()
@@ -185,9 +212,9 @@ class CalHandler(BaseHTTPRequestHandler):
 
         start = when - datetime.timedelta(hours=1)
         processor = CalendarProcessor(
-            user_emails=getattr(self.server, "user_emails", [])
+            user_emails=emails, excluded_events=excluded_events
         )
-        all_events, columns = processor.get_events(self.server.cals[key], start)
+        all_events, columns = processor.get_events(ical_urls, start)
 
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -211,12 +238,6 @@ def main():
     parser.add_argument(
         "--cals", default="cals.json", help="configuration file for calendars"
     )
-    parser.add_argument(
-        "--emails",
-        nargs="+",
-        default=[],
-        help="Your email addresses to identify yourself in calendar events (for filtering declined events)",
-    )
     args = parser.parse_args()
 
     host, port = args.addr.split(":")
@@ -226,8 +247,6 @@ def main():
     server = HTTPServer((host, port), CalHandler)
     with open(args.cals, "rb") as fh:
         server.cals = json.load(fh)
-
-    server.user_emails = [email.lower() for email in args.emails]
 
     try:
         logging.info(f"Starting server on {host}:{port}")

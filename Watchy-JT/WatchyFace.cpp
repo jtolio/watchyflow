@@ -1,285 +1,64 @@
 #include "WatchyFace.h"
 #include "Layout.h"
-#include <Fonts/Picopixel.h>
+#include "Battery.h"
+#include "Calendar.h"
+#include <Fonts/FreeMono9pt7b.h>
 
 #define DARKMODE false
 
-const uint8_t BATTERY_SEGMENT_WIDTH = 7;
-const uint8_t BATTERY_SEGMENT_HEIGHT = 11;
-const uint8_t BATTERY_SEGMENT_SPACING = 9;
+const uint8_t MAX_CALENDAR_COLUMNS = 8;
+
 const uint8_t WEATHER_ICON_WIDTH = 48;
 const uint8_t WEATHER_ICON_HEIGHT = 32;
 
-const uint8_t MAX_CALENDAR_COLUMNS = 8;
-const uint8_t MAX_EVENT_NAME_LEN = 24;
-const uint8_t MAX_EVENTS_PER_COLUMN = 16;
-const uint8_t MAX_DAY_EVENTS = 5;
-
-const GFXfont *SMALL_FONT = &Picopixel;
-
-class LayoutBattery : public LayoutElement {
-public:
-  explicit LayoutBattery(float vbat) : vbat_(vbat) {}
-
-  void size(uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override {
-    *width = 37;
-    *height = 21;
-  }
-
-  void draw(int16_t x0, int16_t y0,
-            uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override {
-    *width = 37;
-    *height = 21;
-
-    Watchy::Watchy::display.drawBitmap(x0, y0, battery, 37, 21,
-                                       DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    Watchy::Watchy::display.fillRect(x0 + 5, y0 + 5, 27, BATTERY_SEGMENT_HEIGHT,
-                                     DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);
-    int8_t batteryLevel = 0;
-    float VBAT = vbat_;
-    if(VBAT > 4.0){
-        batteryLevel = 3;
-    }
-    else if(VBAT > 3.6 && VBAT <= 4.0){
-        batteryLevel = 2;
-    }
-    else if(VBAT > 3.20 && VBAT <= 3.6){
-        batteryLevel = 1;
-    }
-    else if(VBAT <= 3.20){
-        batteryLevel = 0;
-    }
-
-    for(int8_t batterySegments = 0; batterySegments < batteryLevel; batterySegments++){
-        Watchy::Watchy::display.fillRect(
-          x0 + 5 + (batterySegments * BATTERY_SEGMENT_SPACING),
-          y0 + 5,
-          BATTERY_SEGMENT_WIDTH, BATTERY_SEGMENT_HEIGHT,
-          DARKMODE ? GxEPD_WHITE : GxEPD_BLACK);
-    }
-  }
-private:
-  float vbat_;
-};
-
-time_t unixEpochTime(tmElements_t tm) {
-  // the system clock is stored in the local timezone and not UTC, like most
-  // unix systems.
-  // the unix timestamp calculation is therefore off by the local timezone
-  // offset from UTC, so to fix it we need to subtract the gmtOffset.
-  // note that time_t may be 32 bits, and may have a Y2038 problem. it may
-  // only make sense to use time_t for time deltas.
-  return 1742221800 + 20*60;
-  return makeTime(tm) - gmtOffset;
-}
-
-typedef struct dayEventData {
-  char summary[MAX_EVENT_NAME_LEN];
-  char start[11];
-  char end[11];
-} dayEventData;
-
-typedef struct dayEventsData {
-  dayEventData events[MAX_DAY_EVENTS];
-  uint8_t eventCount;
-} dayEventsData;
-
-void reset(dayEventsData *data) {
-  data->eventCount = 0;
-}
-
-void addEvent(dayEventsData *data, String summary, String start, String end) {
-  if (data->eventCount >= MAX_DAY_EVENTS) { return; }
-  if (data->eventCount == MAX_DAY_EVENTS - 1) { summary = "TOO MANY EVENTS"; }
-  start.toCharArray(data->events[data->eventCount].start, 11);
-  end.toCharArray(data->events[data->eventCount].end, 11);
-  summary.toCharArray(data->events[data->eventCount].summary, MAX_EVENT_NAME_LEN);
-  data->eventCount++;
-}
-
-class CalendarDayEvents : public LayoutElement {
-public:
-  CalendarDayEvents(dayEventsData *data, tmElements_t currentTime)
-    : data_(data), currentTime_(currentTime) {}
-
-  void size(uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override {
-    *width = targetWidth;
-    *height = 0;
-
-    Watchy::Watchy::display.setFont(SMALL_FONT);
-
-    String today = String(tmYearToCalendar(currentTime_.Year));
-    today += (currentTime_.Month < 10) ? "-0" : "-";
-    today += String(currentTime_.Month);
-    today += (currentTime_.Day < 10) ? "-0" : "-";
-    today += String(currentTime_.Day);
-
-    for (int i = 0; i < data_->eventCount; i++) {
-      if (String(data_->events[i].start) > today ||
-          String(data_->events[i].end) <= today) {
-        continue;
-      }
-
-      uint16_t textWidth, textHeight;
-      int16_t x1, y1;
-      Watchy::Watchy::display.getTextBounds(
-        String(data_->events[0].summary), 0, 0,
-        &x1, &y1, &textWidth, &textHeight);
-      textWidth += 4;
-      textHeight += 2;
-      if (textWidth > *width) {
-        *width = textWidth;
-      }
-      *height += textHeight;
-    }
-    if (*height > 0) { *height += 2; }
-  }
-
-  void draw(int16_t x0, int16_t y0,
-            uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override {
-    uint16_t color = DARKMODE ? GxEPD_WHITE : GxEPD_BLACK;
-    *width = targetWidth;
-    *height = 0;
-
-    Watchy::Watchy::display.setFont(SMALL_FONT);
-    Watchy::Watchy::display.setTextColor(color);
-
-    String today = String(currentTime_.Year);
-    today += (currentTime_.Month < 10) ? "-0" : "-";
-    today += String(currentTime_.Month);
-    today += (currentTime_.Day < 10) ? "-0" : "-";
-    today += String(currentTime_.Day);
-
-    for (int i = 0; i < data_->eventCount; i++) {
-      if (String(data_->events[i].start) > today ||
-          String(data_->events[i].end) <= today) {
-        // TODO: fix day checking.
-        // continue;
-      }
-
-      String text = data_->events[0].summary;
-      uint16_t textWidth, textHeight;
-      int16_t x1, y1;
-      Watchy::Watchy::display.getTextBounds(
-        text, 0, 0, &x1, &y1, &textWidth, &textHeight);
-      textWidth += 4;
-      textHeight += 2;
-      x1 -= 2;
-      y1 -= 2;
-      if (textWidth > *width) {
-        *width = textWidth;
-      }
-      Watchy::Watchy::display.setCursor(x0 - x1, y0 - y1 + *height);
-      Watchy::Watchy::display.print(text);
-      *height += textHeight;
-    }
-
-    if (*height > 0) {
-      *height += 2;
-      Watchy::Watchy::display.drawFastHLine(x0, y0 + *height, *width, color);
-    }
-  }
-private:
-  dayEventsData *data_;
-  tmElements_t currentTime_;
-};
-
-typedef struct eventData {
-  char summary[MAX_EVENT_NAME_LEN];
-  time_t start;
-  time_t end;
-} eventData;
-
-typedef struct eventsData {
-  eventData events[MAX_EVENTS_PER_COLUMN];
-  uint8_t eventCount;
-} eventsData;
-
-void reset(eventsData *data) {
-  data->eventCount = 0;
-}
-
-void addEvent(eventsData *data, String summary, time_t start, time_t end) {
-  if (data->eventCount >= MAX_EVENTS_PER_COLUMN) { return; }
-  if (data->eventCount == MAX_EVENT_NAME_LEN - 1) { summary = "TOO MANY EVENTS"; }
-  data->events[data->eventCount].start = start;
-  data->events[data->eventCount].end = end;
-  summary.toCharArray(data->events[data->eventCount].summary, MAX_EVENT_NAME_LEN);
-  data->eventCount++;
-}
-
-class CalendarColumn : public LayoutElement {
-public:
-  CalendarColumn() {}
-  CalendarColumn(eventsData *data, tmElements_t currentTime)
-    : data_(data), currentTime_(currentTime) {}
-
-  void size(uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override {
-    *width = targetWidth;
-    *height = targetHeight;
-  }
-
-  void draw(int16_t x0, int16_t y0,
-            uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override {
-    uint16_t color = DARKMODE ? GxEPD_WHITE : GxEPD_BLACK;
-    Watchy::Watchy::display.setFont(SMALL_FONT);
-    Watchy::Watchy::display.setTextColor(color);
-
-    *width = targetWidth;
-    *height = targetHeight;
-    time_t now = unixEpochTime(currentTime_);
-    time_t windowStart = now - (60 * 60);
-    time_t windowEnd = now + (4 * 60 * 60);
-    time_t secondsPerPixel = (windowEnd - windowStart) / targetHeight;
-
-    Watchy::Watchy::display.drawFastHLine(x0 + (targetWidth / 2), y0 + ((now - windowStart) / secondsPerPixel), targetWidth / 2, color);
-
-    for (int i = 0; i < data_->eventCount; i++) {
-      eventData *event = &(data_->events[i]);
-      time_t eventStart = event->start;
-      time_t eventEnd = event->end;
-      if (eventStart < windowStart) {
-        eventStart = windowStart;
-      } else {
-        Watchy::Watchy::display.drawFastHLine(x0, y0 + ((eventStart - windowStart) / secondsPerPixel), targetWidth, color);
-      }
-      int16_t eventOffset = (eventStart - windowStart) / secondsPerPixel;
-      int16_t eventSize = (eventEnd - eventStart) / secondsPerPixel;
-      if (eventEnd > windowEnd) {
-        eventEnd = windowEnd;
-      } else {
-        Watchy::Watchy::display.drawFastHLine(x0, y0 + ((eventEnd - windowStart) / secondsPerPixel), targetWidth, color);
-      }
-      Watchy::Watchy::display.drawFastVLine(
-        x0, y0 + eventOffset, eventSize, color);
-      Watchy::Watchy::display.drawFastVLine(
-        x0 + targetWidth - 1, y0 + eventOffset, eventSize, color);
-      String summary = event->summary;
-      int16_t x1, y1;
-      uint16_t tw, th;
-      Watchy::Watchy::display.getTextBounds(summary, 0, 0, &x1, &y1, &tw, &th);
-      Watchy::Watchy::display.setCursor(x0 - x1 + 2, y0 - y1 + eventOffset + 2) ;
-      Watchy::Watchy::display.print(summary);
-    }
-  }
-private:
-  eventsData *data_;
-  tmElements_t currentTime_;
-};
-
 RTC_DATA_ATTR dayEventsData calendarDay;
 RTC_DATA_ATTR eventsData calendar[MAX_CALENDAR_COLUMNS];
-RTC_DATA_ATTR uint8_t activeCalendarColumns = 0;
+RTC_DATA_ATTR uint8_t activeCalendarColumns;
+RTC_DATA_ATTR time_t lastCalendarFetch;
+RTC_DATA_ATTR char calendarError[32];
 
-void WatchyFace::hourlyUpdate() {
-  const char *payload = "{\"status\": \"ok\", \"columns\": 2, \"events\": [{\"start\": \"2025-03-17\", \"end\": \"2025-03-18\", \"summary\": \"Sam's Birthday\", \"day\": true, \"column\": -1}, {\"start\": \"2025-03-17T08:30:00-04:00\", \"end\": \"2025-03-17T14:30:00-04:00\", \"summary\": \"claire at tch\", \"day\": false, \"start-unix\": 1742214600, \"end-unix\": 1742236200, \"column\": 0}, {\"start\": \"2025-03-17T09:45:00-04:00\", \"end\": \"2025-03-17T10:15:00-04:00\", \"summary\": \"Team Satellite Standup\", \"day\": false, \"start-unix\": 1742219100, \"end-unix\": 1742220900, \"column\": 1}, {\"start\": \"2025-03-17T10:30:00-04:00\", \"end\": \"2025-03-17T11:30:00-04:00\", \"summary\": \"Product/Engineering Staff meeting\", \"day\": false, \"start-unix\": 1742221800, \"end-unix\": 1742225400, \"column\": 1}, {\"start\": \"2025-03-17T11:30:00-04:00\", \"end\": \"2025-03-17T12:00:00-04:00\", \"summary\": \"Storj Select - Standup\", \"day\": false, \"start-unix\": 1742225400, \"end-unix\": 1742227200, \"column\": 1}, {\"start\": \"2025-03-17T12:00:00-04:00\", \"end\": \"2025-03-17T12:30:00-04:00\", \"summary\": \"Kaloyan / JT\", \"day\": false, \"start-unix\": 1742227200, \"end-unix\": 1742229000, \"column\": 1}, {\"start\": \"2025-03-17T12:30:00-04:00\", \"end\": \"2025-03-17T13:00:00-04:00\", \"summary\": \"Ethan / JT\", \"day\": false, \"start-unix\": 1742229000, \"end-unix\": 1742230800, \"column\": 1}, {\"start\": \"2025-03-17T13:00:00-04:00\", \"end\": \"2025-03-17T13:30:00-04:00\", \"summary\": \"Jeff / JT\", \"day\": false, \"start-unix\": 1742230800, \"end-unix\": 1742232600, \"column\": 1}, {\"start\": \"2025-03-17T14:00:00-04:00\", \"end\": \"2025-03-17T15:00:00-04:00\", \"summary\": \"Sync \", \"day\": false, \"start-unix\": 1742234400, \"end-unix\": 1742238000, \"column\": 1}, {\"start\": \"2025-03-17T15:00:00-04:00\", \"end\": \"2025-03-17T16:20:00-04:00\", \"summary\": \"Executive Staff Meeting \", \"day\": false, \"start-unix\": 1742238000, \"end-unix\": 1742242800, \"column\": 0}, {\"start\": \"2025-03-17T16:30:00-04:00\", \"end\": \"2025-03-17T17:00:00-04:00\", \"summary\": \"no meeting wrap up\", \"day\": false, \"start-unix\": 1742243400, \"end-unix\": 1742245200, \"column\": 1}]}";
+void zeroError() {
+  for (int i = 0; i < (sizeof(calendarError) / sizeof(calendarError[0])); i++) {
+    calendarError[i] = 0;
+  }
+}
 
+void WatchyFace::deviceReset() {
+  activeCalendarColumns = 1;
+  reset(&calendar[0]);
+  reset(&calendarDay);
+  lastCalendarFetch = 0;
+  zeroError();
+}
+
+void WatchyFace::postDraw() {
+  if (unixEpochTime(currentTime) - 3600 <= lastCalendarFetch) {
+    return;
+  }
+
+  if (!connectWiFi()) { return; }
+
+  HTTPClient http;
+  http.setConnectTimeout(1000*3);
+  http.setTimeout(1000*5);
+  String calQueryURL = "http://mini2011.lan:8082/v0/account/{calendarAccountKey}";
+  calQueryURL.replace("{calendarAccountKey}", settings.calendarAccountKey);
+  http.begin(calQueryURL.c_str());
+  int httpResponseCode = http.GET();
+  if (httpResponseCode == 200) {
+    zeroError();
+    parseCalendar(http.getString());
+  } else {
+    String error(httpResponseCode);
+    error.toCharArray(calendarError, sizeof(calendarError)/sizeof(calendarError[0]));
+  }
+  http.end();
+  // turn off radios
+  WiFi.mode(WIFI_OFF);
+  btStop();
+}
+
+void WatchyFace::parseCalendar(String payload) {
   JSONVar parsed = JSON.parse(payload);
   if (!parsed.hasOwnProperty("status")) { return; }
   if (!parsed.hasOwnProperty("columns")) { return; }
@@ -289,6 +68,7 @@ void WatchyFace::hourlyUpdate() {
     return;
   }
 
+  lastCalendarFetch = unixEpochTime(currentTime);
   activeCalendarColumns = (uint8_t)(int)parsed["columns"];
   if (activeCalendarColumns >= MAX_CALENDAR_COLUMNS) {
     activeCalendarColumns = MAX_CALENDAR_COLUMNS;
@@ -329,7 +109,6 @@ void WatchyFace::hourlyUpdate() {
 }
 
 void WatchyFace::drawWatchFace() {
-  if (activeCalendarColumns <= 0) { hourlyUpdate(); }
   display.fillScreen(DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);
   display.setTextWrap(false);
 
@@ -371,31 +150,39 @@ void WatchyFace::drawWatchFace() {
   }
   LayoutCenter elTempOrWifiCentered(elTempOrWifi);
 
-  LayoutBattery elBattery(getBatteryVoltage());
+  LayoutBattery elBattery(getBatteryVoltage(), color);
   LayoutCenter elBatteryCentered(&elBattery);
 
   LayoutElement *elTopElems[] = {&elTimeCentered, &elFill, &elTempOrWifiCentered, &elSpacer, &elBatteryCentered};
   bool elTopStretch[] = {false, true, false, false, false};
   LayoutColumns elTop(5, elTopElems, elTopStretch);
 
+  LayoutText elError(String(calendarError), &FreeMono9pt7b, color);
+  LayoutCenter elErrorCenter(&elError);
+  LayoutRotate elErrorRotated(&elErrorCenter, 3);
+
   LayoutText elDateWords(dayOfWeekStr + ", " + monthStr + " " +
       dayOfMonthStr, &Seven_Segment10pt7b, color);
   LayoutRotate elDateRotated(&elDateWords, 3);
-  LayoutElement *elDateElems[] = {&elDateRotated, &elFill};
-  bool elDateStretch[] = {false, true};
-  LayoutRows elDate(2, elDateElems, elDateStretch);
+  LayoutElement *elDateElems[] = {&elDateRotated, &elFill, &elErrorRotated};
+  bool elDateStretch[] = {false, true, false};
+  LayoutRows elDate(3, elDateElems, elDateStretch);
 
-  CalendarDayEvents elCalendarDay(&calendarDay, currentTime);
+  CalendarDayEvents elCalendarDay(&calendarDay, currentTime, color);
 
-  CalendarColumn elCals[MAX_CALENDAR_COLUMNS];
-  LayoutElement *elCalColElems[MAX_CALENDAR_COLUMNS];
-  bool elCalColStretch[MAX_CALENDAR_COLUMNS];
-  for (int i = 0; i < MAX_CALENDAR_COLUMNS; i++) {
-    elCals[i] = CalendarColumn(&calendar[i], currentTime);
-    elCalColElems[i] = &elCals[i];
-    elCalColStretch[i] = true;
+  CalendarHourBar elCalHourBar(currentTime, color);
+
+  CalendarColumn elCals[activeCalendarColumns];
+  LayoutElement *elCalColElems[activeCalendarColumns + 1];
+  bool elCalColStretch[activeCalendarColumns + 1];
+  elCalColElems[0] = &elCalHourBar;
+  elCalColStretch[0] = false;
+  for (int i = 0; i < activeCalendarColumns; i++) {
+    elCals[i] = CalendarColumn(&calendar[i], currentTime, color);
+    elCalColElems[i+1] = &elCals[i];
+    elCalColStretch[i+1] = true;
   }
-  LayoutColumns elCalColumns(activeCalendarColumns, elCalColElems,
+  LayoutColumns elCalColumns(activeCalendarColumns+1, elCalColElems,
                              elCalColStretch);
 
   LayoutElement *elCalendarPartsElems[] = {&elCalendarDay, &elCalColumns};

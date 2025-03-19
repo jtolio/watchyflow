@@ -1,6 +1,10 @@
 {
-  "mysecretkey": [
+  "mysecretkey": {
+    "identities": ["email"],
+    "excluded-events": ["coffee"],
+    "ical-urls": [
      "https://calendar.google.com/calendar/ical/email/private-key/basic.ics",
      "https://calendar.google.com/calendar/ical/email/private-key/basic.ics"
-  ]
+    ],
+  }
 }

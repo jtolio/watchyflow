@@ -60,6 +60,7 @@ typedef struct watchySettings {
   int gmtOffset;
   //
   bool vibrateOClock;
+  String calendarAccountKey;
 } watchySettings;
 
 class Watchy {
@@ -101,7 +102,8 @@ public:
   void showWatchFace(bool partialRefresh);
   virtual void drawWatchFace(); // override this method for different watch
                                 // faces
-  virtual void hourlyUpdate(); // called after the watchface update on minute 59.
+  virtual void postDraw(); // called after the watchface update.
+  virtual void deviceReset(); // called when RTC_DATA_ATTR variables should be initialized.
 
 private:
   void _bmaConfig();
