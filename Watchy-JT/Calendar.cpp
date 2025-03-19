@@ -147,8 +147,6 @@ void CalendarColumn::draw(int16_t x0, int16_t y0,
         x0, y0 + ((eventStart - windowStart) / secondsPerPixel),
         targetWidth, color_);
     }
-    int16_t eventOffset = (eventStart - windowStart) / secondsPerPixel;
-    int16_t eventSize = (eventEnd - eventStart) / secondsPerPixel;
     if (eventEnd > windowEnd) {
       eventEnd = windowEnd;
     } else {
@@ -156,6 +154,8 @@ void CalendarColumn::draw(int16_t x0, int16_t y0,
         x0, y0 + ((eventEnd - windowStart) / secondsPerPixel),
         targetWidth, color_);
     }
+    int16_t eventOffset = (eventStart - windowStart) / secondsPerPixel;
+    int16_t eventSize = (eventEnd - eventStart) / secondsPerPixel;
     Watchy::Watchy::display.drawFastVLine(
       x0, y0 + eventOffset, eventSize, color_);
     Watchy::Watchy::display.drawFastVLine(

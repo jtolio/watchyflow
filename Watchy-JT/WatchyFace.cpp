@@ -199,7 +199,7 @@ void WatchyFace::drawWatchFace() {
   bool elCalendarPartsStretch[] = {false, true};
   LayoutRows elCalendarParts(2, elCalendarPartsElems, elCalendarPartsStretch);
 
-  LayoutBorder elCalendarBorder(&elCalendarParts, true, false, false, true, color);
+  LayoutBorder elCalendarBorder(&elCalendarParts, true, false, true, true, color);
 
   LayoutElement *elMainElems[] = {&elDate, &elSpacer, &elCalendarBorder};
   bool elMainStretch[] = {false, false, true};
