@@ -137,7 +137,7 @@ void CalendarColumn::draw(int16_t x0, int16_t y0,
     tmElements_t eventStarttm;
     fromUnixEpochTime(eventStart, &eventStarttm);
     if (eventStarttm.Hour == currentTime_.Hour && eventStarttm.Minute == currentTime_.Minute) {
-      watchy_->vibMotor(75, 4);
+      watchy_->vibMotor(75, 5);
     }
 
     if (eventStart < windowStart) {
@@ -272,7 +272,7 @@ void CalendarAlarms::maybeDraw(int16_t x0, int16_t y0,
     if (!noop &&
         alarmtm.Minute == watchy_->currentTime.Minute &&
         alarmtm.Hour == watchy_->currentTime.Hour) {
-      watchy_->vibMotor();
+      watchy_->vibMotor(100, 10);
     }
     String text;
     int hourNum = ((alarmtm.Hour + 11) % 12) + 1;
