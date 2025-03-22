@@ -237,7 +237,9 @@ void CalendarHourBar::maybeDraw(int16_t x0, int16_t y0,
     if (tw + 4 > *width) { *width = tw + 4; }
 
     if (!noop) {
-      Watchy::Watchy::display.setCursor(x0 - x1 + 2, y0 + ((hourTime - windowStart) / secondsPerPixel) - y1);
+      int16_t yoffset = y0 + ((hourTime - windowStart) / secondsPerPixel);
+      Watchy::Watchy::display.drawPixel(x0, yoffset, color_);
+      Watchy::Watchy::display.setCursor(x0 - x1 + 2, yoffset - y1);
       Watchy::Watchy::display.print(text);
     }
   }
