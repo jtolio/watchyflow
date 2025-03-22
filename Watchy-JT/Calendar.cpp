@@ -233,13 +233,12 @@ void CalendarHourBar::maybeDraw(int16_t x0, int16_t y0,
     int16_t x1, y1;
     uint16_t tw, th;
     Watchy::Watchy::display.getTextBounds(text, 0, 0, &x1, &y1, &tw, &th);
-    if (th * secondsPerPixel + hourTime > windowEnd) { continue; }
+    if (th * secondsPerPixel + 3 + hourTime > windowEnd) { continue; }
     if (tw + 4 > *width) { *width = tw + 4; }
 
     if (!noop) {
       int16_t yoffset = y0 + ((hourTime - windowStart) / secondsPerPixel);
-      Watchy::Watchy::display.drawPixel(x0, yoffset, color_);
-      Watchy::Watchy::display.setCursor(x0 - x1 + 2, yoffset - y1);
+      Watchy::Watchy::display.setCursor(x0 - x1 + 2, yoffset - y1 + 3);
       Watchy::Watchy::display.print(text);
     }
   }
@@ -249,6 +248,15 @@ void CalendarHourBar::maybeDraw(int16_t x0, int16_t y0,
       x0,
       y0 + ((now - windowStart) / secondsPerPixel),
       *width, color_);
+
+    for (int i = -(CALENDAR_PAST_MINUTES / 60) - 1; i <= CALENDAR_FUTURE_HOURS; i++) {
+      time_t hourTime = currentHourUnix + (i * 60 * 60);
+      if (hourTime < windowStart) { continue; }
+      if (hourTime >= windowEnd) { continue; }
+
+      int16_t yoffset = y0 + ((hourTime - windowStart) / secondsPerPixel);
+      Watchy::Watchy::display.drawFastHLine(x0, yoffset, *width / 2, color_);
+    }
   }
 }
 
