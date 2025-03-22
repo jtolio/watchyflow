@@ -2,11 +2,16 @@
 #define WATCHYFACE_H
 
 #include "Watchy.h"
-#include "Seven_Segment10pt7b.h"
-#include "DSEG7_Classic_Regular_15.h"
-#include "DSEG7_Classic_Bold_25.h"
-#include "DSEG7_Classic_Regular_39.h"
-#include "icons.h"
+
+typedef struct weatherData {
+  int8_t weatherTemperature;
+  int8_t sensorTemperature;
+  int16_t weatherConditionCode;  // negative means the weather api failed.
+  bool isMetric;
+  String weatherDescription;
+  tmElements_t sunrise;
+  tmElements_t sunset;
+} weatherData;
 
 class WatchyFace : public Watchy {
   using Watchy::Watchy;
@@ -16,6 +21,9 @@ public:
   void drawWatchFace() override;
 private:
   void parseCalendar(String payload);
+  weatherData getWeatherData();
+  weatherData _getWeatherData(String cityID, String lat, String lon, String units, String lang,
+                              String url, String apiKey, uint8_t updateInterval);
 };
 
 #endif

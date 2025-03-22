@@ -3,6 +3,9 @@
 #include "Battery.h"
 #include "Calendar.h"
 #include <Fonts/FreeMono9pt7b.h>
+#include "Seven_Segment10pt7b.h"
+#include "DSEG7_Classic_Bold_25.h"
+#include "icons.h"
 
 #define DARKMODE false
 
@@ -17,6 +20,8 @@ RTC_DATA_ATTR alarmsData alarms;
 RTC_DATA_ATTR uint8_t activeCalendarColumns;
 RTC_DATA_ATTR time_t lastCalendarFetch;
 RTC_DATA_ATTR char calendarError[32];
+RTC_DATA_ATTR weatherData currentWeather;
+RTC_DATA_ATTR int weatherIntervalCounter = -1;
 
 void zeroError() {
   for (int i = 0; i < (sizeof(calendarError) / sizeof(calendarError[0])); i++) {
@@ -215,4 +220,70 @@ void WatchyFace::drawWatchFace() {
 
   uint16_t w, h;
   elPaddedScreen.draw(0, 0, display.width(), display.height(), &w, &h);
+}
+
+weatherData WatchyFace::getWeatherData() {
+  return _getWeatherData(settings.cityID, settings.lat, settings.lon,
+    settings.weatherUnit, settings.weatherLang, settings.weatherURL,
+    settings.weatherAPIKey, settings.weatherUpdateInterval);
+}
+
+weatherData WatchyFace::_getWeatherData(
+    String cityID, String lat, String lon, String units, String lang,
+    String url, String apiKey, uint8_t updateInterval) {
+  currentWeather.isMetric = units == String("metric");
+  if (weatherIntervalCounter < 0) { //-1 on first run, set to updateInterval
+    weatherIntervalCounter = updateInterval;
+  }
+  if (weatherIntervalCounter >=
+      updateInterval) { // only update if WEATHER_UPDATE_INTERVAL has elapsed
+                        // i.e. 30 minutes
+    if (connectWiFi()) {
+      HTTPClient http; // Use Weather API for live data if WiFi is connected
+      http.setConnectTimeout(3000); // 3 second max timeout
+      String weatherQueryURL = url;
+      if(cityID != ""){
+        weatherQueryURL.replace("{cityID}", cityID);
+      }else{
+        weatherQueryURL.replace("{lat}", lat);
+        weatherQueryURL.replace("{lon}", lon);
+      }
+      weatherQueryURL.replace("{units}", units);
+      weatherQueryURL.replace("{lang}", lang);
+      weatherQueryURL.replace("{apiKey}", apiKey);
+      http.begin(weatherQueryURL.c_str());
+      int httpResponseCode = http.GET();
+      if (httpResponseCode == 200) {
+        String payload             = http.getString();
+        JSONVar responseObject     = JSON.parse(payload);
+        currentWeather.weatherTemperature = int(responseObject["main"]["temp"]);
+        currentWeather.weatherConditionCode =
+            int(responseObject["weather"][0]["id"]);
+        currentWeather.weatherDescription =
+		        JSONVar::stringify(responseObject["weather"][0]["main"]);
+        breakTime((time_t)(int)responseObject["sys"]["sunrise"], currentWeather.sunrise);
+        breakTime((time_t)(int)responseObject["sys"]["sunset"], currentWeather.sunset);
+        // sync NTP during weather API call and use timezone of lat & lon
+        gmtOffset = int(responseObject["timezone"]);
+        syncNTP(gmtOffset);
+      } else {
+        // http error
+      }
+      http.end();
+      // turn off radios
+      WiFi.mode(WIFI_OFF);
+      btStop();
+    } else { // No WiFi, use internal temperature sensor
+      currentWeather.weatherConditionCode = -1;
+    }
+    uint8_t temperature = sensor.readTemperature(); // celsius
+    if (!currentWeather.isMetric) {
+      temperature = temperature * 9. / 5. + 32.; // fahrenheit
+    }
+    currentWeather.sensorTemperature          = temperature;
+    weatherIntervalCounter = 0;
+  } else {
+    weatherIntervalCounter++;
+  }
+  return currentWeather;
 }

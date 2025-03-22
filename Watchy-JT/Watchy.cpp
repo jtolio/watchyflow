@@ -15,8 +15,6 @@ RTC_DATA_ATTR int menuIndex;
 RTC_DATA_ATTR BMA423 sensor;
 RTC_DATA_ATTR bool WIFI_CONFIGURED;
 RTC_DATA_ATTR bool BLE_CONFIGURED;
-RTC_DATA_ATTR weatherData currentWeather;
-RTC_DATA_ATTR int weatherIntervalCounter = -1;
 RTC_DATA_ATTR long gmtOffset = 0;
 RTC_DATA_ATTR bool alreadyInMenu         = true;
 RTC_DATA_ATTR bool USB_PLUGGED_IN = false;
@@ -693,72 +691,6 @@ void Watchy::drawWatchFace() {
 void Watchy::postDraw() {}
 void Watchy::deviceReset() {}
 
-weatherData Watchy::getWeatherData() {
-  return _getWeatherData(settings.cityID, settings.lat, settings.lon,
-    settings.weatherUnit, settings.weatherLang, settings.weatherURL,
-    settings.weatherAPIKey, settings.weatherUpdateInterval);
-}
-
-weatherData Watchy::_getWeatherData(String cityID, String lat, String lon, String units, String lang,
-                                   String url, String apiKey,
-                                   uint8_t updateInterval) {
-  currentWeather.isMetric = units == String("metric");
-  if (weatherIntervalCounter < 0) { //-1 on first run, set to updateInterval
-    weatherIntervalCounter = updateInterval;
-  }
-  if (weatherIntervalCounter >=
-      updateInterval) { // only update if WEATHER_UPDATE_INTERVAL has elapsed
-                        // i.e. 30 minutes
-    if (connectWiFi()) {
-      HTTPClient http; // Use Weather API for live data if WiFi is connected
-      http.setConnectTimeout(3000); // 3 second max timeout
-      String weatherQueryURL = url;
-      if(cityID != ""){
-        weatherQueryURL.replace("{cityID}", cityID);
-      }else{
-        weatherQueryURL.replace("{lat}", lat);
-        weatherQueryURL.replace("{lon}", lon);
-      }
-      weatherQueryURL.replace("{units}", units);
-      weatherQueryURL.replace("{lang}", lang);
-      weatherQueryURL.replace("{apiKey}", apiKey);
-      http.begin(weatherQueryURL.c_str());
-      int httpResponseCode = http.GET();
-      if (httpResponseCode == 200) {
-        String payload             = http.getString();
-        JSONVar responseObject     = JSON.parse(payload);
-        currentWeather.weatherTemperature = int(responseObject["main"]["temp"]);
-        currentWeather.weatherConditionCode =
-            int(responseObject["weather"][0]["id"]);
-        currentWeather.weatherDescription =
-		        JSONVar::stringify(responseObject["weather"][0]["main"]);
-        breakTime((time_t)(int)responseObject["sys"]["sunrise"], currentWeather.sunrise);
-        breakTime((time_t)(int)responseObject["sys"]["sunset"], currentWeather.sunset);
-        // sync NTP during weather API call and use timezone of lat & lon
-        gmtOffset = int(responseObject["timezone"]);
-        syncNTP(gmtOffset);
-      } else {
-        // http error
-      }
-      http.end();
-      // turn off radios
-      WiFi.mode(WIFI_OFF);
-      btStop();
-    } else { // No WiFi, use internal temperature sensor
-      currentWeather.weatherConditionCode = -1;
-    }
-    uint8_t temperature = sensor.readTemperature(); // celsius
-    if (!currentWeather.isMetric) {
-      temperature = temperature * 9. / 5. + 32.; // fahrenheit
-    }
-    currentWeather.sensorTemperature          = temperature;
-    weatherIntervalCounter = 0;
-  } else {
-    weatherIntervalCounter++;
-  }
-  return currentWeather;
-}
-
 float Watchy::getBatteryVoltage() {
   #ifdef ARDUINO_ESP32S3_DEV
     return analogReadMilliVolts(BATT_ADC_PIN) / 1000.0f * ADC_VOLTAGE_DIVIDER;
@@ -932,7 +864,6 @@ void Watchy::setupWifi() {
     display.println(WiFi.SSID());
 		display.println("Local IP:");
 		display.println(WiFi.localIP());
-    weatherIntervalCounter = -1; // Reset to force weather to be read again
     lastIPAddress = WiFi.localIP();
     WiFi.SSID().toCharArray(lastSSID, 30);
   }
