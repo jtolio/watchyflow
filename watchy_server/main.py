@@ -20,7 +20,9 @@ import recurring_ical_events
 import requests
 
 TIMEZONE = timezone("US/Eastern")
-
+ICAL_CACHE_TIME_SECS = 50*60
+HOURS_PAST = 1
+HOURS_FUTURE = 11
 
 class CalendarProcessor:
 
@@ -30,20 +32,27 @@ class CalendarProcessor:
         self.user_emails = [email.lower() for email in (user_emails or [])]
         self.excluded_events = set(excluded_events or [])
 
-    def fetch_calendar(self, url):
-        cached = CalendarProcessor.calendar_cache.get(url, {})
+    @classmethod
+    def fetch_calendar(cls, url):
+        cached = cls.calendar_cache.get(url, {})
         ts = cached.get("ts", 0)
-        if ts + 50*60 > time.time():
+        if ts + ICAL_CACHE_TIME_SECS > time.time():
             return cached["ical"]
 
         resp = requests.get(url)
         resp.raise_for_status()
         rv = icalendar.Calendar.from_ical(resp.content)
-        CalendarProcessor.calendar_cache[url] = {
+        cls.calendar_cache[url] = {
             "ts": time.time(),
             "ical": rv,
         }
         return rv
+
+    @classmethod
+    def precache(cls, cals):
+        for account in cals.values():
+            for url in account.get("ical-urls", []):
+                cls.fetch_calendar(url)
 
     def is_event_declined_by_user(self, event):
         if "ATTENDEE" not in event or not self.user_emails:
@@ -97,14 +106,14 @@ class CalendarProcessor:
 
     def get_events(self, calendar_urls, start_time, end_time=None):
         if end_time is None:
-            end_time = start_time + datetime.timedelta(hours=7)
+            end_time = start_time + datetime.timedelta(hours=HOURS_FUTURE)
 
         all_events = []
         event_edges = []
 
         for url in calendar_urls:
             try:
-                calendar = self.fetch_calendar(url)
+                calendar = CalendarProcessor.fetch_calendar(url)
                 events = recurring_ical_events.of(calendar).between(
                     start_time, end_time
                 )
@@ -187,6 +196,11 @@ class CalHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         url = urllib.parse.urlparse(self.path)
         query = urllib.parse.parse_qs(url.query)
+        if url.path.startswith("/v0/precache/"):
+            CalendarProcessor.precache(self.server.cals)
+            self.send_response(200)
+            self.end_headers()
+            return
         prefix = "/v0/account/"
         if not url.path.startswith(prefix):
             self.send_response(404)
@@ -210,7 +224,7 @@ class CalHandler(BaseHTTPRequestHandler):
         else:
             when = dateutil.parser.parse(when)
 
-        start = when - datetime.timedelta(hours=1)
+        start = when - datetime.timedelta(hours=HOURS_PAST)
         processor = CalendarProcessor(
             user_emails=emails, excluded_events=excluded_events
         )

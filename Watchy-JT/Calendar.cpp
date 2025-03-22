@@ -5,8 +5,8 @@
 #include <Fonts/FreeMono9pt7b.h>
 
 const GFXfont *SMALL_FONT = &Picopixel;
-const uint8_t CALENDAR_PAST_HOURS = 1;
-const uint8_t CALENDAR_FUTURE_HOURS = 4;
+const int16_t CALENDAR_PAST_MINUTES = 30;
+const int16_t CALENDAR_FUTURE_HOURS = 7;
 
 time_t unixEpochTime(tmElements_t tm) {
   // the system clock is stored in the local timezone and not UTC, like most
@@ -122,7 +122,7 @@ void CalendarColumn::draw(int16_t x0, int16_t y0,
   Watchy::Watchy::display.setTextColor(color_);
 
   time_t now = unixEpochTime(currentTime_);
-  time_t windowStart = now - (CALENDAR_PAST_HOURS * 60 * 60);
+  time_t windowStart = now - (CALENDAR_PAST_MINUTES * 60);
   time_t windowEnd = now + (CALENDAR_FUTURE_HOURS * 60 * 60);
   time_t secondsPerPixel = (windowEnd - windowStart) / targetHeight;
   if (secondsPerPixel <= 0) { secondsPerPixel = 1; }
@@ -182,7 +182,7 @@ void CalendarHourBar::maybeDraw(int16_t x0, int16_t y0,
   Watchy::Watchy::display.setTextColor(color_);
 
   time_t now = unixEpochTime(currentTime_);
-  time_t windowStart = now - (CALENDAR_PAST_HOURS * 60 * 60);
+  time_t windowStart = now - (CALENDAR_PAST_MINUTES * 60);
   time_t windowEnd = now + (CALENDAR_FUTURE_HOURS * 60 * 60);
   time_t secondsPerPixel = (windowEnd - windowStart) / targetHeight;
   if (secondsPerPixel <= 0) { secondsPerPixel = 1; }
@@ -193,7 +193,7 @@ void CalendarHourBar::maybeDraw(int16_t x0, int16_t y0,
   time_t currentHourUnix = unixEpochTime(currentHour);
   int currentHourNum = currentHour.Hour;
 
-  for (int i = -CALENDAR_PAST_HOURS - 1; i <= CALENDAR_FUTURE_HOURS; i++) {
+  for (int i = -(CALENDAR_PAST_MINUTES / 60) - 1; i <= CALENDAR_FUTURE_HOURS; i++) {
     time_t hourTime = currentHourUnix + (i * 60 * 60);
     if (hourTime < windowStart) { continue; }
     if (hourTime >= windowEnd) { continue; }
