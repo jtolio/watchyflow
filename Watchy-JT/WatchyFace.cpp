@@ -21,7 +21,7 @@ RTC_DATA_ATTR uint8_t activeCalendarColumns;
 RTC_DATA_ATTR time_t lastCalendarFetch;
 RTC_DATA_ATTR char calendarError[32];
 RTC_DATA_ATTR weatherData currentWeather;
-RTC_DATA_ATTR int weatherIntervalCounter = -1;
+RTC_DATA_ATTR time_t lastWeatherFetch;
 
 void zeroError() {
   for (int i = 0; i < (sizeof(calendarError) / sizeof(calendarError[0])); i++) {
@@ -35,16 +35,32 @@ void WatchyFace::deviceReset() {
   reset(&alarms);
   reset(&calendarDay);
   lastCalendarFetch = 0;
+  lastWeatherFetch = 0;
+  currentWeather.weatherConditionCode = -1;
   zeroError();
 }
 
 void WatchyFace::postDraw() {
-  if (unixEpochTime(currentTime) - 3600 <= lastCalendarFetch) {
+  time_t currentUnixTime = unixEpochTime(currentTime);
+  if (currentUnixTime - 3600 <= lastCalendarFetch && currentUnixTime - 3600 <= lastWeatherFetch) {
     return;
   }
 
   if (!connectWiFi()) { return; }
 
+  if (currentUnixTime - 3600 > lastCalendarFetch) {
+    fetchCalendar();
+  }
+  if (currentUnixTime - 3600 > lastWeatherFetch) {
+    fetchWeather();
+  }
+
+  // turn off radios
+  WiFi.mode(WIFI_OFF);
+  btStop();
+}
+
+void WatchyFace::fetchCalendar() {
   HTTPClient http;
   http.setConnectTimeout(1000*10);
   http.setTimeout(1000*10);
@@ -60,9 +76,6 @@ void WatchyFace::postDraw() {
     error.toCharArray(calendarError, sizeof(calendarError)/sizeof(calendarError[0]));
   }
   http.end();
-  // turn off radios
-  WiFi.mode(WIFI_OFF);
-  btStop();
 }
 
 void WatchyFace::parseCalendar(String payload) {
@@ -123,6 +136,36 @@ void WatchyFace::parseCalendar(String payload) {
   }
 }
 
+void WatchyFace::fetchWeather() {
+  currentWeather.isMetric = settings.weatherUnit == String("metric");
+
+  HTTPClient http;
+  http.setConnectTimeout(3000);
+  String weatherQueryURL = settings.weatherURL;
+  if(settings.cityID != ""){
+    weatherQueryURL.replace("{cityID}", settings.cityID);
+  }else{
+    weatherQueryURL.replace("{lat}", settings.lat);
+    weatherQueryURL.replace("{lon}", settings.lon);
+  }
+  weatherQueryURL.replace("{units}", settings.weatherUnit);
+  weatherQueryURL.replace("{lang}", settings.weatherLang);
+  weatherQueryURL.replace("{apiKey}", settings.weatherAPIKey);
+  http.begin(weatherQueryURL.c_str());
+  int httpResponseCode = http.GET();
+  if (httpResponseCode == 200) {
+    String payload             = http.getString();
+    JSONVar responseObject     = JSON.parse(payload);
+    currentWeather.weatherTemperature = int(responseObject["main"]["temp"]);
+    currentWeather.weatherConditionCode =
+        int(responseObject["weather"][0]["id"]);
+    gmtOffset = int(responseObject["timezone"]);
+    syncNTP(gmtOffset);
+    lastWeatherFetch = unixEpochTime(currentTime);
+  }
+  http.end();
+}
+
 void WatchyFace::drawWatchFace() {
   display.fillScreen(DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);
   display.setTextWrap(false);
@@ -140,7 +183,6 @@ void WatchyFace::drawWatchFace() {
   }
   timeStr += String(currentTime.Minute);
 
-  weatherData currentWeather = getWeatherData();
   String weatherStr = String(currentWeather.weatherTemperature) +
       (currentWeather.isMetric ? "C" : "F");
 
@@ -220,70 +262,4 @@ void WatchyFace::drawWatchFace() {
 
   uint16_t w, h;
   elPaddedScreen.draw(0, 0, display.width(), display.height(), &w, &h);
-}
-
-weatherData WatchyFace::getWeatherData() {
-  return _getWeatherData(settings.cityID, settings.lat, settings.lon,
-    settings.weatherUnit, settings.weatherLang, settings.weatherURL,
-    settings.weatherAPIKey, settings.weatherUpdateInterval);
-}
-
-weatherData WatchyFace::_getWeatherData(
-    String cityID, String lat, String lon, String units, String lang,
-    String url, String apiKey, uint8_t updateInterval) {
-  currentWeather.isMetric = units == String("metric");
-  if (weatherIntervalCounter < 0) { //-1 on first run, set to updateInterval
-    weatherIntervalCounter = updateInterval;
-  }
-  if (weatherIntervalCounter >=
-      updateInterval) { // only update if WEATHER_UPDATE_INTERVAL has elapsed
-                        // i.e. 30 minutes
-    if (connectWiFi()) {
-      HTTPClient http; // Use Weather API for live data if WiFi is connected
-      http.setConnectTimeout(3000); // 3 second max timeout
-      String weatherQueryURL = url;
-      if(cityID != ""){
-        weatherQueryURL.replace("{cityID}", cityID);
-      }else{
-        weatherQueryURL.replace("{lat}", lat);
-        weatherQueryURL.replace("{lon}", lon);
-      }
-      weatherQueryURL.replace("{units}", units);
-      weatherQueryURL.replace("{lang}", lang);
-      weatherQueryURL.replace("{apiKey}", apiKey);
-      http.begin(weatherQueryURL.c_str());
-      int httpResponseCode = http.GET();
-      if (httpResponseCode == 200) {
-        String payload             = http.getString();
-        JSONVar responseObject     = JSON.parse(payload);
-        currentWeather.weatherTemperature = int(responseObject["main"]["temp"]);
-        currentWeather.weatherConditionCode =
-            int(responseObject["weather"][0]["id"]);
-        currentWeather.weatherDescription =
-		        JSONVar::stringify(responseObject["weather"][0]["main"]);
-        breakTime((time_t)(int)responseObject["sys"]["sunrise"], currentWeather.sunrise);
-        breakTime((time_t)(int)responseObject["sys"]["sunset"], currentWeather.sunset);
-        // sync NTP during weather API call and use timezone of lat & lon
-        gmtOffset = int(responseObject["timezone"]);
-        syncNTP(gmtOffset);
-      } else {
-        // http error
-      }
-      http.end();
-      // turn off radios
-      WiFi.mode(WIFI_OFF);
-      btStop();
-    } else { // No WiFi, use internal temperature sensor
-      currentWeather.weatherConditionCode = -1;
-    }
-    uint8_t temperature = sensor.readTemperature(); // celsius
-    if (!currentWeather.isMetric) {
-      temperature = temperature * 9. / 5. + 32.; // fahrenheit
-    }
-    currentWeather.sensorTemperature          = temperature;
-    weatherIntervalCounter = 0;
-  } else {
-    weatherIntervalCounter++;
-  }
-  return currentWeather;
 }
