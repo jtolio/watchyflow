@@ -105,34 +105,37 @@ void WatchyFace::parseCalendar(String payload) {
     JSONVar event = events[i];
     if (!event.hasOwnProperty("summary")) { continue; }
     if (!event.hasOwnProperty("day")) { continue; }
-    if (!event.hasOwnProperty("column")) { continue; }
-    if (!event.hasOwnProperty("start")) { continue; }
-    if (!event.hasOwnProperty("end")) { continue; }
 
     String summary = event["summary"];
     bool allDay = (bool)event["day"];
-    int column = (int)event["column"];
-    if (column >= activeCalendarColumns) {
-      continue;
-    }
     if (allDay) {
+      if (!event.hasOwnProperty("start")) { continue; }
+      if (!event.hasOwnProperty("end")) { continue; }
       String start = event["start"];
       String end = event["end"];
       addEvent(&calendarDay, summary, start, end);
       continue;
     }
+
     if (!event.hasOwnProperty("start-unix")) { continue; }
-    if (!event.hasOwnProperty("end-unix")) { continue; }
     time_t startUnix = (time_t)(long)event["start-unix"];
-    time_t endUnix = (time_t)(long)event["end-unix"];
 
     if (summary.indexOf(String("[WATCHY ALARM]")) >= 0) {
       summary.replace(String("[WATCHY ALARM]"), String(""));
       summary.trim();
       addAlarm(&alarms, summary, startUnix);
-    } else {
-      addEvent(&calendar[column], summary, startUnix, endUnix);
+      continue;
     }
+
+    if (!event.hasOwnProperty("column")) { continue; }
+    int column = (int)event["column"];
+    if (column >= activeCalendarColumns || column < 0) {
+      continue;
+    }
+
+    if (!event.hasOwnProperty("end-unix")) { continue; }
+    time_t endUnix = (time_t)(long)event["end-unix"];
+    addEvent(&calendar[column], summary, startUnix, endUnix);
   }
 }
 

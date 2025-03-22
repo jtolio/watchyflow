@@ -86,12 +86,12 @@ class CalendarProcessor:
         start = event["DTSTART"].dt
         end = event["DTEND"].dt
         rv = {
-            "start": self.convert_time(start),
-            "end": self.convert_time(end),
             "summary": event["SUMMARY"],
             "day": False,
         }
         if not hasattr(start, "astimezone") or not hasattr(end, "astimezone"):
+            rv["start"] = self.convert_time(start)
+            rv["end"] = self.convert_time(end)
             rv["day"] = True
         else:
             rv["start-unix"] = int(start.timestamp())
