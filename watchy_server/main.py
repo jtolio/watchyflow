@@ -88,10 +88,10 @@ class CalendarProcessor:
         rv = {
             "summary": event["SUMMARY"],
             "day": False,
+            "start": self.convert_time(start),
+            "end": self.convert_time(end),
         }
         if not hasattr(start, "astimezone") or not hasattr(end, "astimezone"):
-            rv["start"] = self.convert_time(start)
-            rv["end"] = self.convert_time(end)
             rv["day"] = True
         else:
             rv["start-unix"] = int(start.timestamp())
@@ -114,6 +114,10 @@ class CalendarProcessor:
         for url in calendar_urls:
             try:
                 calendar = CalendarProcessor.fetch_calendar(url)
+            except Exception as e:
+                logging.error(f"Error fetching calendar {url}: {e}")
+
+            try:
                 events = recurring_ical_events.of(calendar).between(
                     start_time, end_time
                 )
@@ -140,7 +144,7 @@ class CalendarProcessor:
                     event_edges.append((event["start"], "1", event["end"], event_id))
                     event_edges.append((event["end"], "0", "", event_id))
             except Exception as e:
-                logging.error(f"Error fetching calendar {url}: {e}")
+                logging.error(f"Error processing calendar {url}: {e}")
 
         # python documentation crazily recommends that if you want to sort
         # by multiple fields in different directions, say one field ascending
@@ -187,6 +191,12 @@ class CalendarProcessor:
                 event["summary"],
             )
         )
+
+        for i, event in enumerate(all_events):
+            if not event["day"]:
+                del event["start"]
+                del event["end"]
+                all_events[i] = event
 
         return all_events, next_column
 
