@@ -94,6 +94,11 @@ public:
   void draw(int16_t x0, int16_t y0,
             uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override;
+
+private:
+  void resizeText(char *text, uint8_t buflen, uint16_t width, uint16_t height,
+                  int16_t *x1, int16_t *y1, uint16_t *tw, uint16_t *th);
+
 private:
   eventsData *data_;
   Watchy *watchy_;

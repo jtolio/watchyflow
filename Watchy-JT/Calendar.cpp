@@ -160,15 +160,46 @@ void CalendarColumn::draw(int16_t x0, int16_t y0,
       x0, y0 + eventOffset, eventSize, color_);
     Watchy::Watchy::display.drawFastVLine(
       x0 + targetWidth - 1, y0 + eventOffset, eventSize, color_);
-    String summary = event->summary;
+    if (targetWidth <= 4 || eventSize <= 4) { continue; }
     int16_t x1, y1;
     uint16_t tw, th;
-    Watchy::Watchy::display.getTextBounds(summary, 0, 0, &x1, &y1, &tw, &th);
-    if (th + 4 <= eventSize) {
-      Watchy::Watchy::display.setCursor(x0 - x1 + 2, y0 - y1 + eventOffset + 2) ;
-      Watchy::Watchy::display.print(summary);
+    Watchy::Watchy::display.getTextBounds(event->summary, 0, 0, &x1, &y1, &tw, &th);
+    if (tw + 4 > targetWidth || th + 4 > eventSize) {
+      resizeText(event->summary, MAX_EVENT_NAME_LEN, targetWidth - 4, eventSize - 4, &x1, &y1, &tw, &th);
     }
+
+    Watchy::Watchy::display.setCursor(x0 - x1 + 2, y0 - y1 + eventOffset + 2) ;
+    Watchy::Watchy::display.print(event->summary);
   }
+}
+
+void CalendarColumn::resizeText(char *text, uint8_t buflen, uint16_t width,
+    uint16_t height, int16_t *x1, int16_t *y1, uint16_t *tw, uint16_t *th) {
+  String original = text;
+  String result;
+  int i = 0;
+  while (true) {
+    if (i >= original.length()) {
+      break;
+    }
+    Watchy::Watchy::display.getTextBounds(
+      result + original[i], 0, 0, x1, y1, tw, th);
+    if (*th > height) {
+      break;
+    }
+    if (*tw > width) {
+      if (result.length() > 0 && result[result.length() - 1] == '\n') {
+        break;
+      }
+      result += "\n";
+      continue;
+    }
+    result += original[i];
+    i++;
+  }
+  result.toCharArray(text, buflen);
+  Watchy::Watchy::display.getTextBounds(
+    result, 0, 0, x1, y1, tw, th);
 }
 
 void CalendarHourBar::maybeDraw(int16_t x0, int16_t y0,
