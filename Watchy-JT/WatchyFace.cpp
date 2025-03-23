@@ -250,7 +250,7 @@ void WatchyFace::drawWatchFace() {
   LayoutCenter elErrorCenter(&elError);
   LayoutRotate elErrorRotated(&elErrorCenter, 3);
 
-  LayoutText elDateWords(dayOfWeekStr + ", " + monthStr + " " + dayOfMonthStr,
+  LayoutText elDateWords(dayOfWeekStr + " " + monthStr + " " + dayOfMonthStr,
                          &Seven_Segment10pt7b, color);
   LayoutRotate elDateRotated(&elDateWords, 3);
   LayoutElement *elDateElems[] = {&elDateRotated, &elFill, &elErrorRotated};

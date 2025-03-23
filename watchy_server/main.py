@@ -20,9 +20,11 @@ import recurring_ical_events
 import requests
 
 TIMEZONE = timezone("US/Eastern")
-ICAL_CACHE_TIME_SECS = 50*60
+ICAL_CACHE_TIME_SECS = 50 * 60
 HOURS_PAST = 1
 HOURS_FUTURE = 11
+MINIMUM_MINUTES_PER_COLUMN = 30
+
 
 class CalendarProcessor:
 
@@ -90,6 +92,9 @@ class CalendarProcessor:
             "day": False,
             "start": self.convert_time(start),
             "end": self.convert_time(end),
+            "column-end": self.convert_time(
+                max(end, start + datetime.timedelta(minutes=MINIMUM_MINUTES_PER_COLUMN))
+            ),
         }
         if not hasattr(start, "astimezone") or not hasattr(end, "astimezone"):
             rv["day"] = True
@@ -140,9 +145,10 @@ class CalendarProcessor:
                         continue
 
                     event_id = len(all_events)
-                    all_events.append(event)
                     event_edges.append((event["start"], "1", event["end"], event_id))
-                    event_edges.append((event["end"], "0", "", event_id))
+                    event_edges.append((event["column-end"], "0", "", event_id))
+                    del event["column-end"]
+                    all_events.append(event)
             except Exception as e:
                 logging.error(f"Error processing calendar {url}: {e}")
 
@@ -171,8 +177,10 @@ class CalendarProcessor:
                 if column >= 0:
                     free_columns.append(column)
                 continue
-            if (len(timestamp) == len("0000-00-00") or
-                    "[WATCHY ALARM]" in all_events[event_id]["summary"]):
+            if (
+                len(timestamp) == len("0000-00-00")
+                or "[WATCHY ALARM]" in all_events[event_id]["summary"]
+            ):
                 all_events[event_id]["column"] = -1
                 continue
             if free_columns:
