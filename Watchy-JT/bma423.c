@@ -987,7 +987,7 @@ bma423_set_any_motion_config(const struct bma423_anymotion_config *any_motion,
         duration_msb = feature_config[index + 1] << 8;
         duration     = duration_lsb | duration_msb;
         duration     = BMA4_SET_BITS_POS_0(duration, BMA423_ANY_NO_MOTION_DUR,
-                                       any_motion->duration);
+                                           any_motion->duration);
         /* Assign duration value in feature config array*/
         feature_config[index++] = BMA4_GET_LSB(duration);
         feature_config[index]   = BMA4_GET_MSB(duration);

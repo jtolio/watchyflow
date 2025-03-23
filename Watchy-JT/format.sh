@@ -1,4 +1,16 @@
-#!/ bin / bash
-STYLE_OPT = "{BasedOnStyle: llvm, AlignConsecutiveMacros: true, "
-            "AlignConsecutiveAssignments: true}" clang -
-            format-- style = "$STYLE_OPT" - i *
+#!/bin/bash
+
+set -euo pipefail
+
+STYLE="{
+	BasedOnStyle: LLVM,
+	AlignConsecutiveMacros: true,
+	AlignConsecutiveAssignments: true,
+	SortIncludes: false
+}"
+
+for file in *.{h,cpp,c,ino}{,.example}; do
+	if [ -e "$file" ]; then
+		clang-format --style="$STYLE" -i "$file"
+	fi
+done

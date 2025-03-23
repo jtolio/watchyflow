@@ -2911,12 +2911,13 @@ bma4_set_int_pin_config(const struct bma4_int_pin_config *int_pin_config,
     rslt |= BMA4_E_NULL_PTR;
   } else {
     if (int_line <= 1) {
-      data = ((uint8_t)(
-          (int_pin_config->edge_ctrl & BMA4_INT_EDGE_CTRL_MASK) |
-          ((int_pin_config->lvl << 1) & BMA4_INT_LEVEL_MASK) |
-          ((int_pin_config->od << 2) & BMA4_INT_OPEN_DRAIN_MASK) |
-          ((int_pin_config->output_en << 3) & BMA4_INT_OUTPUT_EN_MASK) |
-          ((int_pin_config->input_en << 4) & BMA4_INT_INPUT_EN_MASK)));
+      data = ((
+          uint8_t)((int_pin_config->edge_ctrl & BMA4_INT_EDGE_CTRL_MASK) |
+                   ((int_pin_config->lvl << 1) & BMA4_INT_LEVEL_MASK) |
+                   ((int_pin_config->od << 2) & BMA4_INT_OPEN_DRAIN_MASK) |
+                   ((int_pin_config->output_en << 3) &
+                    BMA4_INT_OUTPUT_EN_MASK) |
+                   ((int_pin_config->input_en << 4) & BMA4_INT_INPUT_EN_MASK)));
 
       rslt |= bma4_write_regs(interrupt_address_array[int_line], &data, 1, dev);
     } else {
@@ -3354,15 +3355,15 @@ static void comp_for_grvty(uint16_t lsb_per_g, const int32_t g_val[3],
 
   /*  Dividing the accel value in LSB by 1000000 to get
   compensated data back in g-value */
-  comp_data->x.val = (int16_t)(
-      data->x -
-      (int16_t)((accel_value_lsb[BMA4_X_AXIS] / (int64_t)BMA4XY_MULTIPLIER)));
-  comp_data->y.val = (int16_t)(
-      data->y -
-      (int16_t)((accel_value_lsb[BMA4_Y_AXIS] / (int64_t)BMA4XY_MULTIPLIER)));
-  comp_data->z.val = (int16_t)(
-      data->z -
-      (int16_t)((accel_value_lsb[BMA4_Z_AXIS] / (int64_t)BMA4XY_MULTIPLIER)));
+  comp_data->x.val =
+      (int16_t)(data->x - (int16_t)((accel_value_lsb[BMA4_X_AXIS] /
+                                     (int64_t)BMA4XY_MULTIPLIER)));
+  comp_data->y.val =
+      (int16_t)(data->y - (int16_t)((accel_value_lsb[BMA4_Y_AXIS] /
+                                     (int64_t)BMA4XY_MULTIPLIER)));
+  comp_data->z.val =
+      (int16_t)(data->z - (int16_t)((accel_value_lsb[BMA4_Z_AXIS] /
+                                     (int64_t)BMA4XY_MULTIPLIER)));
 
   if (comp_data->x.val < 0) {
     comp_data->x.val         = ABS(comp_data->x.val);

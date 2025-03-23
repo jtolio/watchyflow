@@ -4,10 +4,10 @@
 #include "Watchy.h"
 #include "Layout.h"
 
-const uint8_t MAX_EVENT_NAME_LEN = 24;
+const uint8_t MAX_EVENT_NAME_LEN    = 24;
 const uint8_t MAX_EVENTS_PER_COLUMN = 16;
-const uint8_t MAX_ALARMS = 24;
-const uint8_t MAX_DAY_EVENTS = 5;
+const uint8_t MAX_ALARMS            = 24;
+const uint8_t MAX_DAY_EVENTS        = 5;
 
 typedef struct dayEventData {
   char summary[MAX_EVENT_NAME_LEN];
@@ -55,15 +55,15 @@ class CalendarDayEvents : public LayoutElement {
 public:
   CalendarDayEvents(dayEventsData *data, tmElements_t currentTime,
                     uint16_t color)
-    : data_(data), currentTime_(currentTime), color_(color) {}
+      : data_(data), currentTime_(currentTime), color_(color) {}
 
-  void size(uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override {
+  void size(uint16_t targetWidth, uint16_t targetHeight, uint16_t *width,
+            uint16_t *height) override {
     maybeDraw(0, 0, targetWidth, targetHeight, width, height, true);
   }
 
-  void draw(int16_t x0, int16_t y0, uint16_t targetWidth,
-            uint16_t targetHeight, uint16_t *width, uint16_t *height) override {
+  void draw(int16_t x0, int16_t y0, uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override {
     maybeDraw(x0, y0, targetWidth, targetHeight, width, height, false);
   }
 
@@ -80,19 +80,21 @@ private:
 
 class CalendarColumn : public LayoutElement {
 public:
-  CalendarColumn() : data_(NULL), watchy_(NULL), color_(0) { breakTime(0, currentTime_); }
+  CalendarColumn() : data_(NULL), watchy_(NULL), color_(0) {
+    breakTime(0, currentTime_);
+  }
 
   CalendarColumn(eventsData *data, Watchy *watchy, uint16_t color)
-    : data_(data), watchy_(watchy), currentTime_(watchy->currentTime), color_(color) {}
+      : data_(data), watchy_(watchy), currentTime_(watchy->currentTime),
+        color_(color) {}
 
-  void size(uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override {
-    *width = targetWidth;
+  void size(uint16_t targetWidth, uint16_t targetHeight, uint16_t *width,
+            uint16_t *height) override {
+    *width  = targetWidth;
     *height = targetHeight;
   }
 
-  void draw(int16_t x0, int16_t y0,
-            uint16_t targetWidth, uint16_t targetHeight,
+  void draw(int16_t x0, int16_t y0, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override;
 
 private:
@@ -109,14 +111,13 @@ private:
 class CalendarHourBar : public LayoutElement {
 public:
   CalendarHourBar(tmElements_t currentTime, uint16_t color)
-    : currentTime_(currentTime), color_(color) {}
+      : currentTime_(currentTime), color_(color) {}
 
-  void size(uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override {
+  void size(uint16_t targetWidth, uint16_t targetHeight, uint16_t *width,
+            uint16_t *height) override {
     maybeDraw(0, 0, targetWidth, targetHeight, width, height, true);
   }
-  void draw(int16_t x0, int16_t y0,
-            uint16_t targetWidth, uint16_t targetHeight,
+  void draw(int16_t x0, int16_t y0, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
     maybeDraw(x0, y0, targetWidth, targetHeight, width, height, false);
   }
@@ -134,14 +135,13 @@ private:
 class CalendarAlarms : public LayoutElement {
 public:
   CalendarAlarms(alarmsData *data, Watchy *watchy, uint16_t color)
-    : data_(data), watchy_(watchy), color_(color) {}
+      : data_(data), watchy_(watchy), color_(color) {}
 
-  void size(uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override {
+  void size(uint16_t targetWidth, uint16_t targetHeight, uint16_t *width,
+            uint16_t *height) override {
     maybeDraw(0, 0, targetWidth, targetHeight, width, height, true);
   }
-  void draw(int16_t x0, int16_t y0,
-            uint16_t targetWidth, uint16_t targetHeight,
+  void draw(int16_t x0, int16_t y0, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
     maybeDraw(x0, y0, targetWidth, targetHeight, width, height, false);
   }

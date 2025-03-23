@@ -9,7 +9,7 @@ class Watchy32KRTC {
 public:
   Watchy32KRTC();
   void init();
-  void config(String datetime); //datetime format is YYYY:MM:DD:HH:MM:SS
+  void config(String datetime); // datetime format is YYYY:MM:DD:HH:MM:SS
   void clearAlarm();
   void read(tmElements_t &tm);
   void set(tmElements_t tm);

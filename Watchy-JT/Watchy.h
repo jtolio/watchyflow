@@ -17,22 +17,24 @@
 #include "config.h"
 #include "esp_chip_info.h"
 #ifdef ARDUINO_ESP32S3_DEV
-  #include "Watchy32KRTC.h"
-  #include "soc/rtc.h"
-  #include "soc/rtc_io_reg.h"
-  #include "soc/sens_reg.h"
-  #include "esp_sleep.h"
-  #include "rom/rtc.h"
-  #include "soc/soc.h"
-  #include "soc/rtc_cntl_reg.h"
-  #include "time.h"
-  #include "esp_sntp.h"
-  #include "hal/rtc_io_types.h"
-  #include "driver/rtc_io.h"
-  #define uS_TO_S_FACTOR 1000000ULL  //Conversion factor for micro seconds to seconds
-  #define ADC_VOLTAGE_DIVIDER ((360.0f+100.0f)/360.0f) //Voltage divider at battery ADC
+#include "Watchy32KRTC.h"
+#include "soc/rtc.h"
+#include "soc/rtc_io_reg.h"
+#include "soc/sens_reg.h"
+#include "esp_sleep.h"
+#include "rom/rtc.h"
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
+#include "time.h"
+#include "esp_sntp.h"
+#include "hal/rtc_io_types.h"
+#include "driver/rtc_io.h"
+#define uS_TO_S_FACTOR                                                         \
+  1000000ULL // Conversion factor for micro seconds to seconds
+#define ADC_VOLTAGE_DIVIDER                                                    \
+  ((360.0f + 100.0f) / 360.0f) // Voltage divider at battery ADC
 #else
-  #include "WatchyRTC.h"
+#include "WatchyRTC.h"
 #endif
 
 typedef struct watchySettings {
@@ -55,11 +57,11 @@ typedef struct watchySettings {
 
 class Watchy {
 public:
-  #ifdef ARDUINO_ESP32S3_DEV
-   static Watchy32KRTC RTC;
-  #else
-   static WatchyRTC RTC;
-  #endif
+#ifdef ARDUINO_ESP32S3_DEV
+  static Watchy32KRTC RTC;
+#else
+  static WatchyRTC RTC;
+#endif
   static GxEPD2_BW<WatchyDisplay, WatchyDisplay::HEIGHT> display;
   tmElements_t currentTime;
   watchySettings settings;
@@ -91,8 +93,9 @@ public:
   void showWatchFace(bool partialRefresh);
   virtual void drawWatchFace(); // override this method for different watch
                                 // faces
-  virtual void postDraw(); // called after the watchface update.
-  virtual void deviceReset(); // called when RTC_DATA_ATTR variables should be initialized.
+  virtual void postDraw();      // called after the watchface update.
+  virtual void
+  deviceReset(); // called when RTC_DATA_ATTR variables should be initialized.
 
 private:
   void _bmaConfig();

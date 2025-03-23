@@ -1,10 +1,8 @@
 #include "Watchy32KRTC.h"
 
-Watchy32KRTC::Watchy32KRTC(){}
+Watchy32KRTC::Watchy32KRTC() {}
 
-void Watchy32KRTC::init() {
-
-}
+void Watchy32KRTC::init() {}
 
 /*
 
@@ -13,37 +11,36 @@ void Watchy32KRTC::init() {
 
 */
 
-void Watchy32KRTC::config(String datetime) { // String datetime format is YYYY:MM:DD:HH:MM:SS
-    struct tm timeInfo;
-    memset(&timeInfo, 0, sizeof(timeInfo));
+void Watchy32KRTC::config(
+    String datetime) { // String datetime format is YYYY:MM:DD:HH:MM:SS
+  struct tm timeInfo;
+  memset(&timeInfo, 0, sizeof(timeInfo));
 
-    // Parse the time string
-    if (strptime(datetime.c_str(), "%Y:%m:%d:%H:%M:%S", &timeInfo) == NULL) {
-        // Failed to parse the time string
-    }
+  // Parse the time string
+  if (strptime(datetime.c_str(), "%Y:%m:%d:%H:%M:%S", &timeInfo) == NULL) {
+    // Failed to parse the time string
+  }
 
-    // Convert tm to timeval
-    struct timeval tv;
-    tv.tv_sec = mktime(&timeInfo);
-    tv.tv_usec = 0;
+  // Convert tm to timeval
+  struct timeval tv;
+  tv.tv_sec  = mktime(&timeInfo);
+  tv.tv_usec = 0;
 
-    // Set the time using settimeofday
-    if (settimeofday(&tv, NULL) != 0) {
-        // Error setting the time
-    }
+  // Set the time using settimeofday
+  if (settimeofday(&tv, NULL) != 0) {
+    // Error setting the time
+  }
 }
 
-void Watchy32KRTC::clearAlarm() {
-
-}
+void Watchy32KRTC::clearAlarm() {}
 
 void Watchy32KRTC::read(tmElements_t &tm) {
   time_t now;
   struct tm timeInfo;
   time(&now);
   // Set timezone to China Standard Time
-  //setenv("TZ", "CST-8", 1);
-  //tzset();
+  // setenv("TZ", "CST-8", 1);
+  // tzset();
   localtime_r(&now, &timeInfo);
   tm.Year   = timeInfo.tm_year - 70;
   tm.Month  = timeInfo.tm_mon + 1;
@@ -65,18 +62,16 @@ void Watchy32KRTC::set(tmElements_t tm) {
 
   // Convert tm to timeval
   struct timeval tv;
-  tv.tv_sec = mktime(&timeInfo);
+  tv.tv_sec  = mktime(&timeInfo);
   tv.tv_usec = 0;
 
   // Set the time using settimeofday
   if (settimeofday(&tv, NULL) != 0) {
-      // Error setting the time
+    // Error setting the time
   }
 }
 
-uint8_t Watchy32KRTC::temperature() {
- return 0;
-}
+uint8_t Watchy32KRTC::temperature() { return 0; }
 
 String Watchy32KRTC::_getValue(String data, char separator, int index) {
   int found      = 0;
@@ -96,7 +91,7 @@ String Watchy32KRTC::_getValue(String data, char separator, int index) {
 
 void Watchy32KRTC::_timeval_to_tm(struct timeval *tv, struct tm *tm) {
   // Get the seconds and microseconds from the timeval struct
-  time_t seconds = tv->tv_sec;
+  time_t seconds   = tv->tv_sec;
   int microseconds = tv->tv_usec;
   // Convert the seconds to a tm struct
   *tm = *localtime(&seconds);

@@ -4,7 +4,7 @@
 #include <Fonts/Picopixel.h>
 #include <Fonts/FreeMono9pt7b.h>
 
-const GFXfont *SMALL_FONT = &Picopixel;
+const GFXfont *SMALL_FONT           = &Picopixel;
 const int16_t CALENDAR_PAST_MINUTES = 30;
 const int16_t CALENDAR_FUTURE_HOURS = 7;
 
@@ -24,48 +24,57 @@ void fromUnixEpochTime(time_t ts, tmElements_t *tm) {
   breakTime(ts, *tm);
 }
 
-void reset(dayEventsData *data) {
-  data->eventCount = 0;
-}
+void reset(dayEventsData *data) { data->eventCount = 0; }
 
 void addEvent(dayEventsData *data, String summary, String start, String end) {
-  if (data->eventCount >= MAX_DAY_EVENTS) { return; }
-  if (data->eventCount == MAX_DAY_EVENTS - 1) { summary = "TOO MANY EVENTS"; }
+  if (data->eventCount >= MAX_DAY_EVENTS) {
+    return;
+  }
+  if (data->eventCount == MAX_DAY_EVENTS - 1) {
+    summary = "TOO MANY EVENTS";
+  }
   start.toCharArray(data->events[data->eventCount].start, 11);
   end.toCharArray(data->events[data->eventCount].end, 11);
-  summary.toCharArray(data->events[data->eventCount].summary, MAX_EVENT_NAME_LEN);
+  summary.toCharArray(data->events[data->eventCount].summary,
+                      MAX_EVENT_NAME_LEN);
   data->eventCount++;
 }
 
-void reset(eventsData *data) {
-  data->eventCount = 0;
-}
+void reset(eventsData *data) { data->eventCount = 0; }
 
 void addEvent(eventsData *data, String summary, time_t start, time_t end) {
-  if (data->eventCount >= MAX_EVENTS_PER_COLUMN) { return; }
-  if (data->eventCount == MAX_EVENTS_PER_COLUMN - 1) { summary = "TOO MANY EVENTS"; }
+  if (data->eventCount >= MAX_EVENTS_PER_COLUMN) {
+    return;
+  }
+  if (data->eventCount == MAX_EVENTS_PER_COLUMN - 1) {
+    summary = "TOO MANY EVENTS";
+  }
   data->events[data->eventCount].start = start;
-  data->events[data->eventCount].end = end;
-  summary.toCharArray(data->events[data->eventCount].summary, MAX_EVENT_NAME_LEN);
+  data->events[data->eventCount].end   = end;
+  summary.toCharArray(data->events[data->eventCount].summary,
+                      MAX_EVENT_NAME_LEN);
   data->eventCount++;
 }
 
-void reset(alarmsData *data) {
-  data->alarmCount = 0;
-}
+void reset(alarmsData *data) { data->alarmCount = 0; }
 
 void addAlarm(alarmsData *data, String summary, time_t start) {
-  if (data->alarmCount >= MAX_ALARMS) { return; }
-  if (data->alarmCount == MAX_ALARMS - 1) { summary = "TOO MANY ALARMS"; }
+  if (data->alarmCount >= MAX_ALARMS) {
+    return;
+  }
+  if (data->alarmCount == MAX_ALARMS - 1) {
+    summary = "TOO MANY ALARMS";
+  }
   data->alarms[data->alarmCount].start = start;
-  summary.toCharArray(data->alarms[data->alarmCount].summary, MAX_EVENT_NAME_LEN);
+  summary.toCharArray(data->alarms[data->alarmCount].summary,
+                      MAX_EVENT_NAME_LEN);
   data->alarmCount++;
 }
 
-void CalendarDayEvents::maybeDraw(
-    int16_t x0, int16_t y0, uint16_t targetWidth, uint16_t targetHeight,
-    uint16_t *width, uint16_t *height, bool noop) {
-  *width = targetWidth;
+void CalendarDayEvents::maybeDraw(int16_t x0, int16_t y0, uint16_t targetWidth,
+                                  uint16_t targetHeight, uint16_t *width,
+                                  uint16_t *height, bool noop) {
+  *width  = targetWidth;
   *height = 0;
 
   Watchy::Watchy::display.setFont(SMALL_FONT);
@@ -86,8 +95,8 @@ void CalendarDayEvents::maybeDraw(
 
     uint16_t textWidth, textHeight;
     int16_t x1, y1;
-    Watchy::Watchy::display.getTextBounds(
-      text, 0, 0, &x1, &y1, &textWidth, &textHeight);
+    Watchy::Watchy::display.getTextBounds(text, 0, 0, &x1, &y1, &textWidth,
+                                          &textHeight);
     textWidth += 4;
     textHeight += 2;
     x1 -= 2;
@@ -110,35 +119,43 @@ void CalendarDayEvents::maybeDraw(
   }
 }
 
-void CalendarColumn::draw(int16_t x0, int16_t y0,
-                          uint16_t targetWidth, uint16_t targetHeight,
-                          uint16_t *width, uint16_t *height) {
-  if (targetHeight <= 0) { targetHeight = 1; }
+void CalendarColumn::draw(int16_t x0, int16_t y0, uint16_t targetWidth,
+                          uint16_t targetHeight, uint16_t *width,
+                          uint16_t *height) {
+  if (targetHeight <= 0) {
+    targetHeight = 1;
+  }
 
-  *width = targetWidth;
+  *width  = targetWidth;
   *height = targetHeight;
 
   Watchy::Watchy::display.setFont(SMALL_FONT);
   Watchy::Watchy::display.setTextColor(color_);
 
-  time_t now = unixEpochTime(currentTime_);
-  time_t windowStart = now - (CALENDAR_PAST_MINUTES * 60);
-  time_t windowEnd = now + (CALENDAR_FUTURE_HOURS * 60 * 60);
+  time_t now             = unixEpochTime(currentTime_);
+  time_t windowStart     = now - (CALENDAR_PAST_MINUTES * 60);
+  time_t windowEnd       = now + (CALENDAR_FUTURE_HOURS * 60 * 60);
   time_t secondsPerPixel = (windowEnd - windowStart) / targetHeight;
-  if (secondsPerPixel <= 0) { secondsPerPixel = 1; }
+  if (secondsPerPixel <= 0) {
+    secondsPerPixel = 1;
+  }
 
   for (int i = 0; i < data_->eventCount; i++) {
-    eventData *event = &(data_->events[i]);
+    eventData *event  = &(data_->events[i]);
     time_t eventStart = event->start;
-    time_t eventEnd = event->end;
-    if (eventEnd <= windowStart) { continue; }
-    if (eventStart >= windowEnd) { continue; }
+    time_t eventEnd   = event->end;
+    if (eventEnd <= windowStart) {
+      continue;
+    }
+    if (eventStart >= windowEnd) {
+      continue;
+    }
 
     tmElements_t eventStarttm;
     fromUnixEpochTime(eventStart, &eventStarttm);
     if (eventStarttm.Hour == currentTime_.Hour &&
-        eventStarttm.Minute == currentTime_.Minute &&
-        currentTime_.Hour >= 6 && currentTime_.Hour < 22) {
+        eventStarttm.Minute == currentTime_.Minute && currentTime_.Hour >= 6 &&
+        currentTime_.Hour < 22) {
       watchy_->vibMotor(75, 5);
     }
 
@@ -146,37 +163,42 @@ void CalendarColumn::draw(int16_t x0, int16_t y0,
       eventStart = windowStart;
     } else {
       Watchy::Watchy::display.drawFastHLine(
-        x0, y0 + ((eventStart - windowStart) / secondsPerPixel),
-        targetWidth, color_);
+          x0, y0 + ((eventStart - windowStart) / secondsPerPixel), targetWidth,
+          color_);
     }
     if (eventEnd > windowEnd) {
       eventEnd = windowEnd;
     } else {
       Watchy::Watchy::display.drawFastHLine(
-        x0, y0 + ((eventEnd - windowStart) / secondsPerPixel),
-        targetWidth, color_);
+          x0, y0 + ((eventEnd - windowStart) / secondsPerPixel), targetWidth,
+          color_);
     }
     int16_t eventOffset = (eventStart - windowStart) / secondsPerPixel;
-    int16_t eventSize = (eventEnd - eventStart) / secondsPerPixel;
-    Watchy::Watchy::display.drawFastVLine(
-      x0, y0 + eventOffset, eventSize, color_);
-    Watchy::Watchy::display.drawFastVLine(
-      x0 + targetWidth - 1, y0 + eventOffset, eventSize, color_);
-    if (targetWidth <= 4 || eventSize <= 4) { continue; }
+    int16_t eventSize   = (eventEnd - eventStart) / secondsPerPixel;
+    Watchy::Watchy::display.drawFastVLine(x0, y0 + eventOffset, eventSize,
+                                          color_);
+    Watchy::Watchy::display.drawFastVLine(x0 + targetWidth - 1,
+                                          y0 + eventOffset, eventSize, color_);
+    if (targetWidth <= 4 || eventSize <= 4) {
+      continue;
+    }
     int16_t x1, y1;
     uint16_t tw, th;
-    Watchy::Watchy::display.getTextBounds(event->summary, 0, 0, &x1, &y1, &tw, &th);
+    Watchy::Watchy::display.getTextBounds(event->summary, 0, 0, &x1, &y1, &tw,
+                                          &th);
     if (tw + 4 > targetWidth || th + 4 > eventSize) {
-      resizeText(event->summary, MAX_EVENT_NAME_LEN, targetWidth - 4, eventSize - 4, &x1, &y1, &tw, &th);
+      resizeText(event->summary, MAX_EVENT_NAME_LEN, targetWidth - 4,
+                 eventSize - 4, &x1, &y1, &tw, &th);
     }
 
-    Watchy::Watchy::display.setCursor(x0 - x1 + 2, y0 - y1 + eventOffset + 2) ;
+    Watchy::Watchy::display.setCursor(x0 - x1 + 2, y0 - y1 + eventOffset + 2);
     Watchy::Watchy::display.print(event->summary);
   }
 }
 
 void CalendarColumn::resizeText(char *text, uint8_t buflen, uint16_t width,
-    uint16_t height, int16_t *x1, int16_t *y1, uint16_t *tw, uint16_t *th) {
+                                uint16_t height, int16_t *x1, int16_t *y1,
+                                uint16_t *tw, uint16_t *th) {
   String original = text;
   String result;
   int i = 0;
@@ -184,8 +206,8 @@ void CalendarColumn::resizeText(char *text, uint8_t buflen, uint16_t width,
     if (i >= original.length()) {
       break;
     }
-    Watchy::Watchy::display.getTextBounds(
-      result + original[i], 0, 0, x1, y1, tw, th);
+    Watchy::Watchy::display.getTextBounds(result + original[i], 0, 0, x1, y1,
+                                          tw, th);
     if (*th > height) {
       break;
     }
@@ -200,43 +222,55 @@ void CalendarColumn::resizeText(char *text, uint8_t buflen, uint16_t width,
     i++;
   }
   result.toCharArray(text, buflen);
-  Watchy::Watchy::display.getTextBounds(
-    result, 0, 0, x1, y1, tw, th);
+  Watchy::Watchy::display.getTextBounds(result, 0, 0, x1, y1, tw, th);
 }
 
-void CalendarHourBar::maybeDraw(int16_t x0, int16_t y0,
-                                uint16_t targetWidth, uint16_t targetHeight,
-                                uint16_t *width, uint16_t *height, bool noop) {
-  if (targetHeight <= 0) { targetHeight = 1; }
-  *width = 0;
+void CalendarHourBar::maybeDraw(int16_t x0, int16_t y0, uint16_t targetWidth,
+                                uint16_t targetHeight, uint16_t *width,
+                                uint16_t *height, bool noop) {
+  if (targetHeight <= 0) {
+    targetHeight = 1;
+  }
+  *width  = 0;
   *height = targetHeight;
 
   Watchy::Watchy::display.setFont(SMALL_FONT);
   Watchy::Watchy::display.setTextColor(color_);
 
-  time_t now = unixEpochTime(currentTime_);
-  time_t windowStart = now - (CALENDAR_PAST_MINUTES * 60);
-  time_t windowEnd = now + (CALENDAR_FUTURE_HOURS * 60 * 60);
+  time_t now             = unixEpochTime(currentTime_);
+  time_t windowStart     = now - (CALENDAR_PAST_MINUTES * 60);
+  time_t windowEnd       = now + (CALENDAR_FUTURE_HOURS * 60 * 60);
   time_t secondsPerPixel = (windowEnd - windowStart) / targetHeight;
-  if (secondsPerPixel <= 0) { secondsPerPixel = 1; }
+  if (secondsPerPixel <= 0) {
+    secondsPerPixel = 1;
+  }
 
   tmElements_t currentHour = currentTime_;
-  currentHour.Minute = 0;
-  currentHour.Second = 0;
-  time_t currentHourUnix = unixEpochTime(currentHour);
-  int currentHourNum = currentHour.Hour;
+  currentHour.Minute       = 0;
+  currentHour.Second       = 0;
+  time_t currentHourUnix   = unixEpochTime(currentHour);
+  int currentHourNum       = currentHour.Hour;
 
-  for (int i = -(CALENDAR_PAST_MINUTES / 60) - 1; i <= CALENDAR_FUTURE_HOURS; i++) {
+  for (int i = -(CALENDAR_PAST_MINUTES / 60) - 1; i <= CALENDAR_FUTURE_HOURS;
+       i++) {
     time_t hourTime = currentHourUnix + (i * 60 * 60);
-    if (hourTime + (3 * secondsPerPixel) < windowStart) { continue; }
-    if (hourTime >= windowEnd) { continue; }
+    if (hourTime + (3 * secondsPerPixel) < windowStart) {
+      continue;
+    }
+    if (hourTime >= windowEnd) {
+      continue;
+    }
 
     String text(((currentHourNum + i + 11) % 12) + 1);
     int16_t x1, y1;
     uint16_t tw, th;
     Watchy::Watchy::display.getTextBounds(text, 0, 0, &x1, &y1, &tw, &th);
-    if ((th + 3) * secondsPerPixel + hourTime > windowEnd) { continue; }
-    if (tw + 4 > *width) { *width = tw + 4; }
+    if ((th + 3) * secondsPerPixel + hourTime > windowEnd) {
+      continue;
+    }
+    if (tw + 4 > *width) {
+      *width = tw + 4;
+    }
 
     if (!noop) {
       int16_t yoffset = y0 + ((hourTime - windowStart) / secondsPerPixel);
@@ -247,14 +281,17 @@ void CalendarHourBar::maybeDraw(int16_t x0, int16_t y0,
 
   if (!noop) {
     Watchy::Watchy::display.drawFastHLine(
-      x0,
-      y0 + ((now - windowStart) / secondsPerPixel),
-      *width, color_);
+        x0, y0 + ((now - windowStart) / secondsPerPixel), *width, color_);
 
-    for (int i = -(CALENDAR_PAST_MINUTES / 60) - 1; i <= CALENDAR_FUTURE_HOURS; i++) {
+    for (int i = -(CALENDAR_PAST_MINUTES / 60) - 1; i <= CALENDAR_FUTURE_HOURS;
+         i++) {
       time_t hourTime = currentHourUnix + (i * 60 * 60);
-      if (hourTime < windowStart) { continue; }
-      if (hourTime >= windowEnd) { continue; }
+      if (hourTime < windowStart) {
+        continue;
+      }
+      if (hourTime >= windowEnd) {
+        continue;
+      }
 
       int16_t yoffset = y0 + ((hourTime - windowStart) / secondsPerPixel);
       Watchy::Watchy::display.drawFastHLine(x0, yoffset, *width / 2, color_);
@@ -262,27 +299,29 @@ void CalendarHourBar::maybeDraw(int16_t x0, int16_t y0,
   }
 }
 
-
-void CalendarAlarms::maybeDraw(int16_t x0, int16_t y0,
-                               uint16_t targetWidth, uint16_t targetHeight,
-                               uint16_t *width, uint16_t *height, bool noop) {
-  *width = targetWidth;
+void CalendarAlarms::maybeDraw(int16_t x0, int16_t y0, uint16_t targetWidth,
+                               uint16_t targetHeight, uint16_t *width,
+                               uint16_t *height, bool noop) {
+  *width  = targetWidth;
   *height = 0;
 
   Watchy::Watchy::display.setFont(&FreeMono9pt7b);
   Watchy::Watchy::display.setTextColor(color_);
 
-  time_t now = unixEpochTime(watchy_->currentTime);
-  time_t windowStart = now - (2*60);
-  time_t windowEnd = now + (60*60);
+  time_t now         = unixEpochTime(watchy_->currentTime);
+  time_t windowStart = now - (2 * 60);
+  time_t windowEnd   = now + (60 * 60);
   for (int i = 0; i < data_->alarmCount; i++) {
     alarmData *alarm = &(data_->alarms[i]);
-    if (alarm->start < windowStart) { continue; }
-    if (alarm->start > windowEnd) { continue; }
+    if (alarm->start < windowStart) {
+      continue;
+    }
+    if (alarm->start > windowEnd) {
+      continue;
+    }
     tmElements_t alarmtm;
     fromUnixEpochTime(alarm->start, &alarmtm);
-    if (!noop &&
-        alarmtm.Minute == watchy_->currentTime.Minute &&
+    if (!noop && alarmtm.Minute == watchy_->currentTime.Minute &&
         alarmtm.Hour == watchy_->currentTime.Hour) {
       watchy_->vibMotor(100, 10);
     }
@@ -308,5 +347,7 @@ void CalendarAlarms::maybeDraw(int16_t x0, int16_t y0,
 
     *height += th + 2;
   }
-  if (*height > 0) { *height += 2; }
+  if (*height > 0) {
+    *height += 2;
+  }
 }

@@ -1,14 +1,14 @@
 #include "Watchy.h"
 
 #ifdef ARDUINO_ESP32S3_DEV
-  Watchy32KRTC Watchy::RTC;
-  #define ACTIVE_LOW 0
+Watchy32KRTC Watchy::RTC;
+#define ACTIVE_LOW 0
 #else
-  WatchyRTC Watchy::RTC;
-  #define ACTIVE_LOW 1
+WatchyRTC Watchy::RTC;
+#define ACTIVE_LOW 1
 #endif
-GxEPD2_BW<WatchyDisplay, WatchyDisplay::HEIGHT> Watchy::display(
-    WatchyDisplay{});
+GxEPD2_BW<WatchyDisplay, WatchyDisplay::HEIGHT>
+    Watchy::display(WatchyDisplay{});
 
 #define FOREGROUND_COLOR GxEPD_BLACK
 #define BACKGROUND_COLOR GxEPD_WHITE
@@ -18,8 +18,8 @@ RTC_DATA_ATTR int menuIndex;
 RTC_DATA_ATTR BMA423 sensor;
 RTC_DATA_ATTR bool WIFI_CONFIGURED;
 RTC_DATA_ATTR bool BLE_CONFIGURED;
-RTC_DATA_ATTR long gmtOffset = 0;
-RTC_DATA_ATTR bool alreadyInMenu         = true;
+RTC_DATA_ATTR long gmtOffset      = 0;
+RTC_DATA_ATTR bool alreadyInMenu  = true;
 RTC_DATA_ATTR bool USB_PLUGGED_IN = false;
 RTC_DATA_ATTR tmElements_t bootTime;
 RTC_DATA_ATTR uint32_t lastIPAddress;
@@ -28,22 +28,22 @@ RTC_DATA_ATTR char lastSSID[30];
 void Watchy::init(String datetime) {
   esp_sleep_wakeup_cause_t wakeup_reason;
   wakeup_reason = esp_sleep_get_wakeup_cause(); // get wake up reason
-  #ifdef ARDUINO_ESP32S3_DEV
-    Wire.begin(WATCHY_V3_SDA, WATCHY_V3_SCL);     // init i2c
-  #else
-    Wire.begin(SDA, SCL);                         // init i2c
-  #endif
+#ifdef ARDUINO_ESP32S3_DEV
+  Wire.begin(WATCHY_V3_SDA, WATCHY_V3_SCL); // init i2c
+#else
+  Wire.begin(SDA, SCL); // init i2c
+#endif
   RTC.init();
   // Init the display since is almost sure we will use it
   display.epd2.initWatchy();
   display.cp437(true);
 
   switch (wakeup_reason) {
-  #ifdef ARDUINO_ESP32S3_DEV
+#ifdef ARDUINO_ESP32S3_DEV
   case ESP_SLEEP_WAKEUP_TIMER: // RTC Alarm
-  #else
+#else
   case ESP_SLEEP_WAKEUP_EXT0: // RTC Alarm
-  #endif
+#endif
     RTC.read(currentTime);
     switch (guiState) {
     case WATCHFACE_STATE:
@@ -70,23 +70,23 @@ void Watchy::init(String datetime) {
   case ESP_SLEEP_WAKEUP_EXT1: // button Press
     handleButtonPress();
     break;
-  #ifdef ARDUINO_ESP32S3_DEV
+#ifdef ARDUINO_ESP32S3_DEV
   case ESP_SLEEP_WAKEUP_EXT0: // USB plug in
     pinMode(USB_DET_PIN, INPUT);
     USB_PLUGGED_IN = (digitalRead(USB_DET_PIN) == 1);
-    if(guiState == WATCHFACE_STATE){
+    if (guiState == WATCHFACE_STATE) {
       RTC.read(currentTime);
       showWatchFace(true);
     }
     break;
-  #endif
+#endif
   default: // reset
     RTC.config(datetime);
     _bmaConfig();
-    #ifdef ARDUINO_ESP32S3_DEV
+#ifdef ARDUINO_ESP32S3_DEV
     pinMode(USB_DET_PIN, INPUT);
     USB_PLUGGED_IN = (digitalRead(USB_DET_PIN) == 1);
-    #endif
+#endif
     gmtOffset = settings.gmtOffset;
     RTC.read(bootTime);
     RTC.read(currentTime);
@@ -102,9 +102,12 @@ void Watchy::init(String datetime) {
 }
 void Watchy::deepSleep() {
   display.hibernate();
-  RTC.clearAlarm();        // resets the alarm flag in the RTC
-  #ifdef ARDUINO_ESP32S3_DEV
-  esp_sleep_enable_ext0_wakeup((gpio_num_t)USB_DET_PIN, USB_PLUGGED_IN ? LOW : HIGH); //// enable deep sleep wake on USB plug in/out
+  RTC.clearAlarm(); // resets the alarm flag in the RTC
+#ifdef ARDUINO_ESP32S3_DEV
+  esp_sleep_enable_ext0_wakeup(
+      (gpio_num_t)USB_DET_PIN,
+      USB_PLUGGED_IN ? LOW
+                     : HIGH); //// enable deep sleep wake on USB plug in/out
   rtc_gpio_set_direction((gpio_num_t)USB_DET_PIN, RTC_GPIO_MODE_INPUT_ONLY);
   rtc_gpio_pullup_en((gpio_num_t)USB_DET_PIN);
 
@@ -115,14 +118,15 @@ void Watchy::deepSleep() {
   rtc_gpio_pullup_en((gpio_num_t)UP_BTN_PIN);
 
   rtc_clk_32k_enable(true);
-  //rtc_clk_slow_freq_set(RTC_SLOW_FREQ_32K_XTAL);
+  // rtc_clk_slow_freq_set(RTC_SLOW_FREQ_32K_XTAL);
   struct tm timeinfo;
   getLocalTime(&timeinfo);
   int secToNextMin = 60 - timeinfo.tm_sec;
   esp_sleep_enable_timer_wakeup(secToNextMin * uS_TO_S_FACTOR);
-  #else
+#else
   // Set GPIOs 0-39 to input to avoid power leaking out
-  const uint64_t ignore = 0b11110001000000110000100111000010; // Ignore some GPIOs due to resets
+  const uint64_t ignore =
+      0b11110001000000110000100111000010; // Ignore some GPIOs due to resets
   for (int i = 0; i < GPIO_NUM_MAX; i++) {
     if ((ignore >> i) & 0b1)
       continue;
@@ -133,7 +137,7 @@ void Watchy::deepSleep() {
   esp_sleep_enable_ext1_wakeup(
       BTN_PIN_MASK,
       ESP_EXT1_WAKEUP_ANY_HIGH); // enable deep sleep wake on button press
-  #endif
+#endif
   esp_deep_sleep_start();
 }
 
@@ -320,7 +324,7 @@ void Watchy::showMenu(byte menuIndex, bool partialRefresh) {
 
   display.display(partialRefresh);
 
-  guiState = MAIN_MENU_STATE;
+  guiState      = MAIN_MENU_STATE;
   alreadyInMenu = false;
 }
 
@@ -375,30 +379,30 @@ void Watchy::showAbout() {
   display.print(voltage);
   display.println("V");
 
-  #ifndef ARDUINO_ESP32S3_DEV
+#ifndef ARDUINO_ESP32S3_DEV
   display.print("Uptime: ");
   RTC.read(currentTime);
-  time_t b = makeTime(bootTime);
-  time_t c = makeTime(currentTime);
-  int totalSeconds = c-b;
-  //int seconds = (totalSeconds % 60);
+  time_t b         = makeTime(bootTime);
+  time_t c         = makeTime(currentTime);
+  int totalSeconds = c - b;
+  // int seconds = (totalSeconds % 60);
   int minutes = (totalSeconds % 3600) / 60;
-  int hours = (totalSeconds % 86400) / 3600;
-  int days = (totalSeconds % (86400 * 30)) / 86400;
+  int hours   = (totalSeconds % 86400) / 3600;
+  int days    = (totalSeconds % (86400 * 30)) / 86400;
   display.print(days);
   display.print("d");
   display.print(hours);
   display.print("h");
   display.print(minutes);
   display.println("m");
-  #endif
+#endif
 
-  if(WIFI_CONFIGURED){
+  if (WIFI_CONFIGURED) {
     display.print("SSID: ");
     display.println(lastSSID);
     display.print("IP: ");
     display.println(IPAddress(lastIPAddress).toString());
-  }else{
+  } else {
     display.println("WiFi Not Connected");
   }
   display.display(false); // full refresh
@@ -434,19 +438,19 @@ void Watchy::setTime() {
 
   RTC.read(currentTime);
 
-  #ifdef ARDUINO_ESP32S3_DEV
+#ifdef ARDUINO_ESP32S3_DEV
   uint8_t minute = currentTime.Minute;
   uint8_t hour   = currentTime.Hour;
   uint8_t day    = currentTime.Day;
   uint8_t month  = currentTime.Month;
   uint8_t year   = currentTime.Year;
-  #else
+#else
   int8_t minute = currentTime.Minute;
   int8_t hour   = currentTime.Hour;
   int8_t day    = currentTime.Day;
   int8_t month  = currentTime.Month;
   int8_t year   = tmYearToY2k(currentTime.Year);
-  #endif
+#endif
 
   int8_t setIndex = SET_HOUR;
 
@@ -580,13 +584,13 @@ void Watchy::setTime() {
   }
 
   tmElements_t tm;
-  tm.Month  = month;
-  tm.Day    = day;
-  #ifdef ARDUINO_ESP32S3_DEV
-  tm.Year   = year;
-  #else
-  tm.Year   = y2kYearToTm(year);
-  #endif
+  tm.Month = month;
+  tm.Day   = day;
+#ifdef ARDUINO_ESP32S3_DEV
+  tm.Year = year;
+#else
+  tm.Year = y2kYearToTm(year);
+#endif
   tm.Hour   = hour;
   tm.Minute = minute;
   tm.Second = 0;
@@ -695,38 +699,38 @@ void Watchy::postDraw() {}
 void Watchy::deviceReset() {}
 
 float Watchy::getBatteryVoltage() {
-  #ifdef ARDUINO_ESP32S3_DEV
-    return analogReadMilliVolts(BATT_ADC_PIN) / 1000.0f * ADC_VOLTAGE_DIVIDER;
-  #else
+#ifdef ARDUINO_ESP32S3_DEV
+  return analogReadMilliVolts(BATT_ADC_PIN) / 1000.0f * ADC_VOLTAGE_DIVIDER;
+#else
   if (RTC.rtcType == DS3231) {
     return analogReadMilliVolts(BATT_ADC_PIN) / 1000.0f *
            2.0f; // Battery voltage goes through a 1/2 divider.
   } else {
     return analogReadMilliVolts(BATT_ADC_PIN) / 1000.0f * 2.0f;
   }
-  #endif
+#endif
 }
 
 uint8_t Watchy::getBoardRevision() {
   esp_chip_info_t chip_info;
   esp_chip_info(&chip_info);
-  if(chip_info.model == CHIP_ESP32){ //Revision 1.0 - 2.0
-    Wire.beginTransmission(0x68); //v1.0 has DS3231
-    if (Wire.endTransmission() == 0){
+  if (chip_info.model == CHIP_ESP32) { // Revision 1.0 - 2.0
+    Wire.beginTransmission(0x68);      // v1.0 has DS3231
+    if (Wire.endTransmission() == 0) {
       return 10;
     }
     delay(1);
-    Wire.beginTransmission(0x51); //v1.5 and v2.0 have PCF8563
-    if (Wire.endTransmission() == 0){
-        pinMode(35, INPUT);
-        if(digitalRead(35) == 0){
-          return 20; //in rev 2.0, pin 35 is BTN 3 and has a pulldown
-        }else{
-          return 15; //in rev 1.5, pin 35 is the battery ADC
-        }
+    Wire.beginTransmission(0x51); // v1.5 and v2.0 have PCF8563
+    if (Wire.endTransmission() == 0) {
+      pinMode(35, INPUT);
+      if (digitalRead(35) == 0) {
+        return 20; // in rev 2.0, pin 35 is BTN 3 and has a pulldown
+      } else {
+        return 15; // in rev 1.5, pin 35 is the battery ADC
+      }
     }
   }
-  if(chip_info.model == CHIP_ESP32S3){ //Revision 3.0
+  if (chip_info.model == CHIP_ESP32S3) { // Revision 3.0
     return 30;
   }
   return -1;
@@ -865,8 +869,8 @@ void Watchy::setupWifi() {
   } else {
     display.println("Connected to:");
     display.println(WiFi.SSID());
-		display.println("Local IP:");
-		display.println(WiFi.localIP());
+    display.println("Local IP:");
+    display.println(WiFi.localIP());
     lastIPAddress = WiFi.localIP();
     WiFi.SSID().toCharArray(lastSSID, 30);
   }
@@ -890,8 +894,8 @@ void Watchy::_configModeCallback(WiFiManager *myWiFiManager) {
   display.println(WIFI_AP_SSID);
   display.print("IP: ");
   display.println(WiFi.softAPIP());
-	display.println("MAC address:");
-	display.println(WiFi.softAPmacAddress().c_str());
+  display.println("MAC address:");
+  display.println(WiFi.softAPmacAddress().c_str());
   display.display(false); // full refresh
 }
 
@@ -1068,8 +1072,7 @@ void Watchy::showSyncNTP() {
 
 bool Watchy::syncNTP() { // NTP sync - call after connecting to WiFi and
                          // remember to turn it back off
-  return syncNTP(gmtOffset,
-                 settings.ntpServer.c_str());
+  return syncNTP(gmtOffset, settings.ntpServer.c_str());
 }
 
 bool Watchy::syncNTP(long gmt) {
