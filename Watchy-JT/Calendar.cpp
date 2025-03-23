@@ -196,9 +196,11 @@ void CalendarColumn::draw(int16_t x0, int16_t y0, uint16_t targetWidth,
                  eventSize - (EVENT_PADDING * 2), &x1, &y1, &tw, &th);
     }
 
-    Watchy::Watchy::display.setCursor(x0 - x1 + EVENT_PADDING,
-                                      y0 - y1 + eventOffset + EVENT_PADDING);
-    Watchy::Watchy::display.print(event->summary);
+    if (th + (EVENT_PADDING * 2) <= eventSize) {
+      Watchy::Watchy::display.setCursor(x0 - x1 + EVENT_PADDING,
+                                        y0 - y1 + eventOffset + EVENT_PADDING);
+      Watchy::Watchy::display.print(event->summary);
+    }
   }
 }
 
@@ -214,9 +216,6 @@ void CalendarColumn::resizeText(char *text, uint8_t buflen, uint16_t width,
     }
     Watchy::Watchy::display.getTextBounds(result + original[i], 0, 0, x1, y1,
                                           tw, th);
-    if (*th > height) {
-      break;
-    }
     if (*tw > width) {
       // TODO: newlines aren't handled by the display library
       // in a way where the x offset is reset to the offset of
@@ -227,11 +226,6 @@ void CalendarColumn::resizeText(char *text, uint8_t buflen, uint16_t width,
       // position or something. for now, just disable
       // subsequent lines.
       break;
-      if (result.length() > 0 && result[result.length() - 1] == '\n') {
-        break;
-      }
-      result += "\n";
-      continue;
     }
     result += original[i];
     i++;
