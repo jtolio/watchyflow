@@ -136,7 +136,9 @@ void CalendarColumn::draw(int16_t x0, int16_t y0,
 
     tmElements_t eventStarttm;
     fromUnixEpochTime(eventStart, &eventStarttm);
-    if (eventStarttm.Hour == currentTime_.Hour && eventStarttm.Minute == currentTime_.Minute) {
+    if (eventStarttm.Hour == currentTime_.Hour &&
+        eventStarttm.Minute == currentTime_.Minute &&
+        currentTime_.Hour >= 6 && currentTime_.Hour < 22) {
       watchy_->vibMotor(75, 5);
     }
 
@@ -226,14 +228,14 @@ void CalendarHourBar::maybeDraw(int16_t x0, int16_t y0,
 
   for (int i = -(CALENDAR_PAST_MINUTES / 60) - 1; i <= CALENDAR_FUTURE_HOURS; i++) {
     time_t hourTime = currentHourUnix + (i * 60 * 60);
-    if (hourTime < windowStart) { continue; }
+    if (hourTime + (3 * secondsPerPixel) < windowStart) { continue; }
     if (hourTime >= windowEnd) { continue; }
 
     String text(((currentHourNum + i + 11) % 12) + 1);
     int16_t x1, y1;
     uint16_t tw, th;
     Watchy::Watchy::display.getTextBounds(text, 0, 0, &x1, &y1, &tw, &th);
-    if (th * secondsPerPixel + 3 + hourTime > windowEnd) { continue; }
+    if ((th + 3) * secondsPerPixel + hourTime > windowEnd) { continue; }
     if (tw + 4 > *width) { *width = tw + 4; }
 
     if (!noop) {
