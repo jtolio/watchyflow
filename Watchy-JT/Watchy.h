@@ -52,7 +52,7 @@ typedef struct watchySettings {
   int gmtOffset;
   //
   bool vibrateOClock;
-  String calendarAccountKey;
+  String calendarAccountURL;
 } watchySettings;
 
 class Watchy {

@@ -67,9 +67,7 @@ void WatchyFace::fetchCalendar() {
   HTTPClient http;
   http.setConnectTimeout(1000 * 10);
   http.setTimeout(1000 * 10);
-  String calQueryURL =
-      "http://mini2011.lan:8082/v0/account/{calendarAccountKey}";
-  calQueryURL.replace("{calendarAccountKey}", settings.calendarAccountKey);
+  String calQueryURL = settings.calendarAccountURL;
   http.begin(calQueryURL.c_str());
   int httpResponseCode = http.GET();
   if (httpResponseCode == 200) {
