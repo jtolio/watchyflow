@@ -11,6 +11,9 @@
 
 const uint8_t MAX_CALENDAR_COLUMNS = 8;
 
+const uint16_t MIN_SECONDS_BETWEEN_WIFI_UPDATES    = 60 * 60;
+const uint16_t MAX_SECONDS_BETWEEN_WEATHER_UPDATES = 60 * 60 * 2;
+
 const uint8_t WEATHER_ICON_WIDTH  = 48;
 const uint8_t WEATHER_ICON_HEIGHT = 32;
 
@@ -42,19 +45,24 @@ void WatchyFace::deviceReset() {
 
 void WatchyFace::postDraw() {
   time_t currentUnixTime = unixEpochTime(currentTime);
-  if (currentUnixTime - 3600 <= lastCalendarFetch &&
-      currentUnixTime - 3600 <= lastWeatherFetch) {
+  if (currentUnixTime - MIN_SECONDS_BETWEEN_WIFI_UPDATES <= lastCalendarFetch &&
+      currentUnixTime - MIN_SECONDS_BETWEEN_WIFI_UPDATES <= lastWeatherFetch) {
     return;
+  }
+
+  if (currentUnixTime - MAX_SECONDS_BETWEEN_WEATHER_UPDATES >
+      lastWeatherFetch) {
+    currentWeather.weatherConditionCode = -1;
   }
 
   if (!connectWiFi()) {
     return;
   }
 
-  if (currentUnixTime - 3600 > lastCalendarFetch) {
+  if (currentUnixTime - MIN_SECONDS_BETWEEN_WIFI_UPDATES > lastCalendarFetch) {
     fetchCalendar();
   }
-  if (currentUnixTime - 3600 > lastWeatherFetch) {
+  if (currentUnixTime - MIN_SECONDS_BETWEEN_WIFI_UPDATES > lastWeatherFetch) {
     fetchWeather();
   }
 
