@@ -2,14 +2,15 @@
 #include "Layout.h"
 #include "Battery.h"
 #include "Calendar.h"
-#include <Fonts/FreeMono9pt7b.h>
+#include <Fonts/Picopixel.h>
 #include "Seven_Segment10pt7b.h"
 #include "DSEG7_Classic_Bold_25.h"
 #include "icons.h"
 
 #define DARKMODE false
 
-const uint8_t MAX_CALENDAR_COLUMNS = 8;
+const uint8_t MAX_CALENDAR_COLUMNS       = 8;
+const uint8_t MAX_FETCH_ATTEMPTS_AT_ONCE = 3;
 
 const uint16_t MIN_SECONDS_BETWEEN_WIFI_UPDATES    = 60 * 60;
 const uint16_t MAX_SECONDS_BETWEEN_WEATHER_UPDATES = 60 * 60 * 2;
@@ -25,6 +26,8 @@ RTC_DATA_ATTR time_t lastCalendarFetch;
 RTC_DATA_ATTR char calendarError[32];
 RTC_DATA_ATTR weatherData currentWeather;
 RTC_DATA_ATTR time_t lastWeatherFetch;
+RTC_DATA_ATTR time_t lastFetchAttempt;
+RTC_DATA_ATTR uint8_t fetchTries;
 
 void zeroError() {
   for (int i = 0; i < (sizeof(calendarError) / sizeof(calendarError[0])); i++) {
@@ -39,16 +42,25 @@ void WatchyFace::deviceReset() {
   reset(&calendarDay);
   lastCalendarFetch                   = 0;
   lastWeatherFetch                    = 0;
+  lastFetchAttempt                    = 0;
+  fetchTries                          = 0;
   currentWeather.weatherConditionCode = -1;
   zeroError();
 }
 
 void WatchyFace::postDraw() {
   time_t currentUnixTime = unixEpochTime(currentTime);
-  if (currentUnixTime - MIN_SECONDS_BETWEEN_WIFI_UPDATES <= lastCalendarFetch &&
-      currentUnixTime - MIN_SECONDS_BETWEEN_WIFI_UPDATES <= lastWeatherFetch) {
-    return;
+  time_t staleTime       = currentUnixTime - MIN_SECONDS_BETWEEN_WIFI_UPDATES;
+
+  if (fetchTries >= MAX_FETCH_ATTEMPTS_AT_ONCE) {
+    if (lastFetchAttempt >= staleTime) {
+      return;
+    }
+    fetchTries = 0;
   }
+
+  lastFetchAttempt = currentUnixTime;
+  fetchTries++;
 
   if (currentUnixTime - MAX_SECONDS_BETWEEN_WEATHER_UPDATES >
       lastWeatherFetch) {
@@ -59,11 +71,15 @@ void WatchyFace::postDraw() {
     return;
   }
 
-  if (currentUnixTime - MIN_SECONDS_BETWEEN_WIFI_UPDATES > lastCalendarFetch) {
+  if (lastCalendarFetch < staleTime) {
     fetchCalendar();
   }
-  if (currentUnixTime - MIN_SECONDS_BETWEEN_WIFI_UPDATES > lastWeatherFetch) {
+  if (lastWeatherFetch < staleTime) {
     fetchWeather();
+  }
+
+  if (lastCalendarFetch >= staleTime && lastWeatherFetch >= staleTime) {
+    fetchTries = MAX_FETCH_ATTEMPTS_AT_ONCE;
   }
 
   // turn off radios
@@ -202,6 +218,22 @@ void WatchyFace::fetchWeather() {
   http.end();
 }
 
+String secondsToReadable(time_t val) {
+  if (val < 60 && val > -60) {
+    return String(val) + "s";
+  }
+  val /= 60;
+  if (val < 60 && val > -60) {
+    return String(val) + "m";
+  }
+  val /= 60;
+  if (val < 24 && val > -24) {
+    return String(val) + "h";
+  }
+  val /= 24;
+  return String(val) + "d";
+}
+
 void WatchyFace::drawWatchFace() {
   display.fillScreen(DARKMODE ? GxEPD_BLACK : GxEPD_WHITE);
   display.setTextWrap(false);
@@ -252,14 +284,25 @@ void WatchyFace::drawWatchFace() {
   bool elTopStretch[]         = {false, true, false, false, false};
   LayoutColumns elTop(5, elTopElems, elTopStretch);
 
-  LayoutText elError(String(calendarError), &FreeMono9pt7b, color);
+  String errorMessage = calendarError;
+  if (errorMessage.length() == 0) {
+    time_t oldestFetch = lastCalendarFetch;
+    if (oldestFetch > lastWeatherFetch) {
+      oldestFetch = lastWeatherFetch;
+    }
+    time_t age = unixEpochTime(currentTime) - oldestFetch;
+    if (oldestFetch <= 0) {
+      age = -24 * 60 * 60;
+    }
+    errorMessage = secondsToReadable(age);
+  }
+  LayoutText elError(errorMessage, &Picopixel, color);
   LayoutCenter elErrorCenter(&elError);
-  LayoutRotate elErrorRotated(&elErrorCenter, 3);
 
   LayoutText elDateWords(dayOfWeekStr + " " + monthStr + " " + dayOfMonthStr,
                          &Seven_Segment10pt7b, color);
   LayoutRotate elDateRotated(&elDateWords, 3);
-  LayoutElement *elDateElems[] = {&elDateRotated, &elFill, &elErrorRotated};
+  LayoutElement *elDateElems[] = {&elDateRotated, &elFill, &elErrorCenter};
   bool elDateStretch[]         = {false, true, false};
   LayoutRows elDate(3, elDateElems, elDateStretch);
 
@@ -301,4 +344,11 @@ void WatchyFace::drawWatchFace() {
 
   uint16_t w, h;
   elPaddedScreen.draw(0, 0, display.width(), display.height(), &w, &h);
+}
+
+void WatchyFace::triggerSync() {
+  lastCalendarFetch = 0;
+  lastWeatherFetch  = 0;
+  lastFetchAttempt  = 0;
+  fetchTries        = 0;
 }

@@ -91,7 +91,7 @@ void CalendarDayEvents::maybeDraw(int16_t x0, int16_t y0, uint16_t targetWidth,
   today += String(currentTime_.Day);
 
   for (int i = 0; i < data_->eventCount; i++) {
-    String text = data_->events[0].summary;
+    String text = data_->events[i].summary;
     if (String(data_->events[i].start) > today ||
         String(data_->events[i].end) <= today) {
       continue;

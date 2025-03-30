@@ -16,6 +16,7 @@ public:
   void deviceReset() override;
   void postDraw() override;
   void drawWatchFace() override;
+  void triggerSync() override;
 
 private:
   void parseCalendar(String payload);

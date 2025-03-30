@@ -81,7 +81,7 @@ public:
   void showBuzz();
   void showAccelerometer();
   void showUpdateFW();
-  void showSyncNTP();
+  void showSync();
   bool syncNTP();
   bool syncNTP(long gmt);
   bool syncNTP(long gmt, String ntpServer);
@@ -96,6 +96,7 @@ public:
   virtual void postDraw();      // called after the watchface update.
   virtual void
   deviceReset(); // called when RTC_DATA_ATTR variables should be initialized.
+  virtual void triggerSync(); // called when the user requests a network sync.
 
 private:
   void _bmaConfig();

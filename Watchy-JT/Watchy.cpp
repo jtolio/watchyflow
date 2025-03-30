@@ -54,7 +54,6 @@ void Watchy::init(String datetime) {
           vibMotor(75, 4);
         }
       }
-      postDraw();
       break;
     case MAIN_MENU_STATE:
       // Return to watchface if in menu for more than one tick
@@ -170,7 +169,7 @@ void Watchy::handleButtonPress() {
         showUpdateFW();
         break;
       case 6:
-        showSyncNTP();
+        showSync();
         break;
       default:
         break;
@@ -252,7 +251,7 @@ void Watchy::handleButtonPress() {
             showUpdateFW();
             break;
           case 6:
-            showSyncNTP();
+            showSync();
             break;
           default:
             break;
@@ -305,9 +304,8 @@ void Watchy::showMenu(byte menuIndex, bool partialRefresh) {
   int16_t yPos;
 
   const char *menuItems[] = {
-      "About Watchy", "Vibrate Motor", "Show Accelerometer",
-      "Set Time",     "Setup WiFi",    "Update Firmware",
-      "Sync NTP"};
+      "About Watchy", "Vibrate Motor",   "Show Accelerometer", "Set Time",
+      "Setup WiFi",   "Update Firmware", "Sync Network"};
   for (int i = 0; i < MENU_LENGTH; i++) {
     yPos = MENU_HEIGHT + (MENU_HEIGHT * i);
     display.setCursor(0, yPos);
@@ -338,9 +336,8 @@ void Watchy::showFastMenu(byte menuIndex) {
   int16_t yPos;
 
   const char *menuItems[] = {
-      "About Watchy", "Vibrate Motor", "Show Accelerometer",
-      "Set Time",     "Setup WiFi",    "Update Firmware",
-      "Sync NTP"};
+      "About Watchy", "Vibrate Motor",   "Show Accelerometer", "Set Time",
+      "Setup WiFi",   "Update Firmware", "Sync Network"};
   for (int i = 0; i < MENU_LENGTH; i++) {
     yPos = MENU_HEIGHT + (MENU_HEIGHT * i);
     display.setCursor(0, yPos);
@@ -679,6 +676,7 @@ void Watchy::showWatchFace(bool partialRefresh) {
   drawWatchFace();
   display.display(partialRefresh); // partial refresh
   guiState = WATCHFACE_STATE;
+  postDraw();
 }
 
 void Watchy::drawWatchFace() {
@@ -697,6 +695,7 @@ void Watchy::drawWatchFace() {
 
 void Watchy::postDraw() {}
 void Watchy::deviceReset() {}
+void Watchy::triggerSync() {}
 
 float Watchy::getBatteryVoltage() {
 #ifdef ARDUINO_ESP32S3_DEV
@@ -1026,12 +1025,16 @@ void Watchy::updateFWBegin() {
   showMenu(menuIndex, false);
 }
 
-void Watchy::showSyncNTP() {
+void Watchy::showSync() {
   display.setFullWindow();
   display.fillScreen(BACKGROUND_COLOR);
   display.setFont(&FreeMonoBold9pt7b);
   display.setTextColor(FOREGROUND_COLOR);
   display.setCursor(0, 30);
+  display.println("Triggering resets");
+  display.display(false); // full refresh
+  triggerSync();
+  postDraw();
   display.println("Syncing NTP... ");
   display.print("GMT offset: ");
   display.println(gmtOffset);
