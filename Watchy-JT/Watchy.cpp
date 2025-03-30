@@ -25,7 +25,7 @@ RTC_DATA_ATTR tmElements_t bootTime;
 RTC_DATA_ATTR uint32_t lastIPAddress;
 RTC_DATA_ATTR char lastSSID[30];
 
-void Watchy::init(String datetime) {
+void Watchy::init() {
   esp_sleep_wakeup_cause_t wakeup_reason;
   wakeup_reason = esp_sleep_get_wakeup_cause(); // get wake up reason
 #ifdef ARDUINO_ESP32S3_DEV
@@ -80,7 +80,7 @@ void Watchy::init(String datetime) {
     break;
 #endif
   default: // reset
-    RTC.config(datetime);
+    RTC.config("");
     _bmaConfig();
 #ifdef ARDUINO_ESP32S3_DEV
     pinMode(USB_DET_PIN, INPUT);
@@ -99,6 +99,7 @@ void Watchy::init(String datetime) {
   }
   deepSleep();
 }
+
 void Watchy::deepSleep() {
   display.hibernate();
   RTC.clearAlarm(); // resets the alarm flag in the RTC
@@ -154,28 +155,20 @@ void Watchy::handleButtonPress() {
         showAbout();
         break;
       case 1:
-        showBuzz();
-        break;
-      case 2:
         showAccelerometer();
         break;
-      case 3:
+      case 2:
         setTime();
         break;
-      case 4:
+      case 3:
         setupWifi();
         break;
-      case 5:
-        showUpdateFW();
-        break;
-      case 6:
+      case 4:
         showSync();
         break;
       default:
         break;
       }
-    } else if (guiState == FW_UPDATE_STATE) {
-      updateFWBegin();
     }
   }
   // Back Button
@@ -184,8 +177,6 @@ void Watchy::handleButtonPress() {
       RTC.read(currentTime);
       showWatchFace(false);
     } else if (guiState == APP_STATE) {
-      showMenu(menuIndex, false); // exit to menu if already in app
-    } else if (guiState == FW_UPDATE_STATE) {
       showMenu(menuIndex, false); // exit to menu if already in app
     } else if (guiState == WATCHFACE_STATE) {
       return;
@@ -236,28 +227,20 @@ void Watchy::handleButtonPress() {
             showAbout();
             break;
           case 1:
-            showBuzz();
-            break;
-          case 2:
             showAccelerometer();
             break;
-          case 3:
+          case 2:
             setTime();
             break;
-          case 4:
+          case 3:
             setupWifi();
             break;
-          case 5:
-            showUpdateFW();
-            break;
-          case 6:
+          case 4:
             showSync();
             break;
           default:
             break;
           }
-        } else if (guiState == FW_UPDATE_STATE) {
-          updateFWBegin();
         }
       } else if (digitalRead(BACK_BTN_PIN) == ACTIVE_LOW) {
         lastTimeout = millis();
@@ -268,8 +251,6 @@ void Watchy::handleButtonPress() {
           break; // leave loop
         } else if (guiState == APP_STATE) {
           showMenu(menuIndex, false); // exit to menu if already in app
-        } else if (guiState == FW_UPDATE_STATE) {
-          showMenu(menuIndex, false); // exit to menu if already in app
         }
       } else if (digitalRead(UP_BTN_PIN) == ACTIVE_LOW) {
         lastTimeout = millis();
@@ -278,7 +259,7 @@ void Watchy::handleButtonPress() {
           if (menuIndex < 0) {
             menuIndex = MENU_LENGTH - 1;
           }
-          showFastMenu(menuIndex);
+          showMenu(menuIndex, true);
         }
       } else if (digitalRead(DOWN_BTN_PIN) == ACTIVE_LOW) {
         lastTimeout = millis();
@@ -287,7 +268,7 @@ void Watchy::handleButtonPress() {
           if (menuIndex > MENU_LENGTH - 1) {
             menuIndex = 0;
           }
-          showFastMenu(menuIndex);
+          showMenu(menuIndex, true);
         }
       }
     }
@@ -304,8 +285,8 @@ void Watchy::showMenu(byte menuIndex, bool partialRefresh) {
   int16_t yPos;
 
   const char *menuItems[] = {
-      "About Watchy", "Vibrate Motor",   "Show Accelerometer", "Set Time",
-      "Setup WiFi",   "Update Firmware", "Sync Network"};
+      "About Watchy", "Show Accelerometer", "Set Time",
+      "Setup WiFi", "Sync Network"};
   for (int i = 0; i < MENU_LENGTH; i++) {
     yPos = MENU_HEIGHT + (MENU_HEIGHT * i);
     display.setCursor(0, yPos);
@@ -324,37 +305,6 @@ void Watchy::showMenu(byte menuIndex, bool partialRefresh) {
 
   guiState      = MAIN_MENU_STATE;
   alreadyInMenu = false;
-}
-
-void Watchy::showFastMenu(byte menuIndex) {
-  display.setFullWindow();
-  display.fillScreen(BACKGROUND_COLOR);
-  display.setFont(&FreeMonoBold9pt7b);
-
-  int16_t x1, y1;
-  uint16_t w, h;
-  int16_t yPos;
-
-  const char *menuItems[] = {
-      "About Watchy", "Vibrate Motor",   "Show Accelerometer", "Set Time",
-      "Setup WiFi",   "Update Firmware", "Sync Network"};
-  for (int i = 0; i < MENU_LENGTH; i++) {
-    yPos = MENU_HEIGHT + (MENU_HEIGHT * i);
-    display.setCursor(0, yPos);
-    if (i == menuIndex) {
-      display.getTextBounds(menuItems[i], 0, yPos, &x1, &y1, &w, &h);
-      display.fillRect(x1 - 1, y1 - 10, 200, h + 15, FOREGROUND_COLOR);
-      display.setTextColor(BACKGROUND_COLOR);
-      display.println(menuItems[i]);
-    } else {
-      display.setTextColor(FOREGROUND_COLOR);
-      display.println(menuItems[i]);
-    }
-  }
-
-  display.display(true);
-
-  guiState = MAIN_MENU_STATE;
 }
 
 void Watchy::showAbout() {
@@ -405,18 +355,6 @@ void Watchy::showAbout() {
   display.display(false); // full refresh
 
   guiState = APP_STATE;
-}
-
-void Watchy::showBuzz() {
-  display.setFullWindow();
-  display.fillScreen(BACKGROUND_COLOR);
-  display.setFont(&FreeMonoBold9pt7b);
-  display.setTextColor(FOREGROUND_COLOR);
-  display.setCursor(70, 80);
-  display.println("Buzz!");
-  display.display(false); // full refresh
-  vibMotor();
-  showMenu(menuIndex, false);
 }
 
 void Watchy::vibMotor(uint8_t intervalMs, uint8_t length) {
@@ -917,112 +855,6 @@ bool Watchy::connectWiFi() {
     }
   }
   return WIFI_CONFIGURED;
-}
-
-void Watchy::showUpdateFW() {
-  display.setFullWindow();
-  display.fillScreen(BACKGROUND_COLOR);
-  display.setFont(&FreeMonoBold9pt7b);
-  display.setTextColor(FOREGROUND_COLOR);
-  display.setCursor(0, 30);
-  display.println("Please visit");
-  display.println("watchy.sqfmi.com");
-  display.println("with a Bluetooth");
-  display.println("enabled device");
-  display.println(" ");
-  display.println("Press menu button");
-  display.println("again when ready");
-  display.println(" ");
-  display.println("Keep USB powered");
-  display.display(false); // full refresh
-
-  guiState = FW_UPDATE_STATE;
-}
-
-void Watchy::updateFWBegin() {
-  display.setFullWindow();
-  display.fillScreen(BACKGROUND_COLOR);
-  display.setFont(&FreeMonoBold9pt7b);
-  display.setTextColor(FOREGROUND_COLOR);
-  display.setCursor(0, 30);
-  display.println("Bluetooth Started");
-  display.println(" ");
-  display.println("Watchy BLE OTA");
-  display.println(" ");
-  display.println("Waiting for");
-  display.println("connection...");
-  display.display(false); // full refresh
-
-  BLE BT;
-  BT.begin("Watchy BLE OTA");
-  int prevStatus = -1;
-  int currentStatus;
-
-  while (1) {
-    currentStatus = BT.updateStatus();
-    if (prevStatus != currentStatus || prevStatus == 1) {
-      if (currentStatus == 0) {
-        display.setFullWindow();
-        display.fillScreen(BACKGROUND_COLOR);
-        display.setFont(&FreeMonoBold9pt7b);
-        display.setTextColor(FOREGROUND_COLOR);
-        display.setCursor(0, 30);
-        display.println("BLE Connected!");
-        display.println(" ");
-        display.println("Waiting for");
-        display.println("upload...");
-        display.display(false); // full refresh
-      }
-      if (currentStatus == 1) {
-        display.setFullWindow();
-        display.fillScreen(BACKGROUND_COLOR);
-        display.setFont(&FreeMonoBold9pt7b);
-        display.setTextColor(FOREGROUND_COLOR);
-        display.setCursor(0, 30);
-        display.println("Downloading");
-        display.println("firmware:");
-        display.println(" ");
-        display.print(BT.howManyBytes());
-        display.println(" bytes");
-        display.display(true); // partial refresh
-      }
-      if (currentStatus == 2) {
-        display.setFullWindow();
-        display.fillScreen(BACKGROUND_COLOR);
-        display.setFont(&FreeMonoBold9pt7b);
-        display.setTextColor(FOREGROUND_COLOR);
-        display.setCursor(0, 30);
-        display.println("Download");
-        display.println("completed!");
-        display.println(" ");
-        display.println("Rebooting...");
-        display.display(false); // full refresh
-
-        delay(2000);
-        esp_restart();
-      }
-      if (currentStatus == 4) {
-        display.setFullWindow();
-        display.fillScreen(BACKGROUND_COLOR);
-        display.setFont(&FreeMonoBold9pt7b);
-        display.setTextColor(FOREGROUND_COLOR);
-        display.setCursor(0, 30);
-        display.println("BLE Disconnected!");
-        display.println(" ");
-        display.println("exiting...");
-        display.display(false); // full refresh
-        delay(1000);
-        break;
-      }
-      prevStatus = currentStatus;
-    }
-    delay(100);
-  }
-
-  // turn off radios
-  WiFi.mode(WIFI_OFF);
-  btStop();
-  showMenu(menuIndex, false);
 }
 
 void Watchy::showSync() {

@@ -68,7 +68,7 @@ public:
 
 public:
   explicit Watchy(const watchySettings &s) : settings(s) {} // constructor
-  void init(String datetime = "");
+  void init();
   void deepSleep();
   float getBatteryVoltage();
   uint8_t getBoardRevision();
