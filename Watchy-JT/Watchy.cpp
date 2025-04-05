@@ -284,9 +284,8 @@ void Watchy::showMenu(byte menuIndex, bool partialRefresh) {
   uint16_t w, h;
   int16_t yPos;
 
-  const char *menuItems[] = {
-      "About Watchy", "Show Accelerometer", "Set Time",
-      "Setup WiFi", "Sync Network"};
+  const char *menuItems[] = {"About Watchy", "Show Accelerometer", "Set Time",
+                             "Setup WiFi", "Sync Network"};
   for (int i = 0; i < MENU_LENGTH; i++) {
     yPos = MENU_HEIGHT + (MENU_HEIGHT * i);
     display.setCursor(0, yPos);
