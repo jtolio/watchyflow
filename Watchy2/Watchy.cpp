@@ -43,7 +43,10 @@ WatchyRTC rtc_;
 GxEPD2_BW<WatchyDisplay, WatchyDisplay::HEIGHT> display_(WatchyDisplay{});
 RTC_DATA_ATTR bool usbPluggedIn_;
 
-void deepSleep() {
+RTC_DATA_ATTR time_t lastFetchAttempt;
+RTC_DATA_ATTR uint8_t fetchTries;
+
+void Watchy::sleep() {
   display_.hibernate();
   rtc_.clearAlarm(); // resets the alarm flag in the RTC
 #ifdef ARDUINO_ESP32S3_DEV
@@ -84,7 +87,7 @@ void deepSleep() {
   esp_deep_sleep_start();
 }
 
-void Watchy::wakeup(WatchyApp *app) {
+void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   esp_sleep_wakeup_cause_t wakeup_reason;
   wakeup_reason = esp_sleep_get_wakeup_cause(); // get wake up reason
 #ifdef ARDUINO_ESP32S3_DEV
@@ -95,6 +98,41 @@ void Watchy::wakeup(WatchyApp *app) {
   rtc_.init();
   display_.epd2.initWatchy();
   display_.cp437(true);
+  display_.setFullWindow();
+  display_.epd2.asyncPowerOn();
+
+  switch (wakeup_reason) {
+#ifdef ARDUINO_ESP32S3_DEV
+  case ESP_SLEEP_WAKEUP_TIMER: // RTC Alarm
+#else
+  case ESP_SLEEP_WAKEUP_EXT0: // RTC Alarm
+#endif
+    break;
+  case ESP_SLEEP_WAKEUP_EXT1: // button Press
+    break;
+#ifdef ARDUINO_ESP32S3_DEV
+  case ESP_SLEEP_WAKEUP_EXT0: // USB plug in
+    pinMode(USB_DET_PIN, INPUT);
+    usbPluggedIn_ = (digitalRead(USB_DET_PIN) == 1);
+    break;
+#endif
+  default: // reset
+    rtc_.config("");
+#ifdef ARDUINO_ESP32S3_DEV
+    pinMode(USB_DET_PIN, INPUT);
+    usbPluggedIn_    = (digitalRead(USB_DET_PIN) == 1);
+    lastFetchAttempt = 0;
+    fetchTries       = 0;
+#endif
+    // For some reason, seems to be enabled on first boot
+    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+    break;
+  }
+
+  tmElements_t currentTime;
+  rtc_.read(currentTime);
+  Watchy watchy(currentTime);
+  bool partialRefresh = true;
 
   switch (wakeup_reason) {
 #ifdef ARDUINO_ESP32S3_DEV
@@ -107,44 +145,85 @@ void Watchy::wakeup(WatchyApp *app) {
   {
     uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
     if (wakeupBit & MENU_BTN_MASK) {
-      app->buttonSelect();
+      app->buttonSelect(&watchy);
     } else if (wakeupBit & BACK_BTN_MASK) {
-      app->buttonBack();
+      app->buttonBack(&watchy);
     } else if (wakeupBit & UP_BTN_MASK) {
-      app->buttonUp();
+      app->buttonUp(&watchy);
     } else if (wakeupBit & DOWN_BTN_MASK) {
-      app->buttonDown();
+      app->buttonDown(&watchy);
     }
   } break;
 #ifdef ARDUINO_ESP32S3_DEV
   case ESP_SLEEP_WAKEUP_EXT0: // USB plug in
-    pinMode(USB_DET_PIN, INPUT);
-    usbPluggedIn_ = (digitalRead(USB_DET_PIN) == 1);
     break;
 #endif
   default: // reset
-    rtc_.config("");
-#ifdef ARDUINO_ESP32S3_DEV
-    pinMode(USB_DET_PIN, INPUT);
-    usbPluggedIn_ = (digitalRead(USB_DET_PIN) == 1);
-#endif
-    // For some reason, seems to be enabled on first boot
-    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-    app->reset();
+    app->reset(&watchy);
+    partialRefresh = false;
     break;
   }
-  {
-    tmElements_t currentTime;
-    rtc_.read(currentTime);
-    display_.setFullWindow();
-    display_.epd2.asyncPowerOn();
-    Watchy watchy(currentTime);
-    app->show(&watchy);
-    display_.display(false);
+
+  app->show(&watchy, &display_);
+  display_.display(partialRefresh);
+
+  time_t now       = makeTime(currentTime);
+  time_t staleTime = now - settings.networkFetchIntervalSeconds;
+
+  if (fetchTries >= settings.networkFetchTries) {
+    if (lastFetchAttempt >= staleTime) {
+      return;
+    }
+    fetchTries = 0;
   }
-  deepSleep();
+
+  lastFetchAttempt = now;
+  fetchTries++;
+
+  if (WL_CONNECT_FAILED == WiFi.begin(settings.wifiSSID, settings.wifiPass)) {
+    return;
+  }
+  if (WL_CONNECTED != WiFi.waitForConnectResult()) {
+    WiFi.mode(WIFI_OFF);
+    btStop();
+    return;
+  }
+
+  if (app->fetchNetwork(&watchy)) {
+    fetchTries = settings.networkFetchTries;
+  }
+
+  WiFi.mode(WIFI_OFF);
+  btStop();
+
+  app->show(&watchy, &display_);
+  display_.display(true);
 }
 
-GxEPD2_BW<WatchyDisplay, WatchyDisplay::HEIGHT> *Watchy::display() {
-  return &display_;
+void Watchy::vibrate(uint8_t intervalMs, uint8_t length) {
+  pinMode(VIB_MOTOR_PIN, OUTPUT);
+  bool motorOn = false;
+  for (int i = 0; i < length; i++) {
+    motorOn = !motorOn;
+    digitalWrite(VIB_MOTOR_PIN, motorOn);
+    delay(intervalMs);
+  }
+}
+
+float Watchy::battVoltage() {
+#ifdef ARDUINO_ESP32S3_DEV
+  return analogReadMilliVolts(BATT_ADC_PIN) / 1000.0f * ADC_VOLTAGE_DIVIDER;
+#else
+  if (rtc_.rtcType == DS3231) {
+    return analogReadMilliVolts(BATT_ADC_PIN) / 1000.0f *
+           2.0f; // Battery voltage goes through a 1/2 divider.
+  } else {
+    return analogReadMilliVolts(BATT_ADC_PIN) / 1000.0f * 2.0f;
+  }
+#endif
+}
+
+void Watchy::triggerNetworkFetch() {
+  lastFetchAttempt = 0;
+  fetchTries       = 0;
 }

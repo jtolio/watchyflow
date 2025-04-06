@@ -1,0 +1,18 @@
+#ifndef SETTINGS_H
+#define SETTINGS_H
+
+CalendarSettings calSettings{
+    .calendarAccountURL = "https://path/to/calendar/server/with/account",
+    .metric             = false,
+    .weatherURL         = "http://api.openweathermap.org/data/2.5/"
+                          "weather?lat=0.0&lon=0.0&lang=en&units=imperial&appid=APIKEY",
+};
+
+WatchySettings watchSettings{
+    .networkFetchIntervalSeconds = 60 * 60,
+    .networkFetchTries           = 3,
+    .wifiSSID                    = "SSID",
+    .wifiPass                    = "PASSWORD",
+};
+
+#endif

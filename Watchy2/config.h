@@ -1,9 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// Versioning
-#define WATCHY_LIB_VER "1.4.14"
-
 // pins
 
 #ifdef ARDUINO_ESP32S3_DEV // V3
@@ -64,22 +61,10 @@
 #define VIB_MOTOR_PIN 13
 #define RTC_INT_PIN   27
 
-#if defined(ARDUINO_WATCHY_V10)
-#define UP_BTN_PIN   32
-#define BATT_ADC_PIN 33
-#define UP_BTN_MASK  (BIT64(32))
-#define RTC_TYPE     1 // DS3231
-#elif defined(ARDUINO_WATCHY_V15)
-#define UP_BTN_PIN   32
-#define BATT_ADC_PIN 35
-#define UP_BTN_MASK  (BIT64(32))
-#define RTC_TYPE     2 // PCF8563
-#elif defined(ARDUINO_WATCHY_V20)
 #define UP_BTN_PIN   35
 #define BATT_ADC_PIN 34
 #define UP_BTN_MASK  (BIT64(35))
 #define RTC_TYPE     2 // PCF8563
-#endif
 
 #define MENU_BTN_MASK (BIT64(26))
 #define BACK_BTN_MASK (BIT64(25))
@@ -90,34 +75,5 @@
 #endif
 
 #endif
-
-// display
-#define DISPLAY_WIDTH  200
-#define DISPLAY_HEIGHT 200
-// wifi
-#define WIFI_AP_TIMEOUT 60
-#define WIFI_AP_SSID    "Watchy AP"
-// menu
-#define WATCHFACE_STATE -1
-#define MAIN_MENU_STATE 0
-#define APP_STATE       1
-#define FW_UPDATE_STATE 2
-#define MENU_HEIGHT     25
-#define MENU_LENGTH     5
-// set time
-#define SET_HOUR   0
-#define SET_MINUTE 1
-#define SET_YEAR   2
-#define SET_MONTH  3
-#define SET_DAY    4
-#define HOUR_12_24 24
-// BLE OTA
-#define BLE_DEVICE_NAME        "Watchy BLE OTA"
-#define WATCHFACE_NAME         "Watchy 7 Segment"
-#define SOFTWARE_VERSION_MAJOR 1
-#define SOFTWARE_VERSION_MINOR 0
-#define SOFTWARE_VERSION_PATCH 0
-#define HARDWARE_VERSION_MAJOR 1
-#define HARDWARE_VERSION_MINOR 0
 
 #endif

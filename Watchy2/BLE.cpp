@@ -17,6 +17,12 @@
 #define STATUS_UPDATING     1
 #define STATUS_READY        2
 
+#define SOFTWARE_VERSION_MAJOR 1
+#define SOFTWARE_VERSION_MINOR 0
+#define SOFTWARE_VERSION_PATCH 0
+#define HARDWARE_VERSION_MAJOR 1
+#define HARDWARE_VERSION_MINOR 0
+
 esp_ota_handle_t otaHandler = 0;
 
 int status        = -1;
@@ -120,7 +126,7 @@ bool BLE::begin(const char *localName = "Watchy BLE OTA") {
                                 SOFTWARE_VERSION_MAJOR, SOFTWARE_VERSION_MINOR,
                                 SOFTWARE_VERSION_PATCH};
   pVersionCharacteristic->setValue((uint8_t *)hardwareVersion, 5);
-  pWatchFaceNameCharacteristic->setValue("Watchy 7 Segment");
+  pWatchFaceNameCharacteristic->setValue("Watchy");
 
   return true;
 }
