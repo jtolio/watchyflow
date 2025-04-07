@@ -41,10 +41,12 @@ WatchyRTC rtc_;
 #endif
 
 GxEPD2_BW<WatchyDisplay, WatchyDisplay::HEIGHT> display_(WatchyDisplay{});
-RTC_DATA_ATTR bool usbPluggedIn_;
 
-RTC_DATA_ATTR time_t lastFetchAttempt;
-RTC_DATA_ATTR uint8_t fetchTries;
+RTC_DATA_ATTR bool usbPluggedIn_;
+RTC_DATA_ATTR time_t lastFetchAttempt_;
+RTC_DATA_ATTR time_t lastSuccessfulNetworkFetch_;
+RTC_DATA_ATTR uint8_t fetchTries_;
+RTC_DATA_ATTR time_t timezoneOffset_;
 
 void Watchy::sleep() {
   display_.hibernate();
@@ -120,12 +122,17 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     rtc_.config("");
 #ifdef ARDUINO_ESP32S3_DEV
     pinMode(USB_DET_PIN, INPUT);
-    usbPluggedIn_    = (digitalRead(USB_DET_PIN) == 1);
-    lastFetchAttempt = 0;
-    fetchTries       = 0;
+    usbPluggedIn_ = (digitalRead(USB_DET_PIN) == 1);
+#else
+    usbPluggedIn_ = false;
 #endif
     // For some reason, seems to be enabled on first boot
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+
+    lastFetchAttempt_           = 0;
+    lastSuccessfulNetworkFetch_ = 0;
+    fetchTries_                 = 0;
+    timezoneOffset_             = settings.defaultTimezoneOffset;
     break;
   }
 
@@ -167,18 +174,23 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   app->show(&watchy, &display_);
   display_.display(partialRefresh);
 
-  time_t now       = makeTime(currentTime);
+  time_t now       = watchy.unixtime();
   time_t staleTime = now - settings.networkFetchIntervalSeconds;
 
-  if (fetchTries >= settings.networkFetchTries) {
-    if (lastFetchAttempt >= staleTime) {
+  if (fetchTries_ >= settings.networkFetchTries) {
+    // if lastFetchAttempt is in the future, perhaps the timezone
+    // just changed, so we don't want to count that.
+    if (lastFetchAttempt_ >= staleTime && lastFetchAttempt_ < now) {
+      // lastFetchAttempt is newer than staleTime but not in the future.
+      // nothing to do.
       return;
     }
-    fetchTries = 0;
+    // okay it's been long enough that we should start over on our try counter.
+    fetchTries_ = 0;
   }
 
-  lastFetchAttempt = now;
-  fetchTries++;
+  lastFetchAttempt_ = now;
+  fetchTries_++;
 
   if (WL_CONNECT_FAILED == WiFi.begin(settings.wifiSSID, settings.wifiPass)) {
     return;
@@ -189,8 +201,11 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     return;
   }
 
-  if (app->fetchNetwork(&watchy)) {
-    fetchTries = settings.networkFetchTries;
+  bool success    = app->fetchNetwork(&watchy);
+  bool ntpSuccess = syncNTP();
+  if (success && ntpSuccess) {
+    lastSuccessfulNetworkFetch_ = now;
+    fetchTries_                 = settings.networkFetchTries;
   }
 
   WiFi.mode(WIFI_OFF);
@@ -224,6 +239,51 @@ float Watchy::battVoltage() {
 }
 
 void Watchy::triggerNetworkFetch() {
-  lastFetchAttempt = 0;
-  fetchTries       = 0;
+  lastFetchAttempt_ = 0;
+  fetchTries_       = 0;
+}
+
+void Watchy::setTimezoneOffset(time_t seconds) {
+  // see comments in syncNTP and toUnixTime.
+  timezoneOffset_ = seconds;
+}
+
+time_t Watchy::toUnixTime(const tmElements_t &local) {
+  // the system clock is stored in the local timezone and not UTC, like most
+  // unix systems.
+  // the unix timestamp calculation is therefore off by the local timezone
+  // offset from UTC, so to fix it we need to subtract the timezoneOffset.
+  // note that time_t may be 32 bits, and may have a Y2038 problem. it may
+  // only make sense to use time_t for time deltas.
+  return makeTime(local) - timezoneOffset_;
+}
+
+tmElements_t Watchy::toLocalTime(time_t unix) {
+  // see comment in toUnixTime
+  tmElements_t local;
+  unix += timezoneOffset_;
+  breakTime(unix, local);
+  return local;
+}
+
+bool Watchy::syncNTP() {
+  // NTPClient is weird. you ask it for the local time, and then it gives
+  // you "epoch time" in local time, which is weird, because epoch time is
+  // supposed to always be UTC. c'est la vie. we'll keep this madness
+  // contained. syncNTP will set rtc_ to be the local time, given
+  // timezoneOffset. see comment in toUnixTime.
+  WiFiUDP ntpUDP;
+  NTPClient timeClient(ntpUDP, timezoneOffset_);
+  timeClient.begin();
+  if (!timeClient.forceUpdate()) {
+    return false;
+  }
+  tmElements_t tm;
+  breakTime((time_t)timeClient.getEpochTime(), tm);
+  rtc_.set(tm);
+  return true;
+}
+
+time_t Watchy::lastSuccessfulNetworkFetch() {
+  return lastSuccessfulNetworkFetch_;
 }

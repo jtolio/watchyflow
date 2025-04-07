@@ -2,7 +2,6 @@
 #include "Layout.h"
 #include "Watchy.h"
 #include <Fonts/Picopixel.h>
-#include <Fonts/FreeMono9pt7b.h>
 
 const GFXfont *SMALL_FONT          = &Picopixel;
 const time_t CALENDAR_PAST_SECONDS = 30 * 60;
@@ -11,25 +10,6 @@ const int16_t EVENT_PADDING        = 2;
 const time_t SECONDS_PER_PIXEL =
     SMALLEST_EVENT /
     ((int32_t)(SMALL_FONT->yAdvance - 1) + (2 * EVENT_PADDING));
-
-// TODO
-time_t gmtOffset = -4 * 60 * 60;
-
-time_t unixEpochTime(tmElements_t tm) {
-  // the system clock is stored in the local timezone and not UTC, like most
-  // unix systems.
-  // the unix timestamp calculation is therefore off by the local timezone
-  // offset from UTC, so to fix it we need to subtract the gmtOffset.
-  // note that time_t may be 32 bits, and may have a Y2038 problem. it may
-  // only make sense to use time_t for time deltas.
-  return makeTime(tm) - gmtOffset;
-}
-
-void fromUnixEpochTime(time_t ts, tmElements_t *tm) {
-  // see comment in unixEpochTime
-  ts += gmtOffset;
-  breakTime(ts, *tm);
-}
 
 void reset(dayEventsData *data) { data->eventCount = 0; }
 
@@ -138,7 +118,7 @@ void CalendarColumn::draw(Display *display, int16_t x0, int16_t y0,
   display->setFont(SMALL_FONT);
   display->setTextColor(color_);
 
-  time_t now         = unixEpochTime(currentTime_);
+  time_t now         = watchy_->unixtime();
   time_t windowStart = now - CALENDAR_PAST_SECONDS;
   time_t windowEnd   = windowStart + (targetHeight * SECONDS_PER_PIXEL);
 
@@ -153,8 +133,7 @@ void CalendarColumn::draw(Display *display, int16_t x0, int16_t y0,
       continue;
     }
 
-    tmElements_t eventStarttm;
-    fromUnixEpochTime(eventStart, &eventStarttm);
+    tmElements_t eventStarttm = watchy_->toLocalTime(eventStart);
     if (eventStarttm.Hour == currentTime_.Hour &&
         eventStarttm.Minute == currentTime_.Minute && currentTime_.Hour >= 6 &&
         currentTime_.Hour < 22) {
@@ -246,14 +225,14 @@ void CalendarHourBar::maybeDraw(Display *display, int16_t x0, int16_t y0,
   display->setFont(SMALL_FONT);
   display->setTextColor(color_);
 
-  time_t now         = unixEpochTime(currentTime_);
+  time_t now         = watchy_->unixtime();
   time_t windowStart = now - CALENDAR_PAST_SECONDS;
   time_t windowEnd   = windowStart + (targetHeight * SECONDS_PER_PIXEL);
 
   tmElements_t currentHour = currentTime_;
   currentHour.Minute       = 0;
   currentHour.Second       = 0;
-  time_t currentHourUnix   = unixEpochTime(currentHour);
+  time_t currentHourUnix   = watchy_->toUnixTime(currentHour);
   int currentHourNum       = currentHour.Hour;
 
   int16_t futureHours = (windowEnd - currentHourUnix) / 3600;
@@ -309,12 +288,12 @@ void CalendarAlarms::maybeDraw(Display *display, int16_t x0, int16_t y0,
                                uint16_t *width, uint16_t *height, bool noop) {
   *width                   = targetWidth;
   *height                  = 0;
-  tmElements_t currentTime = watchy_->time();
+  tmElements_t currentTime = watchy_->localtime();
 
-  display->setFont(&FreeMono9pt7b);
+  display->setFont(NULL);
   display->setTextColor(color_);
 
-  time_t now         = unixEpochTime(currentTime);
+  time_t now         = watchy_->unixtime();
   time_t windowStart = now - (2 * 60);
   time_t windowEnd   = now + (60 * 60);
   for (int i = 0; i < data_->alarmCount; i++) {
@@ -325,8 +304,7 @@ void CalendarAlarms::maybeDraw(Display *display, int16_t x0, int16_t y0,
     if (alarm->start > windowEnd) {
       continue;
     }
-    tmElements_t alarmtm;
-    fromUnixEpochTime(alarm->start, &alarmtm);
+    tmElements_t alarmtm = watchy_->toLocalTime(alarm->start);
     if (!noop && alarmtm.Minute == currentTime.Minute &&
         alarmtm.Hour == currentTime.Hour) {
       watchy_->vibrate(100, 10);

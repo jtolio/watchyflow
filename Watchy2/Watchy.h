@@ -19,6 +19,8 @@ typedef struct WatchySettings {
   // WiFi settings (TODO, support more than one)
   String wifiSSID;
   String wifiPass;
+
+  time_t defaultTimezoneOffset;
 } WatchySettings;
 
 class Watchy {
@@ -27,17 +29,26 @@ public:
   static void sleep();
 
 public:
-  tmElements_t time() { return time_; }
+  tmElements_t localtime() { return time_; }
+  time_t unixtime() { return toUnixTime(time_); }
+
+  tmElements_t toLocalTime(time_t unix);
+  time_t toUnixTime(const tmElements_t &local);
+
   void vibrate(uint8_t intervalMs = 100, uint8_t length = 20);
   float battVoltage();
 
-  // TODO
-  void setTimezoneOffset(time_t offset) {}
+  // offset is the offset in seconds that the local time is from UTC.
+  // e.g., EST is (-5 * 60 * 60).
+  void setTimezoneOffset(time_t offset);
 
   void triggerNetworkFetch();
+  time_t lastSuccessfulNetworkFetch();
 
 protected:
   Watchy(const tmElements_t &currentTime) : time_(currentTime) {}
+
+  static bool syncNTP();
 
 private:
   tmElements_t time_;

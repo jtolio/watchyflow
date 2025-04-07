@@ -23,8 +23,6 @@ RTC_DATA_ATTR eventsData calendar[MAX_CALENDAR_COLUMNS];
 RTC_DATA_ATTR alarmsData alarms;
 RTC_DATA_ATTR uint8_t activeCalendarColumns;
 RTC_DATA_ATTR char calendarError[32];
-RTC_DATA_ATTR time_t lastCalendarFetch;
-RTC_DATA_ATTR time_t lastWeatherFetch;
 RTC_DATA_ATTR uint16_t lastTemperature;
 
 void zeroError() {
@@ -38,17 +36,11 @@ void CalendarFace::reset(Watchy *watchy) {
   ::reset(&calendar[0]);
   ::reset(&alarms);
   ::reset(&calendarDay);
-  lastCalendarFetch = 0;
-  lastWeatherFetch  = 0;
-  lastTemperature   = 0;
+  lastTemperature = 0;
   zeroError();
 }
 
-void CalendarFace::buttonBack(Watchy *watchy) {
-  watchy->triggerNetworkFetch();
-  lastCalendarFetch = 0;
-  lastWeatherFetch  = 0;
-}
+void CalendarFace::buttonBack(Watchy *watchy) { watchy->triggerNetworkFetch(); }
 
 bool CalendarFace::fetchNetwork(Watchy *watchy) {
   bool success = true;
@@ -81,7 +73,6 @@ bool CalendarFace::fetchNetwork(Watchy *watchy) {
       String payload         = http.getString();
       JSONVar responseObject = JSON.parse(payload);
       lastTemperature        = int(responseObject["main"]["temp"]);
-      lastWeatherFetch       = unixEpochTime(watchy->time());
       watchy->setTimezoneOffset(int(responseObject["timezone"]));
     } else {
       success = false;
@@ -108,7 +99,6 @@ void CalendarFace::parseCalendar(Watchy *watchy, String payload) {
     return;
   }
 
-  lastCalendarFetch     = unixEpochTime(watchy->time());
   activeCalendarColumns = (uint8_t)(int)parsed["columns"];
   if (activeCalendarColumns >= MAX_CALENDAR_COLUMNS) {
     activeCalendarColumns = MAX_CALENDAR_COLUMNS;
@@ -194,7 +184,7 @@ String secondsToReadable(time_t val) {
 bool CalendarFace::show(Watchy *watchy, Display *display) {
   display->fillScreen(BACKGROUND_COLOR);
   display->setTextWrap(false);
-  tmElements_t currentTime = watchy->time();
+  tmElements_t currentTime = watchy->localtime();
 
   uint16_t color = FOREGROUND_COLOR;
 
@@ -227,8 +217,9 @@ bool CalendarFace::show(Watchy *watchy, Display *display) {
   LayoutBitmap elWifi(wifioff, 26, 18, color);
   LayoutText elTemp(weatherStr, &Seven_Segment10pt7b, color);
   LayoutElement *elTempOrWifi = &elWifi;
-  if (lastWeatherFetch + MAX_SECONDS_BETWEEN_WEATHER_UPDATES >=
-      unixEpochTime(currentTime)) {
+  time_t lastSuccessfulFetch  = watchy->lastSuccessfulNetworkFetch();
+  if (lastSuccessfulFetch + MAX_SECONDS_BETWEEN_WEATHER_UPDATES >=
+      watchy->unixtime()) {
     elTempOrWifi = &elTemp;
   }
   LayoutCenter elTempOrWifiCentered(elTempOrWifi);
@@ -244,15 +235,10 @@ bool CalendarFace::show(Watchy *watchy, Display *display) {
 
   String errorMessage = calendarError;
   if (errorMessage.length() == 0) {
-    time_t oldestFetch = lastCalendarFetch;
-    if (oldestFetch > lastWeatherFetch) {
-      oldestFetch = lastWeatherFetch;
+    if (lastSuccessfulFetch > 0) {
+      time_t age   = watchy->unixtime() - lastSuccessfulFetch;
+      errorMessage = secondsToReadable(age);
     }
-    time_t age = unixEpochTime(currentTime) - oldestFetch;
-    if (oldestFetch <= 0) {
-      age = -24 * 60 * 60;
-    }
-    errorMessage = secondsToReadable(age);
   }
   LayoutText elError(errorMessage, &Picopixel, color);
   LayoutCenter elErrorCenter(&elError);
@@ -266,7 +252,7 @@ bool CalendarFace::show(Watchy *watchy, Display *display) {
 
   CalendarDayEvents elCalendarDay(&calendarDay, currentTime, color);
 
-  CalendarHourBar elCalHourBar(currentTime, color);
+  CalendarHourBar elCalHourBar(watchy, color);
 
   CalendarColumn elCals[activeCalendarColumns];
   LayoutElement *elCalColElems[activeCalendarColumns + 1];

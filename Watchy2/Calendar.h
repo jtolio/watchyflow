@@ -84,7 +84,7 @@ public:
   }
 
   CalendarColumn(eventsData *data, Watchy *watchy, uint16_t color)
-      : data_(data), watchy_(watchy), currentTime_(watchy->time()),
+      : data_(data), watchy_(watchy), currentTime_(watchy->localtime()),
         color_(color) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
@@ -110,8 +110,8 @@ private:
 
 class CalendarHourBar : public LayoutElement {
 public:
-  CalendarHourBar(tmElements_t currentTime, uint16_t color)
-      : currentTime_(currentTime), color_(color) {}
+  CalendarHourBar(Watchy *watchy, uint16_t color)
+      : watchy_(watchy), currentTime_(watchy->localtime()), color_(color) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
@@ -128,6 +128,7 @@ private:
                  bool noop);
 
 private:
+  Watchy *watchy_;
   tmElements_t currentTime_;
   uint16_t color_;
 };

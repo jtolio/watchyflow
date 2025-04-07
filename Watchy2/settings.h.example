@@ -13,6 +13,9 @@ WatchySettings watchSettings{
     .networkFetchTries           = 3,
     .wifiSSID                    = "SSID",
     .wifiPass                    = "PASSWORD",
+
+    // EST. will get fixed by weather api for EDT.
+    .defaultTimezoneOffset = -5 * 60 * 60,
 };
 
 #endif

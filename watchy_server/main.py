@@ -238,7 +238,7 @@ class CalHandler(BaseHTTPRequestHandler):
 
         when = (query.get("time") or ["now"])[-1]
         if when == "now":
-            when = datetime.datetime.now()
+            when = datetime.datetime.now().astimezone(TIMEZONE)
         else:
             when = dateutil.parser.parse(when)
 
