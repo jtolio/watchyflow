@@ -1,8 +1,10 @@
-#include "WatchyFace.h"
+#include "Watchy.h"
+#include "CalendarFace.h"
 #include "settings.h"
 
-WatchyFace watchy(settings);
+void setup() {
+  CalendarFace app(calSettings);
+  Watchy::wakeup(&app, watchSettings);
+}
 
-void setup() { watchy.init(); }
-
-void loop() {}
+void loop() { Watchy::sleep(); }

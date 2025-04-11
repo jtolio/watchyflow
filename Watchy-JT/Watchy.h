@@ -1,118 +1,71 @@
 #ifndef WATCHY_H
 #define WATCHY_H
 
-#include <Arduino.h>
-#include <WiFiManager.h>
-#include <HTTPClient.h>
-#include <NTPClient.h>
-#include <WiFiUdp.h>
-#include <Arduino_JSON.h>
+#include <TimeLib.h>
 #include <GxEPD2_BW.h>
-#include <Wire.h>
-#include <Fonts/FreeMonoBold9pt7b.h>
-#include "DSEG7_Classic_Bold_53.h"
 #include "Display.h"
-#include "BLE.h"
-#include "bma.h"
-#include "config.h"
-#include "esp_chip_info.h"
-#ifdef ARDUINO_ESP32S3_DEV
-#include "Watchy32KRTC.h"
-#include "soc/rtc.h"
-#include "soc/rtc_io_reg.h"
-#include "soc/sens_reg.h"
-#include "esp_sleep.h"
-#include "rom/rtc.h"
-#include "soc/soc.h"
-#include "soc/rtc_cntl_reg.h"
-#include "time.h"
-#include "esp_sntp.h"
-#include "hal/rtc_io_types.h"
-#include "driver/rtc_io.h"
-#define uS_TO_S_FACTOR                                                         \
-  1000000ULL // Conversion factor for micro seconds to seconds
-#define ADC_VOLTAGE_DIVIDER                                                    \
-  ((360.0f + 100.0f) / 360.0f) // Voltage divider at battery ADC
-#else
-#include "WatchyRTC.h"
-#endif
 
-typedef struct watchySettings {
-  // Weather Settings
-  String cityID;
-  String lat;
-  String lon;
-  String weatherAPIKey;
-  String weatherURL;
-  String weatherUnit;
-  String weatherLang;
-  int8_t weatherUpdateInterval;
-  // NTP Settings
-  String ntpServer;
-  int gmtOffset;
-  //
-  bool vibrateOClock;
-  String calendarAccountURL;
-} watchySettings;
+class WatchyApp;
+
+typedef GxEPD2_BW<WatchyDisplay, WatchyDisplay::HEIGHT> Display;
+
+typedef struct WatchySettings {
+  // number of seconds between network fetch attempts
+  int networkFetchIntervalSeconds;
+  // number of failing network fetch tries before giving up until the next
+  // interval.
+  int networkFetchTries;
+
+  // WiFi settings (TODO, support more than one)
+  String wifiSSID;
+  String wifiPass;
+
+  time_t defaultTimezoneOffset;
+} WatchySettings;
 
 class Watchy {
 public:
-#ifdef ARDUINO_ESP32S3_DEV
-  static Watchy32KRTC RTC;
-#else
-  static WatchyRTC RTC;
-#endif
-  static GxEPD2_BW<WatchyDisplay, WatchyDisplay::HEIGHT> display;
-  tmElements_t currentTime;
-  watchySettings settings;
+  static void wakeup(WatchyApp *app, WatchySettings settings);
+  static void sleep();
 
 public:
-  explicit Watchy(const watchySettings &s) : settings(s) {} // constructor
-  void init();
-  void deepSleep();
-  float getBatteryVoltage();
-  uint8_t getBoardRevision();
-  void vibMotor(uint8_t intervalMs = 100, uint8_t length = 20);
+  tmElements_t localtime() { return time_; }
+  time_t unixtime() { return toUnixTime(time_); }
 
-  virtual void handleButtonPress();
-  void showMenu(byte menuIndex, bool partialRefresh);
-  void showFastMenu(byte menuIndex);
-  void showAbout();
-  void showBuzz();
-  void showAccelerometer();
-  void showUpdateFW();
-  void showSync();
-  bool syncNTP();
-  bool syncNTP(long gmt);
-  bool syncNTP(long gmt, String ntpServer);
-  void setTime();
-  void setupWifi();
-  bool connectWiFi();
-  void updateFWBegin();
+  tmElements_t toLocalTime(time_t unix);
+  time_t toUnixTime(const tmElements_t &local);
 
-  void showWatchFace(bool partialRefresh);
-  virtual void drawWatchFace(); // override this method for different watch
-                                // faces
-  virtual void postDraw();      // called after the watchface update.
-  virtual void
-  deviceReset(); // called when RTC_DATA_ATTR variables should be initialized.
-  virtual void triggerSync(); // called when the user requests a network sync.
+  void vibrate(uint8_t intervalMs = 100, uint8_t length = 20);
+  float battVoltage();
+
+  // offset is the offset in seconds that the local time is from UTC.
+  // e.g., EST is (-5 * 60 * 60).
+  void setTimezoneOffset(time_t offset);
+
+  void triggerNetworkFetch();
+  time_t lastSuccessfulNetworkFetch();
+
+protected:
+  Watchy(const tmElements_t &currentTime) : time_(currentTime) {}
+
+  static bool syncNTP();
 
 private:
-  void _bmaConfig();
-  static void _configModeCallback(WiFiManager *myWiFiManager);
-  static uint16_t _readRegister(uint8_t address, uint8_t reg, uint8_t *data,
-                                uint16_t len);
-  static uint16_t _writeRegister(uint8_t address, uint8_t reg, uint8_t *data,
-                                 uint16_t len);
+  tmElements_t time_;
 };
 
-extern RTC_DATA_ATTR int guiState;
-extern RTC_DATA_ATTR int menuIndex;
-extern RTC_DATA_ATTR BMA423 sensor;
-extern RTC_DATA_ATTR bool WIFI_CONFIGURED;
-extern RTC_DATA_ATTR bool BLE_CONFIGURED;
-extern RTC_DATA_ATTR bool USB_PLUGGED_IN;
-extern RTC_DATA_ATTR long gmtOffset;
+class WatchyApp {
+public:
+  virtual bool show(Watchy *watchy, Display *display) = 0;
+  virtual bool fetchNetwork(Watchy *watchy) { return true; }
+
+  virtual void reset(Watchy *watchy) {}
+  virtual void buttonUp(Watchy *watchy) {}
+  virtual void buttonDown(Watchy *watchy) {}
+  virtual void buttonSelect(Watchy *watchy) {}
+  virtual void buttonBack(Watchy *watchy) {}
+
+  virtual ~WatchyApp() = default;
+};
 
 #endif

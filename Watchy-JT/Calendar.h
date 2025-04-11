@@ -1,7 +1,6 @@
 #ifndef CALENDAR_H
 #define CALENDAR_H
 
-#include "Watchy.h"
 #include "Layout.h"
 
 const uint8_t MAX_EVENT_NAME_LEN    = 24;
@@ -57,18 +56,18 @@ public:
                     uint16_t color)
       : data_(data), currentTime_(currentTime), color_(color) {}
 
-  void size(uint16_t targetWidth, uint16_t targetHeight, uint16_t *width,
-            uint16_t *height) override {
-    maybeDraw(0, 0, targetWidth, targetHeight, width, height, true);
+  void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override {
+    maybeDraw(display, 0, 0, targetWidth, targetHeight, width, height, true);
   }
 
-  void draw(int16_t x0, int16_t y0, uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override {
-    maybeDraw(x0, y0, targetWidth, targetHeight, width, height, false);
+  void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
+            uint16_t targetHeight, uint16_t *width, uint16_t *height) override {
+    maybeDraw(display, x0, y0, targetWidth, targetHeight, width, height, false);
   }
 
 private:
-  void maybeDraw(int16_t x0, int16_t y0, uint16_t targetWidth,
+  void maybeDraw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
                  uint16_t targetHeight, uint16_t *width, uint16_t *height,
                  bool noop);
 
@@ -85,21 +84,22 @@ public:
   }
 
   CalendarColumn(eventsData *data, Watchy *watchy, uint16_t color)
-      : data_(data), watchy_(watchy), currentTime_(watchy->currentTime),
+      : data_(data), watchy_(watchy), currentTime_(watchy->localtime()),
         color_(color) {}
 
-  void size(uint16_t targetWidth, uint16_t targetHeight, uint16_t *width,
-            uint16_t *height) override {
+  void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override {
     *width  = targetWidth;
     *height = targetHeight;
   }
 
-  void draw(int16_t x0, int16_t y0, uint16_t targetWidth, uint16_t targetHeight,
-            uint16_t *width, uint16_t *height) override;
+  void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
+            uint16_t targetHeight, uint16_t *width, uint16_t *height) override;
 
 private:
-  void resizeText(char *text, uint8_t buflen, uint16_t width, uint16_t height,
-                  int16_t *x1, int16_t *y1, uint16_t *tw, uint16_t *th);
+  void resizeText(Display *display, char *text, uint8_t buflen, uint16_t width,
+                  uint16_t height, int16_t *x1, int16_t *y1, uint16_t *tw,
+                  uint16_t *th);
 
 private:
   eventsData *data_;
@@ -110,24 +110,25 @@ private:
 
 class CalendarHourBar : public LayoutElement {
 public:
-  CalendarHourBar(tmElements_t currentTime, uint16_t color)
-      : currentTime_(currentTime), color_(color) {}
+  CalendarHourBar(Watchy *watchy, uint16_t color)
+      : watchy_(watchy), currentTime_(watchy->localtime()), color_(color) {}
 
-  void size(uint16_t targetWidth, uint16_t targetHeight, uint16_t *width,
-            uint16_t *height) override {
-    maybeDraw(0, 0, targetWidth, targetHeight, width, height, true);
-  }
-  void draw(int16_t x0, int16_t y0, uint16_t targetWidth, uint16_t targetHeight,
+  void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
-    maybeDraw(x0, y0, targetWidth, targetHeight, width, height, false);
+    maybeDraw(display, 0, 0, targetWidth, targetHeight, width, height, true);
+  }
+  void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
+            uint16_t targetHeight, uint16_t *width, uint16_t *height) override {
+    maybeDraw(display, x0, y0, targetWidth, targetHeight, width, height, false);
   }
 
 private:
-  void maybeDraw(int16_t x0, int16_t y0, uint16_t targetWidth,
+  void maybeDraw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
                  uint16_t targetHeight, uint16_t *width, uint16_t *height,
                  bool noop);
 
 private:
+  Watchy *watchy_;
   tmElements_t currentTime_;
   uint16_t color_;
 };
@@ -137,17 +138,17 @@ public:
   CalendarAlarms(alarmsData *data, Watchy *watchy, uint16_t color)
       : data_(data), watchy_(watchy), color_(color) {}
 
-  void size(uint16_t targetWidth, uint16_t targetHeight, uint16_t *width,
-            uint16_t *height) override {
-    maybeDraw(0, 0, targetWidth, targetHeight, width, height, true);
-  }
-  void draw(int16_t x0, int16_t y0, uint16_t targetWidth, uint16_t targetHeight,
+  void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
-    maybeDraw(x0, y0, targetWidth, targetHeight, width, height, false);
+    maybeDraw(display, 0, 0, targetWidth, targetHeight, width, height, true);
+  }
+  void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
+            uint16_t targetHeight, uint16_t *width, uint16_t *height) override {
+    maybeDraw(display, x0, y0, targetWidth, targetHeight, width, height, false);
   }
 
 private:
-  void maybeDraw(int16_t x0, int16_t y0, uint16_t targetWidth,
+  void maybeDraw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
                  uint16_t targetHeight, uint16_t *width, uint16_t *height,
                  bool noop);
 
