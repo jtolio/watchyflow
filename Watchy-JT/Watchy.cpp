@@ -171,8 +171,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     break;
   }
 
-  app->show(&watchy, &display_);
-  display_.display(partialRefresh);
+  app->show(&watchy, &display_, partialRefresh);
 
   time_t now       = watchy.unixtime();
   time_t staleTime = now - settings.networkFetchIntervalSeconds;
@@ -211,8 +210,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   WiFi.mode(WIFI_OFF);
   btStop();
 
-  app->show(&watchy, &display_);
-  display_.display(true);
+  app->show(&watchy, &display_, true);
 }
 
 void Watchy::vibrate(uint8_t intervalMs, uint8_t length) {

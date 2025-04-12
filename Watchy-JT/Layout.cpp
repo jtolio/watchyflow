@@ -295,6 +295,33 @@ void LayoutCenter::draw(Display *display, int16_t x0, int16_t y0,
   }
 }
 
+void LayoutHCenter::size(Display *display, uint16_t targetWidth,
+                         uint16_t targetHeight, uint16_t *width,
+                         uint16_t *height) {
+  child_->size(display, targetWidth, targetHeight, width, height);
+  if (*width < targetWidth) {
+    *width = targetWidth;
+  }
+}
+
+void LayoutHCenter::draw(Display *display, int16_t x0, int16_t y0,
+                         uint16_t targetWidth, uint16_t targetHeight,
+                         uint16_t *width, uint16_t *height) {
+  int16_t x0_offset = 0;
+
+  child_->size(display, targetWidth, targetHeight, width, height);
+  if (*width < targetWidth) {
+    x0_offset = (targetWidth - *width) / 2;
+  }
+
+  child_->draw(display, x0 + x0_offset, y0, *width, *height, width, height);
+
+  *width += x0_offset;
+  if (*width < targetWidth) {
+    *width = targetWidth;
+  }
+}
+
 LayoutPad::LayoutPad(LayoutElement *child, int16_t padTop, int16_t padRight,
                      int16_t padBottom, int16_t padLeft)
     : child_(child), padTop_(padTop), padRight_(padRight),
@@ -355,4 +382,18 @@ void LayoutBorder::draw(Display *display, int16_t x0, int16_t y0,
   if (pad_.padRight() > 0) {
     display->drawFastVLine(x0 + *width - 1, y0, *height, color_);
   }
+}
+
+void LayoutBackground::size(Display *display, uint16_t targetWidth,
+                            uint16_t targetHeight, uint16_t *width,
+                            uint16_t *height) {
+  child_->size(display, targetWidth, targetHeight, width, height);
+}
+
+void LayoutBackground::draw(Display *display, int16_t x0, int16_t y0,
+                            uint16_t targetWidth, uint16_t targetHeight,
+                            uint16_t *width, uint16_t *height) {
+  child_->size(display, targetWidth, targetHeight, width, height);
+  display->fillRect(x0, y0, *width, *height, color_);
+  child_->draw(display, x0, y0, targetWidth, targetHeight, width, height);
 }

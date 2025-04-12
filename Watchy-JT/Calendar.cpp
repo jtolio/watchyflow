@@ -3,13 +3,13 @@
 #include "Watchy.h"
 #include <Fonts/Picopixel.h>
 
-const GFXfont *SMALL_FONT          = &Picopixel;
+const GFXfont *SMALL_FONT          = NULL;
+const int32_t SMALL_FONT_HEIGHT    = 7;
 const time_t CALENDAR_PAST_SECONDS = 30 * 60;
 const time_t SMALLEST_EVENT        = 30 * 60;
 const int16_t EVENT_PADDING        = 2;
 const time_t SECONDS_PER_PIXEL =
-    SMALLEST_EVENT /
-    ((int32_t)(SMALL_FONT->yAdvance - 1) + (2 * EVENT_PADDING));
+    SMALLEST_EVENT / ((int32_t)(SMALL_FONT_HEIGHT) + (2 * EVENT_PADDING));
 
 void reset(dayEventsData *data) { data->eventCount = 0; }
 

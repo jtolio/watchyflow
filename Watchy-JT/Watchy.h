@@ -56,14 +56,14 @@ private:
 
 class WatchyApp {
 public:
-  virtual bool show(Watchy *watchy, Display *display) = 0;
+  virtual bool show(Watchy *watchy, Display *display, bool partialRefresh) = 0;
   virtual bool fetchNetwork(Watchy *watchy) { return true; }
 
   virtual void reset(Watchy *watchy) {}
   virtual void buttonUp(Watchy *watchy) {}
   virtual void buttonDown(Watchy *watchy) {}
   virtual void buttonSelect(Watchy *watchy) {}
-  virtual void buttonBack(Watchy *watchy) {}
+  virtual bool buttonBack(Watchy *watchy) { return true; }
 
   virtual ~WatchyApp() = default;
 };

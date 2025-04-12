@@ -40,8 +40,6 @@ void CalendarFace::reset(Watchy *watchy) {
   zeroError();
 }
 
-void CalendarFace::buttonBack(Watchy *watchy) { watchy->triggerNetworkFetch(); }
-
 bool CalendarFace::fetchNetwork(Watchy *watchy) {
   bool success = true;
   {
@@ -181,7 +179,7 @@ String secondsToReadable(time_t val) {
   return String(val) + "d";
 }
 
-bool CalendarFace::show(Watchy *watchy, Display *display) {
+bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   display->fillScreen(BACKGROUND_COLOR);
   display->setTextWrap(false);
   tmElements_t currentTime = watchy->localtime();
@@ -289,5 +287,6 @@ bool CalendarFace::show(Watchy *watchy, Display *display) {
   uint16_t w, h;
   elPaddedScreen.draw(display, 0, 0, display->width(), display->height(), &w,
                       &h);
+  display->display(partialRefresh);
   return true;
 }
