@@ -13,7 +13,7 @@ public:
     display->setTextWrap(true);
     display->setTextColor(GxEPD_BLACK);
     display->setCursor(5, 10);
-    display->println("github.com/jtolio/watchy");
+    display->println("github.com/jtolio/watchyflow");
     display->display(partialRefresh);
     return true;
   }
