@@ -22,7 +22,7 @@ import requests
 TIMEZONE = timezone("US/Eastern")
 ICAL_CACHE_TIME_SECS = 50 * 60
 HOURS_PAST = 1
-HOURS_FUTURE = 11
+HOURS_FUTURE = 36
 MINIMUM_MINUTES_PER_COLUMN = 30
 
 
@@ -35,7 +35,9 @@ class CalendarProcessor:
         self.excluded_events = set(excluded_events or [])
 
     @classmethod
-    def fetch_calendar(cls, url):
+    def fetch_calendar(cls, url, force_cache_miss=False):
+        if force_cache_miss and url in cls.calendar_cache:
+            del cls.calendar_cache[url]
         cached = cls.calendar_cache.get(url, {})
         ts = cached.get("ts", 0)
         if ts + ICAL_CACHE_TIME_SECS > time.time():
@@ -109,7 +111,9 @@ class CalendarProcessor:
                 return False
         return True
 
-    def get_events(self, calendar_urls, start_time, end_time=None):
+    def get_events(
+        self, calendar_urls, start_time, end_time=None, force_cache_miss=False
+    ):
         if end_time is None:
             end_time = start_time + datetime.timedelta(hours=HOURS_FUTURE)
 
@@ -118,7 +122,9 @@ class CalendarProcessor:
 
         for url in calendar_urls:
             try:
-                calendar = CalendarProcessor.fetch_calendar(url)
+                calendar = CalendarProcessor.fetch_calendar(
+                    url, force_cache_miss=force_cache_miss
+                )
             except Exception as e:
                 logging.error(f"Error fetching calendar {url}: {e}")
 
@@ -246,7 +252,10 @@ class CalHandler(BaseHTTPRequestHandler):
         processor = CalendarProcessor(
             user_emails=emails, excluded_events=excluded_events
         )
-        all_events, columns = processor.get_events(ical_urls, start)
+        force_cache_miss = (query.get("force_cache_miss") or ["false"])[-1] == "true"
+        all_events, columns = processor.get_events(
+            ical_urls, start, force_cache_miss=force_cache_miss
+        )
 
         self.send_response(200)
         self.send_header("Content-Type", "application/json")

@@ -4,7 +4,7 @@
 #include <Fonts/Picopixel.h>
 
 const GFXfont *SMALL_FONT          = NULL;
-const int32_t SMALL_FONT_HEIGHT    = 7;
+const int32_t SMALL_FONT_HEIGHT    = 8;
 const time_t CALENDAR_PAST_SECONDS = 30 * 60;
 const time_t SMALLEST_EVENT        = 30 * 60;
 const int16_t EVENT_PADDING        = 2;
@@ -68,11 +68,13 @@ void CalendarDayEvents::maybeDraw(Display *display, int16_t x0, int16_t y0,
   display->setFont(SMALL_FONT);
   display->setTextColor(color_);
 
-  String today = String(tmYearToCalendar(currentTime_.Year));
-  today += (currentTime_.Month < 10) ? "-0" : "-";
-  today += String(currentTime_.Month);
-  today += (currentTime_.Day < 10) ? "-0" : "-";
-  today += String(currentTime_.Day);
+  tmElements_t drawnTime = watchy_->toLocalTime(watchy_->unixtime() + offset_);
+
+  String today = String(tmYearToCalendar(drawnTime.Year));
+  today += (drawnTime.Month < 10) ? "-0" : "-";
+  today += String(drawnTime.Month);
+  today += (drawnTime.Day < 10) ? "-0" : "-";
+  today += String(drawnTime.Day);
 
   for (int i = 0; i < data_->eventCount; i++) {
     String text = data_->events[i].summary;
@@ -118,9 +120,10 @@ void CalendarColumn::draw(Display *display, int16_t x0, int16_t y0,
   display->setFont(SMALL_FONT);
   display->setTextColor(color_);
 
-  time_t now         = watchy_->unixtime();
-  time_t windowStart = now - CALENDAR_PAST_SECONDS;
-  time_t windowEnd   = windowStart + (targetHeight * SECONDS_PER_PIXEL);
+  tmElements_t currentTime = watchy_->localtime();
+  time_t windowOffset      = watchy_->unixtime() + offset_;
+  time_t windowStart       = windowOffset - CALENDAR_PAST_SECONDS;
+  time_t windowEnd         = windowStart + (targetHeight * SECONDS_PER_PIXEL);
 
   for (int i = 0; i < data_->eventCount; i++) {
     eventData *event  = &(data_->events[i]);
@@ -134,9 +137,11 @@ void CalendarColumn::draw(Display *display, int16_t x0, int16_t y0,
     }
 
     tmElements_t eventStarttm = watchy_->toLocalTime(eventStart);
-    if (eventStarttm.Hour == currentTime_.Hour &&
-        eventStarttm.Minute == currentTime_.Minute && currentTime_.Hour >= 6 &&
-        currentTime_.Hour < 22) {
+    if (eventStarttm.Day == currentTime.Day &&
+        eventStarttm.Hour == currentTime.Hour &&
+        eventStarttm.Minute == currentTime.Minute &&
+        // TODO: configurable
+        currentTime.Hour >= 6 && currentTime.Hour < 22) {
       watchy_->vibrate(75, 5);
     }
 
@@ -225,11 +230,12 @@ void CalendarHourBar::maybeDraw(Display *display, int16_t x0, int16_t y0,
   display->setFont(SMALL_FONT);
   display->setTextColor(color_);
 
-  time_t now         = watchy_->unixtime();
-  time_t windowStart = now - CALENDAR_PAST_SECONDS;
-  time_t windowEnd   = windowStart + (targetHeight * SECONDS_PER_PIXEL);
+  time_t now          = watchy_->unixtime();
+  time_t windowOffset = now + offset_;
+  time_t windowStart  = windowOffset - CALENDAR_PAST_SECONDS;
+  time_t windowEnd    = windowStart + (targetHeight * SECONDS_PER_PIXEL);
 
-  tmElements_t currentHour = currentTime_;
+  tmElements_t currentHour = watchy_->localtime();
   currentHour.Minute       = 0;
   currentHour.Second       = 0;
   time_t currentHourUnix   = watchy_->toUnixTime(currentHour);
@@ -265,8 +271,10 @@ void CalendarHourBar::maybeDraw(Display *display, int16_t x0, int16_t y0,
   }
 
   if (!noop) {
-    display->drawFastHLine(x0, y0 + ((now - windowStart) / SECONDS_PER_PIXEL),
-                           *width, color_);
+    if (now >= windowStart && now < windowEnd) {
+      display->drawFastHLine(x0, y0 + ((now - windowStart) / SECONDS_PER_PIXEL),
+                             *width, color_);
+    }
 
     for (int i = -(CALENDAR_PAST_SECONDS / 3600) - 1; i <= futureHours; i++) {
       time_t hourTime = currentHourUnix + (i * 60 * 60);

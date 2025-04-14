@@ -28,13 +28,29 @@ public:
   }
 };
 
+class TriggerCalendarReset : public WatchyApp {
+public:
+  explicit TriggerCalendarReset(CalendarFace *cal) : cal_(cal) {}
+  virtual bool show(Watchy *watchy, Display *display,
+                    bool partialRefresh) override {
+    cal_->forceCacheMiss();
+    watchy->triggerNetworkFetch();
+    return false;
+  }
+
+private:
+  CalendarFace *cal_;
+};
+
 void setup() {
   CalendarFace app(calSettings);
   AboutApp about;
   TriggerNetworkFetchApp netFetch;
-  WatchyApp *menuItems[] = {&about, &netFetch};
-  String menuNames[]     = {"About", "Trigger Network Fetch"};
-  MenuApp menu(&rootMenu, &app, 2, menuItems, menuNames);
+  TriggerCalendarReset calReset(&app);
+  WatchyApp *menuItems[] = {&about, &netFetch, &calReset};
+  String menuNames[]     = {"About", "Trigger Network Fetch",
+                            "Trigger Calendar Reset"};
+  MenuApp menu(&rootMenu, &app, 3, menuItems, menuNames);
   Watchy::wakeup(&menu, watchSettings);
 }
 

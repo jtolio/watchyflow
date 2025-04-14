@@ -4,7 +4,7 @@
 #include "Layout.h"
 
 const uint8_t MAX_EVENT_NAME_LEN    = 24;
-const uint8_t MAX_EVENTS_PER_COLUMN = 16;
+const uint8_t MAX_EVENTS_PER_COLUMN = 24;
 const uint8_t MAX_ALARMS            = 24;
 const uint8_t MAX_DAY_EVENTS        = 5;
 
@@ -40,9 +40,6 @@ typedef struct alarmsData {
   uint8_t alarmCount;
 } alarmsData;
 
-time_t unixEpochTime(tmElements_t tm);
-void fromUnixEpochTime(time_t ts, tmElements_t *tm);
-
 void reset(dayEventsData *data);
 void reset(eventsData *data);
 void reset(alarmsData *data);
@@ -52,9 +49,9 @@ void addAlarm(alarmsData *data, String summary, time_t start);
 
 class CalendarDayEvents : public LayoutElement {
 public:
-  CalendarDayEvents(dayEventsData *data, tmElements_t currentTime,
+  CalendarDayEvents(dayEventsData *data, Watchy *watchy, int32_t offsetSeconds,
                     uint16_t color)
-      : data_(data), currentTime_(currentTime), color_(color) {}
+      : data_(data), watchy_(watchy), offset_(offsetSeconds), color_(color) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
@@ -73,19 +70,18 @@ private:
 
 private:
   dayEventsData *data_;
-  tmElements_t currentTime_;
+  Watchy *watchy_;
+  int32_t offset_;
   uint16_t color_;
 };
 
 class CalendarColumn : public LayoutElement {
 public:
-  CalendarColumn() : data_(NULL), watchy_(NULL), color_(0) {
-    breakTime(0, currentTime_);
-  }
+  CalendarColumn() : data_(NULL), watchy_(NULL), offset_(0), color_(0) {}
 
-  CalendarColumn(eventsData *data, Watchy *watchy, uint16_t color)
-      : data_(data), watchy_(watchy), currentTime_(watchy->localtime()),
-        color_(color) {}
+  CalendarColumn(eventsData *data, Watchy *watchy, int32_t offsetSeconds,
+                 uint16_t color)
+      : data_(data), watchy_(watchy), offset_(offsetSeconds), color_(color) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
@@ -104,14 +100,14 @@ private:
 private:
   eventsData *data_;
   Watchy *watchy_;
-  tmElements_t currentTime_;
+  int32_t offset_;
   uint16_t color_;
 };
 
 class CalendarHourBar : public LayoutElement {
 public:
-  CalendarHourBar(Watchy *watchy, uint16_t color)
-      : watchy_(watchy), currentTime_(watchy->localtime()), color_(color) {}
+  CalendarHourBar(Watchy *watchy, int32_t offsetSeconds, uint16_t color)
+      : watchy_(watchy), offset_(offsetSeconds), color_(color) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
@@ -129,7 +125,7 @@ private:
 
 private:
   Watchy *watchy_;
-  tmElements_t currentTime_;
+  int32_t offset_;
   uint16_t color_;
 };
 

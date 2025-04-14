@@ -8,6 +8,7 @@
 #include "Calendar.h"
 #include "Seven_Segment10pt7b.h"
 #include "DSEG7_Classic_Bold_25.h"
+#include "DSEG7_Classic_Regular_39.h"
 #include "icons.h"
 
 #define DARKMODE false
@@ -17,6 +18,7 @@ const uint16_t BACKGROUND_COLOR = DARKMODE ? GxEPD_BLACK : GxEPD_WHITE;
 
 const uint8_t MAX_CALENDAR_COLUMNS                 = 8;
 const uint16_t MAX_SECONDS_BETWEEN_WEATHER_UPDATES = 60 * 60 * 2;
+const int32_t SCROLL_INCREMENT                     = 3 * 60 * 60;
 
 RTC_DATA_ATTR dayEventsData calendarDay;
 RTC_DATA_ATTR eventsData calendar[MAX_CALENDAR_COLUMNS];
@@ -24,6 +26,8 @@ RTC_DATA_ATTR alarmsData alarms;
 RTC_DATA_ATTR uint8_t activeCalendarColumns;
 RTC_DATA_ATTR char calendarError[32];
 RTC_DATA_ATTR uint16_t lastTemperature;
+RTC_DATA_ATTR int32_t viewWindowOffset;
+RTC_DATA_ATTR bool viewShowAboveCalendar;
 
 void zeroError() {
   for (int i = 0; i < (sizeof(calendarError) / sizeof(calendarError[0])); i++) {
@@ -36,7 +40,9 @@ void CalendarFace::reset(Watchy *watchy) {
   ::reset(&calendar[0]);
   ::reset(&alarms);
   ::reset(&calendarDay);
-  lastTemperature = 0;
+  lastTemperature       = 0;
+  viewWindowOffset      = 0;
+  viewShowAboveCalendar = false;
   zeroError();
 }
 
@@ -47,6 +53,9 @@ bool CalendarFace::fetchNetwork(Watchy *watchy) {
     http.setConnectTimeout(1000 * 10);
     http.setTimeout(1000 * 10);
     String calQueryURL = settings_.calendarAccountURL;
+    if (forceCacheMiss_) {
+      calQueryURL += "?force_cache_miss=true";
+    }
     http.begin(calQueryURL.c_str());
     int httpResponseCode = http.GET();
     if (httpResponseCode == 200) {
@@ -209,8 +218,14 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   LayoutFill elFill;
   LayoutSpacer elSpacer(5);
 
-  LayoutText elTime(timeStr, &DSEG7_Classic_Bold_25, color);
-  LayoutCenter elTimeCentered(&elTime);
+  LayoutText elTimeSmall(timeStr, &DSEG7_Classic_Bold_25, color);
+  LayoutText elTimeLarge(timeStr, &DSEG7_Classic_Regular_39, color);
+  LayoutText *elTime = &elTimeSmall;
+  if (viewShowAboveCalendar) {
+    elTime = &elTimeLarge;
+  }
+
+  LayoutCenter elTimeCentered(elTime);
 
   LayoutBitmap elWifi(wifioff, 26, 18, color);
   LayoutText elTemp(weatherStr, &Seven_Segment10pt7b, color);
@@ -248,9 +263,10 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   bool elDateStretch[]         = {false, true, false};
   LayoutRows elDate(3, elDateElems, elDateStretch);
 
-  CalendarDayEvents elCalendarDay(&calendarDay, currentTime, color);
+  CalendarDayEvents elCalendarDay(&calendarDay, watchy, viewWindowOffset,
+                                  color);
 
-  CalendarHourBar elCalHourBar(watchy, color);
+  CalendarHourBar elCalHourBar(watchy, viewWindowOffset, color);
 
   CalendarColumn elCals[activeCalendarColumns];
   LayoutElement *elCalColElems[activeCalendarColumns + 1];
@@ -258,7 +274,7 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   elCalColElems[0]   = &elCalHourBar;
   elCalColStretch[0] = false;
   for (int i = 0; i < activeCalendarColumns; i++) {
-    elCals[i]              = CalendarColumn(&calendar[i], watchy, color);
+    elCals[i] = CalendarColumn(&calendar[i], watchy, viewWindowOffset, color);
     elCalColElems[i + 1]   = &elCals[i];
     elCalColStretch[i + 1] = true;
   }
@@ -289,4 +305,32 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
                       &h);
   display->display(partialRefresh);
   return true;
+}
+
+void CalendarFace::buttonDown(Watchy *watchy) {
+  if (viewShowAboveCalendar) {
+    viewShowAboveCalendar = false;
+    return;
+  }
+  viewWindowOffset += SCROLL_INCREMENT;
+  if (viewWindowOffset >= (24 - 5) * 60 * 60) {
+    viewWindowOffset = 24 * 60 * 60;
+  }
+}
+
+void CalendarFace::buttonUp(Watchy *watchy) {
+  if (viewWindowOffset == 0) {
+    viewShowAboveCalendar = true;
+    return;
+  }
+  viewWindowOffset -= SCROLL_INCREMENT;
+  if (viewWindowOffset <= 0) {
+    viewWindowOffset = 0;
+  }
+}
+
+bool CalendarFace::buttonBack(Watchy *watchy) {
+  viewWindowOffset      = 0;
+  viewShowAboveCalendar = false;
+  return false;
 }
