@@ -176,12 +176,14 @@ class CalendarProcessor:
 
         free_columns = []
         next_column = 0
+        count_by_column = {}
         for timestamp, is_start, _, event_id in event_edges:
             is_start = is_start == "1"
             if not is_start:
                 column = all_events[event_id]["column"]
                 if column >= 0:
                     free_columns.append(column)
+                    count_by_column[column] = count_by_column.get(column, 0) + 1
                 continue
             if (
                 len(timestamp) == len("0000-00-00")
@@ -190,7 +192,9 @@ class CalendarProcessor:
                 all_events[event_id]["column"] = -1
                 continue
             if free_columns:
-                free_columns.sort()
+                free_columns.sort(
+                    key=lambda column: (count_by_column.get(column, 0), column)
+                )
                 all_events[event_id]["column"] = free_columns.pop(0)
                 continue
             all_events[event_id]["column"] = next_column
