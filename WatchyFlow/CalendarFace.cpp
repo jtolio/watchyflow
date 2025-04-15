@@ -206,12 +206,15 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   }
   timeStr += String(currentTime.Minute);
 
+  tmElements_t offsetTime =
+      watchy->toLocalTime(watchy->unixtime() + viewWindowOffset);
+
   String weatherStr = String(lastTemperature) + (settings_.metric ? "C" : "F");
 
-  String dayOfWeekStr  = dayShortStr(currentTime.Wday);
-  String monthStr      = monthShortStr(currentTime.Month);
-  String dayOfMonthStr = String(currentTime.Day);
-  if (currentTime.Day < 10) {
+  String dayOfWeekStr  = dayShortStr(offsetTime.Wday);
+  String monthStr      = monthShortStr(offsetTime.Month);
+  String dayOfMonthStr = String(offsetTime.Day);
+  if (offsetTime.Day < 10) {
     dayOfMonthStr = String("0") + dayOfMonthStr;
   }
 
