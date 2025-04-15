@@ -298,11 +298,8 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   bool elScreenStretch[]         = {false, false, true, false};
   LayoutRows elScreen(4, elScreenElems, elScreenStretch);
 
-  LayoutPad elPaddedScreen(&elScreen, 5, 5, 5, 5);
-
   uint16_t w, h;
-  elPaddedScreen.draw(display, 0, 0, display->width(), display->height(), &w,
-                      &h);
+  elScreen.draw(display, 0, 0, display->width(), display->height(), &w, &h);
   display->display(partialRefresh);
   return true;
 }
