@@ -1,6 +1,20 @@
 profiles:
-  watchy:
+  watchy_v2:
     fqbn: esp32:esp32:watchy:Revision=v20,PartitionScheme=huge_app
+    platforms:
+      - platform: esp32:esp32 (2.0.17)
+    libraries:
+      - WiFiManager (2.0.17)
+      - NTPClient (3.2.1)
+      - Arduino_JSON (0.2.0)
+      - GxEPD2 (1.6.2)
+      - Adafruit GFX Library (1.12.0)
+      - Adafruit BusIO (1.17.0)
+      - DS3232RTC (2.0.1)
+      - Time (1.6.1)
+      - Rtc_Pcf8563 (1.0.3)
+  watchy_v3:
+    fqbn: esp32:esp32:esp32s3:PartitionScheme=default_8MB,FlashSize=8M
     platforms:
       - platform: esp32:esp32 (2.0.17)
     libraries:
