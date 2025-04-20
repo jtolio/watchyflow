@@ -32,6 +32,8 @@
 #include "WatchyRTC.h"
 #endif
 
+#include "Layout.h"
+
 #ifdef ARDUINO_ESP32S3_DEV
 Watchy32KRTC rtc_;
 #define ACTIVE_LOW 0
@@ -205,6 +207,8 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     return;
   }
 
+  drawLoading();
+
   bool success    = app->fetchNetwork(&watchy);
   bool ntpSuccess = syncNTP();
   if (success && ntpSuccess) {
@@ -289,4 +293,17 @@ bool Watchy::syncNTP() {
 
 time_t Watchy::lastSuccessfulNetworkFetch() {
   return lastSuccessfulNetworkFetch_;
+}
+
+void Watchy::drawLoading() {
+  LayoutText text("Loading...", NULL, GxEPD_BLACK);
+  LayoutPad pad(&text, 3, 3, 3, 3);
+  LayoutBorder border(&pad, true, true, true, true, GxEPD_BLACK);
+  LayoutBackground background(&border, GxEPD_WHITE);
+
+  uint16_t w, h;
+  background.size(&display_, 0, 0, &w, &h);
+  background.draw(&display_, display_.width() - w - 3,
+                  display_.height() - h - 3, 0, 0, &w, &h);
+  display_.display(true);
 }

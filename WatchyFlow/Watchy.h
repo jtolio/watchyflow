@@ -59,6 +59,7 @@ protected:
       : time_(currentTime), wakeup_(wakeup) {}
 
   static bool syncNTP();
+  static void drawLoading();
 
 private:
   tmElements_t time_;
