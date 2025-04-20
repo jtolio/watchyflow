@@ -103,19 +103,24 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   display_.setFullWindow();
   display_.epd2.asyncPowerOn();
 
+  WakeupReason wakeup_reason_enum = WAKEUP_RESET;
+
   switch (wakeup_reason) {
 #ifdef ARDUINO_ESP32S3_DEV
   case ESP_SLEEP_WAKEUP_TIMER: // RTC Alarm
 #else
   case ESP_SLEEP_WAKEUP_EXT0: // RTC Alarm
 #endif
+    wakeup_reason_enum = WAKEUP_CLOCK;
     break;
   case ESP_SLEEP_WAKEUP_EXT1: // button Press
+    wakeup_reason_enum = WAKEUP_BUTTON;
     break;
 #ifdef ARDUINO_ESP32S3_DEV
   case ESP_SLEEP_WAKEUP_EXT0: // USB plug in
     pinMode(USB_DET_PIN, INPUT);
-    usbPluggedIn_ = (digitalRead(USB_DET_PIN) == 1);
+    usbPluggedIn_      = (digitalRead(USB_DET_PIN) == 1);
+    wakeup_reason_enum = WAKEUP_USB;
     break;
 #endif
   default: // reset
@@ -138,7 +143,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
 
   tmElements_t currentTime;
   rtc_.read(currentTime);
-  Watchy watchy(currentTime);
+  Watchy watchy(currentTime, wakeup_reason_enum);
   bool partialRefresh = true;
 
   switch (wakeup_reason) {

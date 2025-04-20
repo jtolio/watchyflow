@@ -137,9 +137,10 @@ void CalendarColumn::draw(Display *display, int16_t x0, int16_t y0,
     }
 
     tmElements_t eventStarttm = watchy_->toLocalTime(eventStart);
-    if (eventStarttm.Day == currentTime.Day &&
+    if (eventStarttm.Minute == currentTime.Minute &&
         eventStarttm.Hour == currentTime.Hour &&
-        eventStarttm.Minute == currentTime.Minute &&
+        eventStarttm.Day == currentTime.Day &&
+        watchy_->wakeupReason() == WAKEUP_CLOCK &&
         // TODO: configurable
         currentTime.Hour >= 6 && currentTime.Hour < 22) {
       watchy_->vibrate(75, 5);
@@ -314,7 +315,8 @@ void CalendarAlarms::maybeDraw(Display *display, int16_t x0, int16_t y0,
     }
     tmElements_t alarmtm = watchy_->toLocalTime(alarm->start);
     if (!noop && alarmtm.Minute == currentTime.Minute &&
-        alarmtm.Hour == currentTime.Hour) {
+        alarmtm.Hour == currentTime.Hour &&
+        watchy_->wakeupReason() == WAKEUP_CLOCK) {
       watchy_->vibrate(100, 10);
     }
     String text;
