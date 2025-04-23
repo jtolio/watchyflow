@@ -18,7 +18,7 @@ const uint16_t BACKGROUND_COLOR = DARKMODE ? GxEPD_BLACK : GxEPD_WHITE;
 
 const uint8_t MAX_CALENDAR_COLUMNS                 = 8;
 const uint16_t MAX_SECONDS_BETWEEN_WEATHER_UPDATES = 60 * 60 * 2;
-const int32_t DAY_SCROLL_INCREMENT                 = 3 * 60 * 60;
+const int32_t DAY_SCROLL_INCREMENT                 = 2 * 60 * 60;
 
 RTC_DATA_ATTR dayEventsData calendarDay;
 RTC_DATA_ATTR eventsData calendar[MAX_CALENDAR_COLUMNS];
