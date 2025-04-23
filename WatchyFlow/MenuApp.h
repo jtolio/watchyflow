@@ -24,7 +24,7 @@ public:
   void reset(Watchy *watchy) override;
   void buttonUp(Watchy *watchy) override;
   void buttonDown(Watchy *watchy) override;
-  void buttonSelect(Watchy *watchy) override;
+  bool buttonSelect(Watchy *watchy) override;
   bool buttonBack(Watchy *watchy) override;
 
 private:

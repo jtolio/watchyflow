@@ -6,24 +6,18 @@
 const uint8_t MAX_EVENT_NAME_LEN    = 24;
 const uint8_t MAX_EVENTS_PER_COLUMN = 24;
 const uint8_t MAX_ALARMS            = 24;
-const uint8_t MAX_DAY_EVENTS        = 5;
-
-typedef struct dayEventData {
-  char summary[MAX_EVENT_NAME_LEN];
-  char start[11];
-  char end[11];
-} dayEventData;
-
-typedef struct dayEventsData {
-  dayEventData events[MAX_DAY_EVENTS];
-  uint8_t eventCount;
-} dayEventsData;
+const uint8_t MAX_DAY_EVENTS        = 31;
 
 typedef struct eventData {
   char summary[MAX_EVENT_NAME_LEN];
   time_t start;
   time_t end;
 } eventData;
+
+typedef struct dayEventsData {
+  eventData events[MAX_DAY_EVENTS];
+  uint8_t eventCount;
+} dayEventsData;
 
 typedef struct eventsData {
   eventData events[MAX_EVENTS_PER_COLUMN];
@@ -43,7 +37,7 @@ typedef struct alarmsData {
 void reset(dayEventsData *data);
 void reset(eventsData *data);
 void reset(alarmsData *data);
-void addEvent(dayEventsData *data, String summary, String start, String end);
+void addEvent(dayEventsData *data, String summary, time_t start, time_t end);
 void addEvent(eventsData *data, String summary, time_t start, time_t end);
 void addAlarm(alarmsData *data, String summary, time_t start);
 
@@ -67,6 +61,28 @@ private:
   void maybeDraw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
                  uint16_t targetHeight, uint16_t *width, uint16_t *height,
                  bool noop);
+
+private:
+  dayEventsData *data_;
+  Watchy *watchy_;
+  int32_t offset_;
+  uint16_t color_;
+};
+
+class CalendarMonth : public LayoutElement {
+public:
+  CalendarMonth(dayEventsData *data, Watchy *watchy, int32_t offsetEvents,
+                uint16_t color)
+      : data_(data), watchy_(watchy), offset_(offsetEvents), color_(color) {}
+
+  void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override {
+    *width  = targetWidth;
+    *height = targetHeight;
+  }
+
+  void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
+            uint16_t targetHeight, uint16_t *width, uint16_t *height) override;
 
 private:
   dayEventsData *data_;

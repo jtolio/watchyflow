@@ -18,7 +18,7 @@ const uint16_t BACKGROUND_COLOR = DARKMODE ? GxEPD_BLACK : GxEPD_WHITE;
 
 const uint8_t MAX_CALENDAR_COLUMNS                 = 8;
 const uint16_t MAX_SECONDS_BETWEEN_WEATHER_UPDATES = 60 * 60 * 2;
-const int32_t SCROLL_INCREMENT                     = 3 * 60 * 60;
+const int32_t DAY_SCROLL_INCREMENT                 = 3 * 60 * 60;
 
 RTC_DATA_ATTR dayEventsData calendarDay;
 RTC_DATA_ATTR eventsData calendar[MAX_CALENDAR_COLUMNS];
@@ -26,8 +26,10 @@ RTC_DATA_ATTR alarmsData alarms;
 RTC_DATA_ATTR uint8_t activeCalendarColumns;
 RTC_DATA_ATTR char calendarError[32];
 RTC_DATA_ATTR uint16_t lastTemperature;
-RTC_DATA_ATTR int32_t viewWindowOffset;
+RTC_DATA_ATTR int32_t dayScheduleOffset;
+RTC_DATA_ATTR int32_t monthEventOffset;
 RTC_DATA_ATTR bool viewShowAboveCalendar;
+RTC_DATA_ATTR bool monthView;
 
 void zeroError() {
   for (int i = 0; i < (sizeof(calendarError) / sizeof(calendarError[0])); i++) {
@@ -41,8 +43,10 @@ void CalendarFace::reset(Watchy *watchy) {
   ::reset(&alarms);
   ::reset(&calendarDay);
   lastTemperature       = 0;
-  viewWindowOffset      = 0;
+  dayScheduleOffset     = 0;
   viewShowAboveCalendar = false;
+  monthView             = false;
+  monthEventOffset      = 0;
   zeroError();
 }
 
@@ -128,31 +132,27 @@ void CalendarFace::parseCalendar(Watchy *watchy, String payload) {
     if (!event.hasOwnProperty("day")) {
       continue;
     }
+    if (!event.hasOwnProperty("start")) {
+      continue;
+    }
+    if (!event.hasOwnProperty("end")) {
+      continue;
+    }
+
+    time_t start = (time_t)(long)event["start"];
+    time_t end   = (time_t)(long)event["end"];
 
     String summary = event["summary"];
     bool allDay    = (bool)event["day"];
     if (allDay) {
-      if (!event.hasOwnProperty("start")) {
-        continue;
-      }
-      if (!event.hasOwnProperty("end")) {
-        continue;
-      }
-      String start = event["start"];
-      String end   = event["end"];
       addEvent(&calendarDay, summary, start, end);
       continue;
     }
 
-    if (!event.hasOwnProperty("start-unix")) {
-      continue;
-    }
-    time_t startUnix = (time_t)(long)event["start-unix"];
-
     if (summary.indexOf(String("[WATCHY ALARM]")) >= 0) {
       summary.replace(String("[WATCHY ALARM]"), String(""));
       summary.trim();
-      addAlarm(&alarms, summary, startUnix);
+      addAlarm(&alarms, summary, start);
       continue;
     }
 
@@ -164,11 +164,7 @@ void CalendarFace::parseCalendar(Watchy *watchy, String payload) {
       continue;
     }
 
-    if (!event.hasOwnProperty("end-unix")) {
-      continue;
-    }
-    time_t endUnix = (time_t)(long)event["end-unix"];
-    addEvent(&calendar[column], summary, startUnix, endUnix);
+    addEvent(&calendar[column], summary, start, end);
   }
 }
 
@@ -207,7 +203,7 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   timeStr += String(currentTime.Minute);
 
   tmElements_t offsetTime =
-      watchy->toLocalTime(watchy->unixtime() + viewWindowOffset);
+      watchy->toLocalTime(watchy->unixtime() + dayScheduleOffset);
 
   String weatherStr = String(lastTemperature) + (settings_.metric ? "C" : "F");
 
@@ -266,18 +262,16 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   bool elDateStretch[]         = {false, true, false};
   LayoutRows elDate(3, elDateElems, elDateStretch);
 
-  CalendarDayEvents elCalendarDay(&calendarDay, watchy, viewWindowOffset,
+  CalendarDayEvents elCalendarDay(&calendarDay, watchy, dayScheduleOffset,
                                   color);
-
-  CalendarHourBar elCalHourBar(watchy, viewWindowOffset, color);
-
+  CalendarHourBar elCalHourBar(watchy, dayScheduleOffset, color);
   CalendarColumn elCals[activeCalendarColumns];
   LayoutElement *elCalColElems[activeCalendarColumns + 1];
   bool elCalColStretch[activeCalendarColumns + 1];
   elCalColElems[0]   = &elCalHourBar;
   elCalColStretch[0] = false;
   for (int i = 0; i < activeCalendarColumns; i++) {
-    elCals[i] = CalendarColumn(&calendar[i], watchy, viewWindowOffset, color);
+    elCals[i] = CalendarColumn(&calendar[i], watchy, dayScheduleOffset, color);
     elCalColElems[i + 1]   = &elCals[i];
     elCalColStretch[i + 1] = true;
   }
@@ -288,7 +282,13 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   bool elCalendarPartsStretch[]         = {false, true};
   LayoutRows elCalendarParts(2, elCalendarPartsElems, elCalendarPartsStretch);
 
-  LayoutBorder elCalendarBorder(&elCalendarParts, true, false, true, true,
+  CalendarMonth elCalendarMonth(&calendarDay, watchy, monthEventOffset, color);
+
+  LayoutElement *elCalendarSelection = &elCalendarParts;
+  if (monthView) {
+    elCalendarSelection = &elCalendarMonth;
+  }
+  LayoutBorder elCalendarBorder(elCalendarSelection, true, false, true, true,
                                 color);
 
   LayoutElement *elMainElems[] = {&elDate, &elSpacer, &elCalendarBorder};
@@ -312,25 +312,33 @@ void CalendarFace::buttonDown(Watchy *watchy) {
     viewShowAboveCalendar = false;
     return;
   }
-  viewWindowOffset += SCROLL_INCREMENT;
-  if (viewWindowOffset >= (24 - 5) * 60 * 60) {
-    viewWindowOffset = 24 * 60 * 60;
+  if (monthView) {
+    return;
+  }
+  dayScheduleOffset += DAY_SCROLL_INCREMENT;
+  if (dayScheduleOffset >= (24 - 5) * 60 * 60) {
+    dayScheduleOffset = 24 * 60 * 60;
   }
 }
 
 void CalendarFace::buttonUp(Watchy *watchy) {
-  if (viewWindowOffset == 0) {
+  if (dayScheduleOffset == 0) {
     viewShowAboveCalendar = true;
     return;
   }
-  viewWindowOffset -= SCROLL_INCREMENT;
-  if (viewWindowOffset <= 0) {
-    viewWindowOffset = 0;
+  if (monthView) {
+    return;
+  }
+  dayScheduleOffset -= DAY_SCROLL_INCREMENT;
+  if (dayScheduleOffset <= 0) {
+    dayScheduleOffset = 0;
   }
 }
 
 bool CalendarFace::buttonBack(Watchy *watchy) {
-  viewWindowOffset      = 0;
+  dayScheduleOffset     = 0;
+  monthEventOffset      = 0;
   viewShowAboveCalendar = false;
+  monthView             = !monthView;
   return false;
 }

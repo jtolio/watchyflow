@@ -23,6 +23,7 @@ TIMEZONE = timezone("US/Eastern")
 ICAL_CACHE_TIME_SECS = 50 * 60
 HOURS_PAST = 1
 HOURS_FUTURE = 36
+DAYS_FUTURE = 31
 MINIMUM_MINUTES_PER_COLUMN = 30
 
 
@@ -82,27 +83,39 @@ class CalendarProcessor:
         return False
 
     def convert_time(self, dt):
-        if hasattr(dt, "astimezone"):
-            dt = dt.astimezone(TIMEZONE)
-        return dt.isoformat()
+        if isinstance(dt, datetime.datetime):
+            return int(dt.astimezone(TIMEZONE).timestamp())
+        assert isinstance(dt, datetime.date)
+        return int(
+            datetime.datetime.combine(
+                dt,
+                datetime.time(
+                    hour=0, minute=0, second=0, microsecond=0, tzinfo=TIMEZONE
+                ),
+            ).timestamp()
+        )
 
     def event_to_dict(self, event):
         start = event["DTSTART"].dt
         end = event["DTEND"].dt
         rv = {
             "summary": event["SUMMARY"],
-            "day": False,
+            "day": (
+                (
+                    not isinstance(start, datetime.datetime)
+                    and isinstance(start, datetime.date)
+                )
+                or (
+                    not isinstance(end, datetime.datetime)
+                    and isinstance(end, datetime.date)
+                )
+            ),
             "start": self.convert_time(start),
             "end": self.convert_time(end),
             "column-end": self.convert_time(
                 max(end, start + datetime.timedelta(minutes=MINIMUM_MINUTES_PER_COLUMN))
             ),
         }
-        if not hasattr(start, "astimezone") or not hasattr(end, "astimezone"):
-            rv["day"] = True
-        else:
-            rv["start-unix"] = int(start.timestamp())
-            rv["end-unix"] = int(end.timestamp())
         return rv
 
     def has_required_fields(self, event):
@@ -112,10 +125,19 @@ class CalendarProcessor:
         return True
 
     def get_events(
-        self, calendar_urls, start_time, end_time=None, force_cache_miss=False
+        self,
+        calendar_urls,
+        start_time,
+        end_time=None,
+        day_end_time=None,
+        force_cache_miss=False,
     ):
         if end_time is None:
             end_time = start_time + datetime.timedelta(hours=HOURS_FUTURE)
+        if day_end_time is None:
+            day_end_time = start_time + datetime.timedelta(hours=(24 * DAYS_FUTURE))
+
+        end_time_converted = self.convert_time(end_time)
 
         all_events = []
         event_edges = []
@@ -130,7 +152,7 @@ class CalendarProcessor:
 
             try:
                 events = recurring_ical_events.of(calendar).between(
-                    start_time, end_time
+                    start_time, max(end_time, day_end_time)
                 )
 
                 for event in events:
@@ -147,12 +169,16 @@ class CalendarProcessor:
 
                     if event["end"] <= event["start"]:
                         continue
+
+                    if not event["day"] and event["end"] > end_time_converted:
+                        continue
+
                     if event["summary"] in self.excluded_events:
                         continue
 
                     event_id = len(all_events)
                     event_edges.append((event["start"], "1", event["end"], event_id))
-                    event_edges.append((event["column-end"], "0", "", event_id))
+                    event_edges.append((event["column-end"], "0", 0, event_id))
                     del event["column-end"]
                     all_events.append(event)
             except Exception as e:
@@ -186,7 +212,7 @@ class CalendarProcessor:
                     count_by_column[column] = count_by_column.get(column, 0) + 1
                 continue
             if (
-                len(timestamp) == len("0000-00-00")
+                all_events[event_id]["day"]
                 or "[WATCHY ALARM]" in all_events[event_id]["summary"]
             ):
                 all_events[event_id]["column"] = -1
@@ -209,12 +235,6 @@ class CalendarProcessor:
                 event["summary"],
             )
         )
-
-        for i, event in enumerate(all_events):
-            if not event["day"]:
-                del event["start"]
-                del event["end"]
-                all_events[i] = event
 
         return all_events, next_column
 

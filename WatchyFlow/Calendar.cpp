@@ -13,15 +13,15 @@ const time_t SECONDS_PER_PIXEL =
 
 void reset(dayEventsData *data) { data->eventCount = 0; }
 
-void addEvent(dayEventsData *data, String summary, String start, String end) {
+void addEvent(dayEventsData *data, String summary, time_t start, time_t end) {
   if (data->eventCount >= MAX_DAY_EVENTS) {
     return;
   }
   if (data->eventCount == MAX_DAY_EVENTS - 1) {
     summary = "TOO MANY EVENTS";
   }
-  start.toCharArray(data->events[data->eventCount].start, 11);
-  end.toCharArray(data->events[data->eventCount].end, 11);
+  data->events[data->eventCount].start = start;
+  data->events[data->eventCount].end   = end;
   summary.toCharArray(data->events[data->eventCount].summary,
                       MAX_EVENT_NAME_LEN);
   data->eventCount++;
@@ -68,18 +68,12 @@ void CalendarDayEvents::maybeDraw(Display *display, int16_t x0, int16_t y0,
   display->setFont(SMALL_FONT);
   display->setTextColor(color_);
 
-  tmElements_t drawnTime = watchy_->toLocalTime(watchy_->unixtime() + offset_);
-
-  String today = String(tmYearToCalendar(drawnTime.Year));
-  today += (drawnTime.Month < 10) ? "-0" : "-";
-  today += String(drawnTime.Month);
-  today += (drawnTime.Day < 10) ? "-0" : "-";
-  today += String(drawnTime.Day);
+  time_t drawnTimeUnix = watchy_->unixtime() + offset_;
 
   for (int i = 0; i < data_->eventCount; i++) {
     String text = data_->events[i].summary;
-    if (String(data_->events[i].start) > today ||
-        String(data_->events[i].end) <= today) {
+    if (data_->events[i].start > drawnTimeUnix ||
+        data_->events[i].end <= drawnTimeUnix) {
       continue;
     }
 
@@ -104,6 +98,59 @@ void CalendarDayEvents::maybeDraw(Display *display, int16_t x0, int16_t y0,
     if (!noop) {
       display->drawFastHLine(x0, y0 + *height, *width, color_);
     }
+  }
+}
+
+void CalendarMonth::draw(Display *display, int16_t x0, int16_t y0,
+                         uint16_t targetWidth, uint16_t targetHeight,
+                         uint16_t *width, uint16_t *height) {
+  *width  = targetWidth;
+  *height = targetHeight;
+
+  LayoutText days[data_->eventCount];
+  LayoutText events[data_->eventCount];
+
+  String lastDayStr = "";
+
+  for (int i = offset_; i < data_->eventCount; i++) {
+    eventData *event = &(data_->events[i]);
+
+    tmElements_t start = watchy_->toLocalTime(event->start);
+    tmElements_t end   = watchy_->toLocalTime(event->end);
+    String str         = String(dayShortStr(start.Wday)).substring(0, 2);
+    if (start.Day < 10) {
+      str += " 0";
+    } else {
+      str += " ";
+    }
+    str += String(start.Day);
+    if (event->end > event->start + 24 * 60 * 60 + 1) {
+      str += "-" + String(end.Day);
+    }
+
+    str += ": ";
+
+    if (str == lastDayStr) {
+      for (int j = 0; j < str.length(); j++) {
+        str[j] = ' ';
+      }
+    } else {
+      lastDayStr = str;
+    }
+
+    str += String(event->summary);
+
+    LayoutText text(str, SMALL_FONT, color_);
+    uint16_t w, h;
+    text.size(display, targetWidth, targetHeight, &w, &h);
+    if (h + (EVENT_PADDING * 2) > targetHeight) {
+      break;
+    }
+
+    text.draw(display, x0 + EVENT_PADDING, y0 + EVENT_PADDING, targetWidth,
+              targetHeight, &w, &h);
+    targetHeight -= h + EVENT_PADDING;
+    y0 += h + EVENT_PADDING;
   }
 }
 

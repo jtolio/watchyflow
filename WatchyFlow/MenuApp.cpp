@@ -84,22 +84,25 @@ void MenuApp::buttonDown(Watchy *watchy) {
   }
 }
 
-void MenuApp::buttonSelect(Watchy *watchy) {
+bool MenuApp::buttonSelect(Watchy *watchy) {
   uint16_t state    = memory_->state % (itemCount_ + 2);
   uint16_t selected = memory_->selected;
   switch (state) {
   default:
-    items_[state - 2]->buttonSelect(watchy);
-    return;
+    if (items_[state - 2]->buttonSelect(watchy)) {
+      memory_->state  = 1;
+      fullDrawNeeded_ = true;
+    }
+    return false;
   case 1:
     selected        = selected % itemCount_;
     memory_->state  = selected + 2;
     fullDrawNeeded_ = true;
-    return;
+    return false;
   case 0:
     memory_->state  = 1;
     fullDrawNeeded_ = true;
-    return;
+    return false;
   }
 }
 

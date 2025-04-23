@@ -100,8 +100,8 @@ class TestCalendarProcessor(unittest.TestCase):
 
         result = self.processor.event_to_dict(event)
 
-        self.assertEqual(result["start"], now.isoformat())
-        self.assertEqual(result["end"], end.isoformat())
+        self.assertEqual(result["start"], int(now.timestamp()))
+        self.assertEqual(result["end"], int(end.timestamp()))
         self.assertEqual(result["summary"], "Test Event")
 
     @patch("main.recurring_ical_events")
@@ -154,7 +154,7 @@ class TestCalendarProcessor(unittest.TestCase):
         self.assertEqual(result[1]["summary"], "Event 4")
 
         # Verify mocks were called correctly
-        mock_fetch_calendar.assert_called_once_with("http://example.com/calendar.ics")
+        mock_fetch_calendar.assert_called_once_with("http://example.com/calendar.ics", force_cache_miss=False)
         mock_recurring_events.of.assert_called_once_with(mock_calendar)
         mock_events_object.between.assert_called_once()
 

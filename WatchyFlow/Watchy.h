@@ -74,7 +74,7 @@ public:
   virtual void reset(Watchy *watchy) {}
   virtual void buttonUp(Watchy *watchy) {}
   virtual void buttonDown(Watchy *watchy) {}
-  virtual void buttonSelect(Watchy *watchy) {}
+  virtual bool buttonSelect(Watchy *watchy) { return false; }
   virtual bool buttonBack(Watchy *watchy) { return true; }
 
   virtual ~WatchyApp() = default;
