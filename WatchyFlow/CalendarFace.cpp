@@ -30,6 +30,7 @@ RTC_DATA_ATTR int32_t dayScheduleOffset;
 RTC_DATA_ATTR int32_t monthEventOffset;
 RTC_DATA_ATTR bool viewShowAboveCalendar;
 RTC_DATA_ATTR bool monthView;
+RTC_DATA_ATTR bool monthDayAbs;
 
 void zeroError() {
   for (int i = 0; i < (sizeof(calendarError) / sizeof(calendarError[0])); i++) {
@@ -46,6 +47,7 @@ void CalendarFace::reset(Watchy *watchy) {
   dayScheduleOffset     = 0;
   viewShowAboveCalendar = false;
   monthView             = false;
+  monthDayAbs           = false;
   monthEventOffset      = 0;
   zeroError();
 }
@@ -282,7 +284,8 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   bool elCalendarPartsStretch[]         = {false, true};
   LayoutRows elCalendarParts(2, elCalendarPartsElems, elCalendarPartsStretch);
 
-  CalendarMonth elCalendarMonth(&calendarDay, watchy, monthEventOffset, color);
+  CalendarMonth elCalendarMonth(&calendarDay, watchy, monthEventOffset,
+                                !monthDayAbs, color);
 
   LayoutElement *elCalendarSelection = &elCalendarParts;
   if (monthView) {
@@ -308,11 +311,12 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
 }
 
 void CalendarFace::buttonDown(Watchy *watchy) {
-  if (viewShowAboveCalendar) {
-    viewShowAboveCalendar = false;
+  if (monthView) {
+    monthDayAbs = !monthDayAbs;
     return;
   }
-  if (monthView) {
+  if (viewShowAboveCalendar) {
+    viewShowAboveCalendar = false;
     return;
   }
   dayScheduleOffset += DAY_SCROLL_INCREMENT;
@@ -322,11 +326,12 @@ void CalendarFace::buttonDown(Watchy *watchy) {
 }
 
 void CalendarFace::buttonUp(Watchy *watchy) {
-  if (dayScheduleOffset == 0) {
-    viewShowAboveCalendar = true;
+  if (monthView) {
+    viewShowAboveCalendar = !viewShowAboveCalendar;
     return;
   }
-  if (monthView) {
+  if (dayScheduleOffset == 0) {
+    viewShowAboveCalendar = true;
     return;
   }
   dayScheduleOffset -= DAY_SCROLL_INCREMENT;
@@ -340,5 +345,6 @@ bool CalendarFace::buttonBack(Watchy *watchy) {
   monthEventOffset      = 0;
   viewShowAboveCalendar = false;
   monthView             = !monthView;
+  monthDayAbs           = false;
   return false;
 }

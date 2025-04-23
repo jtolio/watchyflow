@@ -72,8 +72,9 @@ private:
 class CalendarMonth : public LayoutElement {
 public:
   CalendarMonth(dayEventsData *data, Watchy *watchy, int32_t offsetEvents,
-                uint16_t color)
-      : data_(data), watchy_(watchy), offset_(offsetEvents), color_(color) {}
+                bool dayDelta, uint16_t color)
+      : data_(data), watchy_(watchy), offset_(offsetEvents),
+        dayDelta_(dayDelta), color_(color) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
@@ -88,6 +89,7 @@ private:
   dayEventsData *data_;
   Watchy *watchy_;
   int32_t offset_;
+  bool dayDelta_;
   uint16_t color_;
 };
 

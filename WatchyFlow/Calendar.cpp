@@ -116,16 +116,28 @@ void CalendarMonth::draw(Display *display, int16_t x0, int16_t y0,
     eventData *event = &(data_->events[i]);
 
     tmElements_t start = watchy_->toLocalTime(event->start);
-    tmElements_t end   = watchy_->toLocalTime(event->end);
     String str         = String(dayShortStr(start.Wday)).substring(0, 2);
-    if (start.Day < 10) {
-      str += " 0";
+
+    if (dayDelta_) {
+      time_t now = watchy_->unixtime();
+      int days   = (event->start - now + (24 * 60 * 60 - 1)) / (24 * 60 * 60);
+      if (days < 10) {
+        str += "  ";
+      } else {
+        str += " ";
+      }
+      str += String(days) + "d";
     } else {
-      str += " ";
-    }
-    str += String(start.Day);
-    if (event->end > event->start + 24 * 60 * 60 + 1) {
-      str += "-" + String(end.Day);
+      tmElements_t end = watchy_->toLocalTime(event->end);
+      if (start.Day < 10) {
+        str += "  ";
+      } else {
+        str += " ";
+      }
+      str += String(start.Day);
+      if (event->end > event->start + 24 * 60 * 60 + 1) {
+        str += "-" + String(end.Day);
+      }
     }
 
     str += ": ";
