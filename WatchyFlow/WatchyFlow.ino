@@ -12,8 +12,22 @@ public:
     display->fillScreen(GxEPD_WHITE);
     display->setTextWrap(true);
     display->setTextColor(GxEPD_BLACK);
-    display->setCursor(5, 10);
+    display->setCursor(0, 0);
     display->println("github.com/jtolio/watchyflow");
+
+    display->print("batt:       ");
+    display->print(watchy->battVoltage());
+    display->println(" V");
+
+    display->print("time:       ");
+    display->println(watchy->unixtime());
+
+    display->print("last fetch: ");
+    display->println(watchy->lastSuccessfulNetworkFetch());
+
+    display->print("wakeup:     ");
+    display->println(watchy->wakeupReason());
+
     display->display(partialRefresh);
     return true;
   }
