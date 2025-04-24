@@ -57,7 +57,8 @@ class CalendarProcessor:
     def precache(cls, cals):
         for account in cals.values():
             for url in account.get("ical-urls", []):
-                cls.fetch_calendar(url)
+                if not url.startswith("#"):
+                    cls.fetch_calendar(url)
 
     def is_event_declined_by_user(self, event):
         if "ATTENDEE" not in event or not self.user_emails:
@@ -143,6 +144,8 @@ class CalendarProcessor:
         event_edges = []
 
         for url in calendar_urls:
+            if url.startswith("#"):
+                continue
             try:
                 calendar = CalendarProcessor.fetch_calendar(
                     url, force_cache_miss=force_cache_miss

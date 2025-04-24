@@ -3,8 +3,11 @@
     "identities": ["email"],
     "excluded-events": ["coffee"],
     "ical-urls": [
-     "https://calendar.google.com/calendar/ical/email/private-key/basic.ics",
-     "https://calendar.google.com/calendar/ical/email/private-key/basic.ics"
+     "#comment 1",
+     "https://calendar.google.com/calendar/ical/email1/private-key/basic.ics",
+
+     "#comment 2",
+     "https://calendar.google.com/calendar/ical/email2/private-key/basic.ics"
     ],
   }
 }
