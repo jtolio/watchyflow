@@ -312,7 +312,9 @@ void CalendarHourBar::maybeDraw(Display *display, int16_t x0, int16_t y0,
       continue;
     }
 
-    String text(((currentHourNum + i + 11) % 12) + 1);
+    int hourNum = ((currentHourNum + i + 11) % 12) + 1;
+    String text(hourNum < 10 ? " " : "");
+    text += hourNum;
     int16_t x1, y1;
     uint16_t tw, th;
     display->getTextBounds(text, 0, 0, &x1, &y1, &tw, &th);

@@ -193,12 +193,8 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
 
   uint16_t color = FOREGROUND_COLOR;
 
-  String timeStr  = "";
   int displayHour = ((currentTime.Hour + 11) % 12) + 1;
-  if (displayHour < 10) {
-    timeStr += "0";
-  }
-  timeStr += String(displayHour) + ":";
+  String timeStr  = String(displayHour) + ":";
   if (currentTime.Minute < 10) {
     timeStr += "0";
   }
@@ -320,18 +316,14 @@ void CalendarFace::buttonDown(Watchy *watchy) {
     return;
   }
   dayScheduleOffset += DAY_SCROLL_INCREMENT;
-  if (dayScheduleOffset >= (24 - 5) * 60 * 60) {
-    dayScheduleOffset = 24 * 60 * 60;
+  if (dayScheduleOffset >= (36 - 6) * 60 * 60) {
+    dayScheduleOffset = (36 - 6) * 60 * 60;
   }
 }
 
 void CalendarFace::buttonUp(Watchy *watchy) {
-  if (monthView) {
+  if (monthView || dayScheduleOffset == 0) {
     viewShowAboveCalendar = !viewShowAboveCalendar;
-    return;
-  }
-  if (dayScheduleOffset == 0) {
-    viewShowAboveCalendar = true;
     return;
   }
   dayScheduleOffset -= DAY_SCROLL_INCREMENT;
@@ -341,10 +333,10 @@ void CalendarFace::buttonUp(Watchy *watchy) {
 }
 
 bool CalendarFace::buttonBack(Watchy *watchy) {
-  dayScheduleOffset     = 0;
-  monthEventOffset      = 0;
-  viewShowAboveCalendar = false;
-  monthView             = !monthView;
-  monthDayAbs           = false;
+  if (dayScheduleOffset == 0) {
+    monthView = !monthView;
+  }
+  dayScheduleOffset = 0;
+  monthEventOffset  = 0;
   return false;
 }
