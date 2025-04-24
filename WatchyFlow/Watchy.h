@@ -9,6 +9,12 @@ class WatchyApp;
 
 typedef GxEPD2_BW<WatchyDisplay, WatchyDisplay::HEIGHT> Display;
 
+typedef struct AccelData {
+  int16_t x;
+  int16_t y;
+  int16_t z;
+} AccelData;
+
 typedef enum WakeupReason {
   WAKEUP_RESET  = 0,
   WAKEUP_CLOCK  = 1,
@@ -53,6 +59,14 @@ public:
 
   void triggerNetworkFetch();
   time_t lastSuccessfulNetworkFetch();
+
+  uint32_t stepCounter();
+  void resetStepCounter();
+
+  uint8_t temperature(); // celsius
+
+  bool accel(AccelData &acc);
+  uint8_t direction();
 
 protected:
   Watchy(const tmElements_t &currentTime, WakeupReason wakeup)

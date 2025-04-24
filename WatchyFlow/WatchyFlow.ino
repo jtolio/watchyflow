@@ -28,6 +28,30 @@ public:
     display->print("wakeup:     ");
     display->println(watchy->wakeupReason());
 
+    display->print("steps:      ");
+    display->println(watchy->stepCounter());
+
+    display->print("temp:       ");
+    uint8_t temp = watchy->temperature();
+    display->print(temp);
+    display->print(" C ");
+    display->print(temp * 9 / 5 + 32);
+    display->println(" F");
+
+    display->print("direction:  ");
+    display->println(watchy->direction());
+
+    display->println("");
+
+    AccelData accel;
+    if (watchy->accel(accel)) {
+      display->print(accel.x);
+      display->print(", ");
+      display->print(accel.y);
+      display->print(", ");
+      display->println(accel.z);
+    }
+
     display->display(partialRefresh);
     return true;
   }
