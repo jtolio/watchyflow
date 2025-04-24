@@ -79,7 +79,7 @@ protected:
       : time_(currentTime), wakeup_(wakeup) {}
 
   static bool syncNTP();
-  static void drawLoading();
+  static void drawNotice(char *msg);
 
 private:
   tmElements_t time_;

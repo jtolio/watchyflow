@@ -234,21 +234,21 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   lastFetchAttempt_ = now;
   fetchTries_++;
 
-  if (!connectWiFi(settings)) {
-    return;
+  drawNotice("Connecting...");
+
+  if (connectWiFi(settings)) {
+    drawNotice("Loading...   ");
+
+    bool success    = app->fetchNetwork(&watchy);
+    bool ntpSuccess = syncNTP();
+    if (success && ntpSuccess) {
+      lastSuccessfulNetworkFetch_ = now;
+      fetchTries_                 = settings.networkFetchTries;
+    }
+
+    WiFi.mode(WIFI_OFF);
+    btStop();
   }
-
-  drawLoading();
-
-  bool success    = app->fetchNetwork(&watchy);
-  bool ntpSuccess = syncNTP();
-  if (success && ntpSuccess) {
-    lastSuccessfulNetworkFetch_ = now;
-    fetchTries_                 = settings.networkFetchTries;
-  }
-
-  WiFi.mode(WIFI_OFF);
-  btStop();
 
   app->show(&watchy, &display_, true);
 }
@@ -326,8 +326,8 @@ time_t Watchy::lastSuccessfulNetworkFetch() {
   return lastSuccessfulNetworkFetch_;
 }
 
-void Watchy::drawLoading() {
-  LayoutText text("Loading...", NULL, GxEPD_BLACK);
+void Watchy::drawNotice(char *msg) {
+  LayoutText text(msg, NULL, GxEPD_BLACK);
   LayoutPad pad(&text, 3, 3, 3, 3);
   LayoutBorder border(&pad, true, true, true, true, GxEPD_BLACK);
   LayoutBackground background(&border, GxEPD_WHITE);
