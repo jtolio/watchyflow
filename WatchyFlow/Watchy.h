@@ -22,6 +22,11 @@ typedef enum WakeupReason {
   WAKEUP_USB    = 3
 } WakeupReason;
 
+typedef struct WiFiConfig {
+  String SSID;
+  String Pass;
+} WiFiConfig;
+
 typedef struct WatchySettings {
   // number of seconds between network fetch attempts
   int networkFetchIntervalSeconds;
@@ -29,9 +34,8 @@ typedef struct WatchySettings {
   // interval.
   int networkFetchTries;
 
-  // WiFi settings (TODO, support more than one)
-  String wifiSSID;
-  String wifiPass;
+  WiFiConfig *wifiNetworks;
+  int wifiNetworkCount;
 
   time_t defaultTimezoneOffset;
 

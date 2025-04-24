@@ -94,6 +94,22 @@ void Watchy::sleep() {
   esp_deep_sleep_start();
 }
 
+bool connectWiFi(WatchySettings settings) {
+  for (int i = 0; i < settings.wifiNetworkCount; i++) {
+    if (WL_CONNECT_FAILED == WiFi.begin(settings.wifiNetworks[i].SSID,
+                                        settings.wifiNetworks[i].Pass)) {
+      continue;
+    }
+    if (WL_CONNECTED != WiFi.waitForConnectResult()) {
+      WiFi.mode(WIFI_OFF);
+      btStop();
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
 void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   esp_sleep_wakeup_cause_t wakeup_reason;
   wakeup_reason = esp_sleep_get_wakeup_cause(); // get wake up reason
@@ -218,12 +234,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   lastFetchAttempt_ = now;
   fetchTries_++;
 
-  if (WL_CONNECT_FAILED == WiFi.begin(settings.wifiSSID, settings.wifiPass)) {
-    return;
-  }
-  if (WL_CONNECTED != WiFi.waitForConnectResult()) {
-    WiFi.mode(WIFI_OFF);
-    btStop();
+  if (!connectWiFi(settings)) {
     return;
   }
 

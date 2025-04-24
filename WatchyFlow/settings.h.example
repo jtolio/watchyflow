@@ -8,11 +8,23 @@ CalendarSettings calSettings{
                           "weather?lat=0.0&lon=0.0&lang=en&units=imperial&appid=APIKEY",
 };
 
+WiFiConfig wifiNetworks[] = {
+    {
+        .SSID = "ssid1",
+        .Pass = "pass1",
+    },
+    {
+        .SSID = "ssid2",
+        .Pass = "pass2",
+    },
+};
+
 WatchySettings watchSettings{
     .networkFetchIntervalSeconds = 60 * 60,
     .networkFetchTries           = 3,
-    .wifiSSID                    = "SSID",
-    .wifiPass                    = "PASSWORD",
+
+    .wifiNetworks     = wifiNetworks,
+    .wifiNetworkCount = sizeof(wifiNetworks) / sizeof(wifiNetworks[0]),
 
     // EST. will get fixed by weather api for EDT.
     .defaultTimezoneOffset = -5 * 60 * 60,
