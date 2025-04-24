@@ -16,6 +16,8 @@ WatchySettings watchSettings{
 
     // EST. will get fixed by weather api for EDT.
     .defaultTimezoneOffset = -5 * 60 * 60,
+
+    .flipButtonSides = false,
 };
 
 #endif

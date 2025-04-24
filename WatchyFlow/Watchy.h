@@ -34,6 +34,8 @@ typedef struct WatchySettings {
   String wifiPass;
 
   time_t defaultTimezoneOffset;
+
+  bool flipButtonSides;
 } WatchySettings;
 
 class Watchy {

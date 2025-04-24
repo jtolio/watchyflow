@@ -163,13 +163,29 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   {
     uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
     if (wakeupBit & MENU_BTN_MASK) {
-      app->buttonSelect(&watchy);
+      if (settings.flipButtonSides) {
+        app->buttonDown(&watchy);
+      } else {
+        app->buttonSelect(&watchy);
+      }
     } else if (wakeupBit & BACK_BTN_MASK) {
-      app->buttonBack(&watchy);
+      if (settings.flipButtonSides) {
+        app->buttonUp(&watchy);
+      } else {
+        app->buttonBack(&watchy);
+      }
     } else if (wakeupBit & UP_BTN_MASK) {
-      app->buttonUp(&watchy);
+      if (settings.flipButtonSides) {
+        app->buttonBack(&watchy);
+      } else {
+        app->buttonUp(&watchy);
+      }
     } else if (wakeupBit & DOWN_BTN_MASK) {
-      app->buttonDown(&watchy);
+      if (settings.flipButtonSides) {
+        app->buttonSelect(&watchy);
+      } else {
+        app->buttonDown(&watchy);
+      }
     }
   } break;
 #ifdef ARDUINO_ESP32S3_DEV
