@@ -250,7 +250,16 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     btStop();
   }
 
+  rtc_.read(currentTime);
+  watchy.reset(currentTime, WAKEUP_NETFETCH);
+
   app->show(&watchy, &display_, true);
+}
+
+void Watchy::reset(const tmElements_t &currentTime, WakeupReason wakeup) {
+  localtime_ = currentTime;
+  unixtime_  = toUnixTime(currentTime);
+  wakeup_    = wakeup;
 }
 
 void Watchy::vibrate(uint8_t intervalMs, uint8_t length) {

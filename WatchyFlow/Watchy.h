@@ -16,10 +16,11 @@ typedef struct AccelData {
 } AccelData;
 
 typedef enum WakeupReason {
-  WAKEUP_RESET  = 0,
-  WAKEUP_CLOCK  = 1,
-  WAKEUP_BUTTON = 2,
-  WAKEUP_USB    = 3
+  WAKEUP_RESET    = 0,
+  WAKEUP_CLOCK    = 1,
+  WAKEUP_BUTTON   = 2,
+  WAKEUP_USB      = 3,
+  WAKEUP_NETFETCH = 4,
 } WakeupReason;
 
 typedef struct WiFiConfig {
@@ -78,6 +79,8 @@ protected:
   Watchy(const tmElements_t &currentTime, WakeupReason wakeup)
       : localtime_(currentTime), unixtime_(toUnixTime(currentTime)),
         wakeup_(wakeup) {}
+
+  void reset(const tmElements_t &currentTime, WakeupReason wakeup);
 
   static bool syncNTP();
   static void drawNotice(char *msg);
