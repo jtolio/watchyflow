@@ -6,6 +6,7 @@
 #include "Layout.h"
 #include "Battery.h"
 #include "Calendar.h"
+#include "Weather.h"
 #include "Seven_Segment10pt7b.h"
 #include "DSEG7_Classic_Bold_25.h"
 #include "DSEG7_Classic_Regular_39.h"
@@ -16,7 +17,7 @@
 const uint16_t FOREGROUND_COLOR = DARKMODE ? GxEPD_WHITE : GxEPD_BLACK;
 const uint16_t BACKGROUND_COLOR = DARKMODE ? GxEPD_BLACK : GxEPD_WHITE;
 
-const uint8_t MAX_CALENDAR_COLUMNS                 = 8;
+const uint8_t MAX_CALENDAR_COLUMNS                 = 6;
 const uint16_t MAX_SECONDS_BETWEEN_WEATHER_UPDATES = 60 * 60 * 2;
 const int32_t DAY_SCROLL_INCREMENT                 = 2 * 60 * 60;
 
@@ -26,6 +27,7 @@ RTC_DATA_ATTR alarmsData alarms;
 RTC_DATA_ATTR uint8_t activeCalendarColumns;
 RTC_DATA_ATTR char calendarError[32];
 RTC_DATA_ATTR uint16_t lastTemperature;
+RTC_DATA_ATTR int16_t weatherConditionCode;
 RTC_DATA_ATTR int32_t dayScheduleOffset;
 RTC_DATA_ATTR int32_t monthEventOffset;
 RTC_DATA_ATTR bool viewShowAboveCalendar;
@@ -44,8 +46,9 @@ void CalendarFace::reset(Watchy *watchy) {
   ::reset(&alarms);
   ::reset(&calendarDay);
   lastTemperature       = 0;
+  weatherConditionCode  = -1;
   dayScheduleOffset     = 0;
-  viewShowAboveCalendar = false;
+  viewShowAboveCalendar = true;
   monthView             = false;
   monthDayAbs           = false;
   monthEventOffset      = 0;
@@ -86,6 +89,7 @@ bool CalendarFace::fetchNetwork(Watchy *watchy) {
       String payload         = http.getString();
       JSONVar responseObject = JSON.parse(payload);
       lastTemperature        = int(responseObject["main"]["temp"]);
+      weatherConditionCode   = int(responseObject["weather"][0]["id"]);
       watchy->setTimezoneOffset(int(responseObject["timezone"]));
     } else {
       success = false;
@@ -203,7 +207,21 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   tmElements_t offsetTime =
       watchy->toLocalTime(watchy->unixtime() + dayScheduleOffset);
 
-  String weatherStr = String(lastTemperature) + (settings_.metric ? "C" : "F");
+  time_t lastSuccessfulFetch = watchy->lastSuccessfulNetworkFetch();
+  bool weatherUpToDate =
+      lastSuccessfulFetch + MAX_SECONDS_BETWEEN_WEATHER_UPDATES >=
+      watchy->unixtime();
+
+  String tempStr;
+  if (weatherUpToDate) {
+    tempStr = String(lastTemperature) + (settings_.metric ? "C" : "F");
+  } else {
+    if (settings_.metric) {
+      tempStr = String(watchy->temperature()) + "C";
+    } else {
+      tempStr = String(watchy->temperature() * 9 / 5 + 32) + "F";
+    }
+  }
 
   String dayOfWeekStr  = dayShortStr(offsetTime.Wday);
   String monthStr      = monthShortStr(offsetTime.Month);
@@ -215,33 +233,67 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   LayoutFill elFill;
   LayoutSpacer elSpacer(5);
 
-  LayoutText elTimeSmall(timeStr, &DSEG7_Classic_Bold_25, color);
-  LayoutText elTimeLarge(timeStr, &DSEG7_Classic_Regular_39, color);
-  LayoutText *elTime = &elTimeSmall;
-  if (viewShowAboveCalendar) {
-    elTime = &elTimeLarge;
-  }
-
-  LayoutCenter elTimeCentered(elTime);
+  LayoutText elTime(timeStr, &DSEG7_Classic_Bold_25, color);
+  LayoutCenter elTimeCentered(&elTime);
 
   LayoutBitmap elWifi(wifioff, 26, 18, color);
-  LayoutText elTemp(weatherStr, &Seven_Segment10pt7b, color);
+  LayoutText elTemp(tempStr, &Seven_Segment10pt7b, color);
   LayoutElement *elTempOrWifi = &elWifi;
-  time_t lastSuccessfulFetch  = watchy->lastSuccessfulNetworkFetch();
-  if (lastSuccessfulFetch + MAX_SECONDS_BETWEEN_WEATHER_UPDATES >=
-      watchy->unixtime()) {
+  if (weatherUpToDate) {
     elTempOrWifi = &elTemp;
   }
+  LayoutCenter elTempCentered(&elTemp);
   LayoutCenter elTempOrWifiCentered(elTempOrWifi);
 
   LayoutBattery elBattery(watchy->battVoltage(), color);
   LayoutCenter elBatteryCentered(&elBattery);
 
-  LayoutElement *elTopElems[] = {&elTimeCentered, &elFill,
-                                 &elTempOrWifiCentered, &elSpacer,
-                                 &elBatteryCentered};
-  bool elTopStretch[]         = {false, true, false, false, false};
-  LayoutColumns elTop(5, elTopElems, elTopStretch);
+  LayoutElement *elSmallTopElems[] = {&elTimeCentered, &elFill,
+                                      &elTempOrWifiCentered, &elSpacer,
+                                      &elBatteryCentered};
+  bool elSmallTopStretch[]         = {false, true, false, false, false};
+  LayoutColumns elSmallTop(5, elSmallTopElems, elSmallTopStretch);
+
+  LayoutBitmap elStepsIcon(steps, 19, 23, color);
+  LayoutCenter elStepsIconCentered(&elStepsIcon);
+
+  if (currentTime.Hour == 0 && currentTime.Minute == 0) {
+    watchy->resetStepCounter();
+  }
+  LayoutText elStepsCount(String(watchy->stepCounter()), &Seven_Segment10pt7b,
+                          color);
+  LayoutCenter elStepsCountCentered(&elStepsCount);
+
+  LayoutText elBatteryVoltage(String(watchy->battVoltage()) + "V",
+                              &Seven_Segment10pt7b, color);
+  LayoutCenter elBatteryVoltageCentered(&elBatteryVoltage);
+
+  LayoutWeatherIcon elWeatherIcon(weatherUpToDate, weatherConditionCode, color);
+  LayoutCenter elWeatherIconCentered(&elWeatherIcon);
+
+  LayoutElement *elBatteryRowElems[] = {
+      &elStepsIconCentered,      &elSpacer, &elStepsCountCentered, &elFill,
+      &elBatteryVoltageCentered, &elSpacer, &elBatteryCentered};
+  bool elBatteryRowStretch[] = {false, false, false, true, false, false, false};
+  LayoutColumns elBatteryRow(7, elBatteryRowElems, elBatteryRowStretch);
+
+  LayoutText elBigTime(timeStr, &DSEG7_Classic_Regular_39, color);
+  LayoutCenter elBigTimeCentered(&elBigTime);
+
+  LayoutElement *elWeatherRowElems[] = {
+      &elSpacer, &elBigTimeCentered,    &elSpacer, &elFill, &elTempCentered,
+      &elSpacer, &elWeatherIconCentered};
+  bool elWeatherRowStretch[] = {false, false, false, true, false, false, false};
+  LayoutColumns elWeatherRow(7, elWeatherRowElems, elWeatherRowStretch);
+
+  LayoutElement *elLargeTopElems[] = {&elBatteryRow, &elSpacer, &elWeatherRow};
+  bool elLargeTopStretch[]         = {false, false, false};
+  LayoutRows elLargeTop(3, elLargeTopElems, elLargeTopStretch);
+
+  LayoutElement *elTop = &elSmallTop;
+  if (viewShowAboveCalendar) {
+    elTop = &elLargeTop;
+  }
 
   String errorMessage = calendarError;
   if (errorMessage.length() == 0) {
@@ -296,7 +348,7 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
 
   CalendarAlarms elAlarms(&alarms, watchy, color);
 
-  LayoutElement *elScreenElems[] = {&elTop, &elSpacer, &elMain, &elAlarms};
+  LayoutElement *elScreenElems[] = {elTop, &elSpacer, &elMain, &elAlarms};
   bool elScreenStretch[]         = {false, false, true, false};
   LayoutRows elScreen(4, elScreenElems, elScreenStretch);
 

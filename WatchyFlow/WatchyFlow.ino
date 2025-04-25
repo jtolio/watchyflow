@@ -34,9 +34,9 @@ public:
     display->print("temp:       ");
     uint8_t temp = watchy->temperature();
     display->print(temp);
-    display->print(" C ");
+    display->print("C, ");
     display->print(temp * 9 / 5 + 32);
-    display->println(" F");
+    display->println("F");
 
     display->print("direction:  ");
     display->println(watchy->direction());
@@ -54,6 +54,15 @@ public:
 
     display->display(partialRefresh);
     return true;
+  }
+};
+
+class ResetStepCounter : public WatchyApp {
+public:
+  virtual bool show(Watchy *watchy, Display *display,
+                    bool partialRefresh) override {
+    watchy->resetStepCounter();
+    return false;
   }
 };
 
@@ -85,10 +94,11 @@ void setup() {
   AboutApp about;
   TriggerNetworkFetchApp netFetch;
   TriggerCalendarReset calReset(&app);
-  WatchyApp *menuItems[] = {&about, &netFetch, &calReset};
-  String menuNames[]     = {"About", "Trigger Network Fetch",
-                            "Trigger Calendar Reset"};
-  MenuApp menu(&rootMenu, &app, 3, menuItems, menuNames);
+  ResetStepCounter resetSteps;
+  WatchyApp *menuItems[] = {&about, &netFetch, &calReset, &resetSteps};
+  String menuNames[]     = {"About", "Network Fetch", "Calendar Reset",
+                            "Reset Steps"};
+  MenuApp menu(&rootMenu, &app, 4, menuItems, menuNames);
   Watchy::wakeup(&menu, watchSettings);
 }
 

@@ -48,8 +48,8 @@ public:
   static void sleep();
 
 public:
-  tmElements_t localtime() { return time_; }
-  time_t unixtime() { return toUnixTime(time_); }
+  tmElements_t localtime() { return localtime_; }
+  time_t unixtime() { return unixtime_; }
 
   tmElements_t toLocalTime(time_t unix);
   time_t toUnixTime(const tmElements_t &local);
@@ -76,13 +76,15 @@ public:
 
 protected:
   Watchy(const tmElements_t &currentTime, WakeupReason wakeup)
-      : time_(currentTime), wakeup_(wakeup) {}
+      : localtime_(currentTime), unixtime_(toUnixTime(currentTime)),
+        wakeup_(wakeup) {}
 
   static bool syncNTP();
   static void drawNotice(char *msg);
 
 private:
-  tmElements_t time_;
+  tmElements_t localtime_;
+  time_t unixtime_;
   WakeupReason wakeup_;
 };
 
