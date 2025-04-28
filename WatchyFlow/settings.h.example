@@ -30,6 +30,14 @@ WatchySettings watchSettings{
     .defaultTimezoneOffset = -5 * 60 * 60,
 
     .flipButtonSides = false,
+
+#ifdef IS_WATCHY_V3
+    .fullVoltage  = 3.99,
+    .emptyVoltage = 3.2,
+#else
+    .fullVoltage  = 4.2,
+    .emptyVoltage = 3.2,
+#endif
 };
 
 #endif

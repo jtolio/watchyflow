@@ -5,6 +5,12 @@
 #include <GxEPD2_BW.h>
 #include "Display.h"
 
+#ifdef ARDUINO_ESP32S3_DEV
+#define IS_WATCHY_V3
+#else
+#define IS_WATCHY_V2
+#endif
+
 class WatchyApp;
 
 typedef GxEPD2_BW<WatchyDisplay, WatchyDisplay::HEIGHT> Display;
@@ -41,6 +47,9 @@ typedef struct WatchySettings {
   time_t defaultTimezoneOffset;
 
   bool flipButtonSides;
+
+  float fullVoltage;
+  float emptyVoltage;
 } WatchySettings;
 
 class Watchy {
@@ -58,7 +67,9 @@ public:
   WakeupReason wakeupReason() { return wakeup_; }
 
   void vibrate(uint8_t intervalMs = 100, uint8_t length = 20);
+
   float battVoltage();
+  int battPercent();
 
   // offset is the offset in seconds that the local time is from UTC.
   // e.g., EST is (-5 * 60 * 60).
@@ -76,9 +87,10 @@ public:
   uint8_t direction();
 
 protected:
-  Watchy(const tmElements_t &currentTime, WakeupReason wakeup)
+  Watchy(const tmElements_t &currentTime, WakeupReason wakeup,
+         WatchySettings settings)
       : localtime_(currentTime), unixtime_(toUnixTime(currentTime)),
-        wakeup_(wakeup) {}
+        wakeup_(wakeup), settings_(settings) {}
 
   void reset(const tmElements_t &currentTime, WakeupReason wakeup);
 
@@ -89,6 +101,7 @@ private:
   tmElements_t localtime_;
   time_t unixtime_;
   WakeupReason wakeup_;
+  WatchySettings settings_;
 };
 
 class WatchyApp {

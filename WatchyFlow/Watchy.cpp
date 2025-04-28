@@ -165,7 +165,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
 
   tmElements_t currentTime;
   rtc_.read(currentTime);
-  Watchy watchy(currentTime, wakeup_reason_enum);
+  Watchy watchy(currentTime, wakeup_reason_enum, settings);
   bool partialRefresh = true;
 
   switch (wakeup_reason) {
@@ -283,6 +283,18 @@ float Watchy::battVoltage() {
     return analogReadMilliVolts(BATT_ADC_PIN) / 1000.0f * 2.0f;
   }
 #endif
+}
+
+int Watchy::battPercent() {
+  int percent = (battVoltage() - settings_.emptyVoltage) * 100 /
+                (settings_.fullVoltage - settings_.emptyVoltage);
+  if (percent > 100) {
+    percent = 100;
+  }
+  if (percent < 0) {
+    percent = 0;
+  }
+  return percent;
 }
 
 void Watchy::triggerNetworkFetch() {

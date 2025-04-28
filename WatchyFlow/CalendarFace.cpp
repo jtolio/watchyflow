@@ -245,7 +245,7 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   LayoutCenter elTempCentered(&elTemp);
   LayoutCenter elTempOrWifiCentered(elTempOrWifi);
 
-  LayoutBattery elBattery(watchy->battVoltage(), color);
+  LayoutBattery elBattery(watchy, color);
   LayoutCenter elBatteryCentered(&elBattery);
 
   LayoutElement *elSmallTopElems[] = {&elTimeCentered, &elFill,
@@ -387,6 +387,8 @@ void CalendarFace::buttonUp(Watchy *watchy) {
 bool CalendarFace::buttonBack(Watchy *watchy) {
   if (dayScheduleOffset == 0) {
     monthView = !monthView;
+  } else {
+    viewShowAboveCalendar = true;
   }
   dayScheduleOffset = 0;
   monthEventOffset  = 0;

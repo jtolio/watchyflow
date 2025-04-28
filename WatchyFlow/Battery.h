@@ -1,12 +1,13 @@
 #ifndef BATTERY_H
 #define BATTERY_H
 
+#include "Watchy.h"
 #include "Layout.h"
 
 class LayoutBattery : public LayoutElement {
 public:
-  explicit LayoutBattery(float vbat, uint16_t color)
-      : vbat_(vbat), color_(color) {}
+  explicit LayoutBattery(Watchy *watchy, uint16_t color)
+      : watchy_(watchy), color_(color) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override;
@@ -15,7 +16,7 @@ public:
             uint16_t targetHeight, uint16_t *width, uint16_t *height) override;
 
 private:
-  float vbat_;
+  Watchy *watchy_;
   uint16_t color_;
 };
 
