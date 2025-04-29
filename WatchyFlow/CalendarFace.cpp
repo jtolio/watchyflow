@@ -303,14 +303,13 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
     }
   }
   LayoutText elError(errorMessage, &Picopixel, color);
-  LayoutCenter elErrorCenter(&elError);
 
   LayoutText elDateWords(dayOfWeekStr + " " + monthStr + " " + dayOfMonthStr,
                          &Seven_Segment10pt7b, color);
   LayoutRotate elDateRotated(&elDateWords, 3);
-  LayoutElement *elDateElems[] = {&elDateRotated, &elFill, &elErrorCenter};
-  bool elDateStretch[]         = {false, true, false};
-  LayoutRows elDate(3, elDateElems, elDateStretch);
+  LayoutElement *elDateElems[] = {&elDateRotated, &elFill};
+  bool elDateStretch[]         = {false, true};
+  LayoutRows elDate(2, elDateElems, elDateStretch);
 
   CalendarDayEvents elCalendarDay(&calendarDay, watchy, dayScheduleOffset,
                                   color);
@@ -339,7 +338,19 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
   if (monthView) {
     elCalendarSelection = &elCalendarMonth;
   }
-  LayoutBorder elCalendarBorder(elCalendarSelection, true, false, true, true,
+
+  LayoutPad elErrorPadded(&elError, 2, 2, 2, 2);
+  LayoutBackground elErrorBackground(&elErrorPadded, BACKGROUND_COLOR);
+  LayoutElement *elErrorRightElems[] = {&elFill, &elErrorBackground};
+  bool elErrorRightStretch[]         = {true, false};
+  LayoutColumns elErrorRight(2, elErrorRightElems, elErrorRightStretch);
+  LayoutElement *elErrorBottomRightElems[] = {&elFill, &elErrorRight};
+  bool elErrorBottomRightStretch[]         = {true, false};
+  LayoutRows elErrorBottomRight(2, elErrorBottomRightElems,
+                                elErrorBottomRightStretch);
+  LayoutOverlay elCalWithError(elCalendarSelection, &elErrorBottomRight);
+
+  LayoutBorder elCalendarBorder(&elCalWithError, true, false, true, true,
                                 color);
 
   LayoutElement *elMainElems[] = {&elDate, &elSpacer, &elCalendarBorder};

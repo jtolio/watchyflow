@@ -253,4 +253,24 @@ private:
   uint16_t color_;
 };
 
+class LayoutOverlay : public LayoutElement {
+public:
+  LayoutOverlay() : background_(NULL), foreground_(NULL) {}
+  LayoutOverlay(const LayoutOverlay &copy)
+      : background_(copy.background_), foreground_(copy.foreground_) {}
+
+  LayoutOverlay(LayoutElement *background, LayoutElement *foreground)
+      : background_(background), foreground_(foreground) {}
+
+  void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override;
+
+  void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
+            uint16_t targetHeight, uint16_t *width, uint16_t *height) override;
+
+private:
+  LayoutElement *background_;
+  LayoutElement *foreground_;
+};
+
 #endif

@@ -397,3 +397,36 @@ void LayoutBackground::draw(Display *display, int16_t x0, int16_t y0,
   display->fillRect(x0, y0, *width, *height, color_);
   child_->draw(display, x0, y0, targetWidth, targetHeight, width, height);
 }
+
+void LayoutOverlay::size(Display *display, uint16_t targetWidth,
+                         uint16_t targetHeight, uint16_t *width,
+                         uint16_t *height) {
+  uint16_t w, h;
+  background_->size(display, targetWidth, targetHeight, &w, &h);
+  if (targetWidth < w) {
+    targetWidth = w;
+  }
+  if (targetHeight < h) {
+    targetHeight = h;
+  }
+  foreground_->size(display, targetWidth, targetHeight, width, height);
+  if (w > *width) {
+    *width = w;
+  }
+  if (h > *height) {
+    *height = h;
+  }
+}
+
+void LayoutOverlay::draw(Display *display, int16_t x0, int16_t y0,
+                         uint16_t targetWidth, uint16_t targetHeight,
+                         uint16_t *width, uint16_t *height) {
+  background_->draw(display, x0, y0, targetWidth, targetHeight, width, height);
+  if (targetWidth < *width) {
+    targetWidth = *width;
+  }
+  if (targetHeight < *height) {
+    targetHeight = *height;
+  }
+  foreground_->draw(display, x0, y0, targetWidth, targetHeight, width, height);
+}
