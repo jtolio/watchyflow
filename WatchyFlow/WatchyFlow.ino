@@ -2,11 +2,19 @@
 #include "CalendarFace.h"
 #include "MenuApp.h"
 #include "settings.h"
+#include "Arena.h"
 
 RTC_DATA_ATTR menuAppMemory rootMenu;
+RTC_DATA_ATTR size_t arenaUsed_;
+RTC_DATA_ATTR size_t arenaRemaining_;
 
 class AboutApp : public WatchyApp {
 public:
+  virtual void reset(Watchy *watchy) override {
+    arenaUsed_      = 0;
+    arenaRemaining_ = 0;
+  }
+
   virtual bool show(Watchy *watchy, Display *display,
                     bool partialRefresh) override {
     display->fillScreen(GxEPD_WHITE);
@@ -37,6 +45,11 @@ public:
     display->print("C, ");
     display->print(temp * 9 / 5 + 32);
     display->println("F");
+
+    display->print("arena used: ");
+    display->println(arenaUsed_);
+    display->print("remaining:  ");
+    display->println(arenaRemaining_);
 
     display->print("direction:  ");
     display->println(watchy->direction());
@@ -105,4 +118,10 @@ void setup() {
   Watchy::wakeup(&menu, watchSettings);
 }
 
-void loop() { Watchy::sleep(); }
+void loop() {
+  if (globalArena.used() > arenaUsed_) {
+    arenaUsed_      = globalArena.used();
+    arenaRemaining_ = globalArena.remaining();
+  }
+  Watchy::sleep();
+}

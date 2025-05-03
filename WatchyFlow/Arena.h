@@ -15,6 +15,9 @@ public:
   void *allocate(size_t requested, size_t alignment);
   void deallocate(void *ptr, size_t size) noexcept;
 
+  size_t used() { return current_ - begin_; }
+  size_t remaining() { return end_ - current_; }
+
 private:
   size_t size_;
   char *begin_;
