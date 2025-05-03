@@ -238,102 +238,101 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
     }
   }
 
-  LayoutText elemTemp(tempStr, &Seven_Segment10pt7b, color);
-  LayoutBitmap elemWiFiOff(wifioff, 26, 18, color);
-  LayoutElement *elemTempOrWiFi =
-      weatherUpToDate ? static_cast<LayoutElement *>(&elemTemp)
-                      : static_cast<LayoutElement *>(&elemWiFiOff);
+  LayoutCell elemTempOrWiFi;
+  if (weatherUpToDate) {
+    elemTempOrWiFi.set(LayoutText(tempStr, &Seven_Segment10pt7b, color));
+  } else {
+    elemTempOrWiFi.set(LayoutBitmap(wifioff, 26, 18, color));
+  }
 
-  LayoutColumns elemSmallTop({
-      LayoutCell(
-          LayoutCenter(LayoutText(timeStr, &DSEG7_Classic_Bold_25, color))),
-      LayoutCell(LayoutFill(), true),
-      LayoutCell(LayoutCenter(*elemTempOrWiFi)),
-      LayoutCell(LayoutSpacer(5)),
-      LayoutCell(LayoutCenter(LayoutBattery(watchy, color))),
-  });
-
-  LayoutRows elemLargeTop({
-      LayoutCell(LayoutColumns({
-          LayoutCell(LayoutCenter(LayoutBitmap(steps, 19, 23, color))),
-          LayoutCell(LayoutSpacer(5)),
-          LayoutCell(LayoutCenter(LayoutText(String(watchy->stepCounter()),
-                                             &Seven_Segment10pt7b, color))),
-          LayoutCell(LayoutFill(), true),
-          LayoutCell(
-              LayoutCenter(LayoutText(String(watchy->battVoltage()) + "V",
-                                      &Seven_Segment10pt7b, color))),
-          LayoutCell(LayoutSpacer(5)),
-          LayoutCell(LayoutCenter(LayoutBattery(watchy, color))),
-      })),
-      LayoutCell(LayoutSpacer(5)),
-      LayoutCell(LayoutColumns({
-          LayoutCell(LayoutSpacer(5)),
-          LayoutCell(LayoutCenter(
-              LayoutText(timeStr, &DSEG7_Classic_Regular_39, color))),
-          LayoutCell(LayoutSpacer(5)),
-          LayoutCell(LayoutFill(), true),
-          LayoutCell(LayoutCenter(elemTemp)),
-          LayoutCell(LayoutSpacer(5)),
-          LayoutCell(LayoutCenter(
-              LayoutWeatherIcon(weatherUpToDate, weatherConditionCode, color))),
-      })),
-  });
-
-  LayoutElement *elemTop = viewShowAboveCalendar
-                               ? static_cast<LayoutElement *>(&elemLargeTop)
-                               : static_cast<LayoutElement *>(&elemSmallTop);
+  LayoutCell elemTop;
+  if (viewShowAboveCalendar) {
+    elemTop.set(LayoutRows({
+        LayoutEntry(LayoutColumns({
+            LayoutEntry(LayoutVCenter(LayoutBitmap(steps, 19, 23, color))),
+            LayoutEntry(LayoutSpacer(5)),
+            LayoutEntry(LayoutVCenter(LayoutText(String(watchy->stepCounter()),
+                                                 &Seven_Segment10pt7b, color))),
+            LayoutEntry(LayoutFill(), true),
+            LayoutEntry(LayoutVCenter(LayoutText(String(watchy->battVoltage()),
+                                                 &Seven_Segment10pt7b, color))),
+            LayoutEntry(LayoutSpacer(5)),
+            LayoutEntry(LayoutVCenter(LayoutBattery(watchy, color))),
+        })),
+        LayoutEntry(LayoutSpacer(5)),
+        LayoutEntry(LayoutColumns({
+            LayoutEntry(LayoutSpacer(5)),
+            LayoutEntry(LayoutVCenter(
+                LayoutText(timeStr, &DSEG7_Classic_Regular_39, color))),
+            LayoutEntry(LayoutSpacer(5)),
+            LayoutEntry(LayoutFill(), true),
+            LayoutEntry(LayoutVCenter(
+                LayoutText(tempStr, &Seven_Segment10pt7b, color))),
+            LayoutEntry(LayoutSpacer(5)),
+            LayoutEntry(LayoutVCenter(LayoutWeatherIcon(
+                weatherUpToDate, weatherConditionCode, color))),
+        })),
+    }));
+  } else {
+    elemTop.set(LayoutColumns({
+        LayoutEntry(
+            LayoutVCenter(LayoutText(timeStr, &DSEG7_Classic_Bold_25, color))),
+        LayoutEntry(LayoutFill(), true),
+        LayoutEntry(LayoutVCenter(elemTempOrWiFi)),
+        LayoutEntry(LayoutSpacer(5)),
+        LayoutEntry(LayoutVCenter(LayoutBattery(watchy, color))),
+    }));
+  }
 
   LayoutBottomAlign elemError(LayoutRightAlign(LayoutBackground(
       LayoutPad(LayoutText(errorMessage, &Picopixel, color), 2, 2, 2, 2),
       BACKGROUND_COLOR)));
 
-  std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> calColumns(
-      allocatorLayoutCell);
-  calColumns.reserve(activeCalendarColumns + 1);
-  calColumns.push_back(
-      LayoutCell(CalendarHourBar(watchy, dayScheduleOffset, color)));
-  for (int i = 0; i < activeCalendarColumns; i++) {
-    calColumns.push_back(LayoutCell(
-        CalendarColumn(&calendar[i], watchy, dayScheduleOffset, color), true));
+  LayoutCell elemCalendar;
+  if (monthView) {
+    elemCalendar.set(CalendarMonth(&calendarDay, watchy, monthEventOffset,
+                                   !monthDayAbs, color));
+  } else {
+    std::vector<LayoutEntry, MemArenaAllocator<LayoutEntry>> calColumns(
+        allocatorLayoutEntry);
+    calColumns.reserve(activeCalendarColumns + 1);
+    calColumns.push_back(
+        LayoutEntry(CalendarHourBar(watchy, dayScheduleOffset, color)));
+    for (int i = 0; i < activeCalendarColumns; i++) {
+      calColumns.push_back(LayoutEntry(
+          CalendarColumn(&calendar[i], watchy, dayScheduleOffset, color),
+          true));
+    }
+    elemCalendar.set(LayoutRows({
+        LayoutEntry(
+            CalendarDayEvents(&calendarDay, watchy, dayScheduleOffset, color)),
+        LayoutEntry(LayoutColumns(calColumns), true),
+    }));
   }
 
-  LayoutRows elemCalendarDay({
-      LayoutCell(
-          CalendarDayEvents(&calendarDay, watchy, dayScheduleOffset, color)),
-      LayoutCell(LayoutColumns(calColumns), true),
-  });
-
-  CalendarMonth elemCalendarMonth(&calendarDay, watchy, monthEventOffset,
-                                  !monthDayAbs, color);
-
-  LayoutElement *elemCalendar =
-      monthView ? static_cast<LayoutElement *>(&elemCalendarMonth)
-                : static_cast<LayoutElement *>(&elemCalendarDay);
-
   uint16_t w, h;
-  LayoutRows(
-      {
-          LayoutCell(*elemTop),
-          LayoutCell(LayoutSpacer(5)),
-          LayoutCell(LayoutColumns({
-                         LayoutCell(LayoutRows({
-                             LayoutCell(LayoutRotate(
+  LayoutRows({
+                 LayoutEntry(elemTop),
+                 LayoutEntry(LayoutSpacer(5)),
+                 LayoutEntry(
+                     LayoutColumns({
+                         LayoutEntry(LayoutRows({
+                             LayoutEntry(LayoutRotate(
                                  LayoutText(dayOfWeekStr + " " + monthStr +
                                                 " " + dayOfMonthStr,
                                             &Seven_Segment10pt7b, color),
                                  3)),
-                             LayoutCell(LayoutFill(), true),
+                             LayoutEntry(LayoutFill(), true),
                          })),
-                         LayoutCell(LayoutSpacer(5)),
-                         LayoutCell(LayoutBorder(
-                                        LayoutOverlay(*elemCalendar, elemError),
-                                        true, false, true, true, color),
-                                    true),
+                         LayoutEntry(LayoutSpacer(5)),
+                         LayoutEntry(LayoutBorder(
+                                         LayoutOverlay(elemCalendar, elemError),
+                                         true, false, true, true, color),
+                                     true),
                      }),
                      true),
-          LayoutCell(CalendarAlarms(&alarms, watchy, color)),
-      })
+                 LayoutEntry(CalendarAlarms(&alarms, watchy, color)),
+             })
       .draw(display, 0, 0, display->width(), display->height(), &w, &h);
 
   display->display(partialRefresh);

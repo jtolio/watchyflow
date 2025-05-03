@@ -140,28 +140,28 @@ bool MenuApp::showMenu(Watchy *watchy, Display *display, bool partialRefresh) {
   display->fillScreen(BACKGROUND_COLOR);
   display->setTextWrap(false);
 
-  std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> menu(
-      allocatorLayoutCell);
+  std::vector<LayoutEntry, MemArenaAllocator<LayoutEntry>> menu(
+      allocatorLayoutEntry);
   menu.reserve(items_.size() + 2);
 
-  menu.push_back(LayoutCell(LayoutBorder(
+  menu.push_back(LayoutEntry(LayoutBorder(
       LayoutHCenter(LayoutPad(LayoutText("Menu", TITLE_FONT, FOREGROUND_COLOR),
                               3, 0, 3, 0)),
       false, false, true, false, FOREGROUND_COLOR)));
 
   for (int i = 0; i < items_.size(); i++) {
     if (i != memory_->selected) {
-      menu.push_back(LayoutCell(LayoutHCenter(LayoutPad(
+      menu.push_back(LayoutEntry(LayoutHCenter(LayoutPad(
           LayoutText(items_[i].name_, FONT, FOREGROUND_COLOR), 3, 0, 3, 0))));
     } else {
-      menu.push_back(LayoutCell(LayoutBackground(
+      menu.push_back(LayoutEntry(LayoutBackground(
           LayoutHCenter(LayoutPad(
               LayoutText(items_[i].name_, FONT, BACKGROUND_COLOR), 3, 0, 3, 0)),
           FOREGROUND_COLOR)));
     }
   }
 
-  menu.push_back(LayoutCell(LayoutFill(), true));
+  menu.push_back(LayoutEntry(LayoutFill(), true));
 
   uint16_t w, h;
   LayoutRows(menu).draw(display, 0, 0, display->width(), display->height(), &w,

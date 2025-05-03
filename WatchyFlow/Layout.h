@@ -87,9 +87,9 @@ private:
   uint16_t color_;
 };
 
-class LayoutCell {
+class LayoutEntry {
 public:
-  explicit LayoutCell(const LayoutElement &elem, bool stretch = false)
+  explicit LayoutEntry(const LayoutElement &elem, bool stretch = false)
       : elem_(elem.clone()), stretch_(stretch) {}
 
   friend class LayoutColumns;
@@ -100,12 +100,12 @@ private:
   bool stretch_;
 };
 
-extern MemArenaAllocator<LayoutCell> allocatorLayoutCell;
+extern MemArenaAllocator<LayoutEntry> allocatorLayoutEntry;
 
 class LayoutColumns : public LayoutElement {
 public:
-  LayoutColumns(std::initializer_list<LayoutCell> elems);
-  LayoutColumns(std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> elems)
+  LayoutColumns(std::initializer_list<LayoutEntry> elems);
+  LayoutColumns(std::vector<LayoutEntry, MemArenaAllocator<LayoutEntry>> elems)
       : elems_(std::move(elems)) {}
   LayoutColumns(const LayoutColumns &copy) : elems_(copy.elems_) {}
 
@@ -119,13 +119,13 @@ public:
   }
 
 private:
-  std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> elems_;
+  std::vector<LayoutEntry, MemArenaAllocator<LayoutEntry>> elems_;
 };
 
 class LayoutRows : public LayoutElement {
 public:
-  LayoutRows(std::initializer_list<LayoutCell> elems);
-  LayoutRows(std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> elems)
+  LayoutRows(std::initializer_list<LayoutEntry> elems);
+  LayoutRows(std::vector<LayoutEntry, MemArenaAllocator<LayoutEntry>> elems)
       : elems_(std::move(elems)) {}
   LayoutRows(const LayoutRows &copy) : elems_(copy.elems_) {}
 
@@ -139,7 +139,7 @@ public:
   }
 
 private:
-  std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> elems_;
+  std::vector<LayoutEntry, MemArenaAllocator<LayoutEntry>> elems_;
 };
 
 class LayoutFill : public LayoutElement {
@@ -191,6 +191,24 @@ public:
 
   LayoutElement::ptr clone() const override {
     return std::make_shared<LayoutHCenter>(*this);
+  }
+
+private:
+  LayoutElement::ptr child_;
+};
+
+class LayoutVCenter : public LayoutElement {
+public:
+  explicit LayoutVCenter(const LayoutElement &child) : child_(child.clone()) {}
+  LayoutVCenter(const LayoutVCenter &copy) : child_(copy.child_) {}
+
+  void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override;
+  void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
+            uint16_t targetHeight, uint16_t *width, uint16_t *height) override;
+
+  LayoutElement::ptr clone() const override {
+    return std::make_shared<LayoutVCenter>(*this);
   }
 
 private:
@@ -344,7 +362,8 @@ private:
 
 class LayoutRightAlign : public LayoutElement {
 public:
-  LayoutRightAlign(const LayoutElement &child) : child_(child.clone()) {}
+  explicit LayoutRightAlign(const LayoutElement &child)
+      : child_(child.clone()) {}
   LayoutRightAlign(const LayoutRightAlign &copy) : child_(copy.child_) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
@@ -377,7 +396,8 @@ private:
 
 class LayoutBottomAlign : public LayoutElement {
 public:
-  LayoutBottomAlign(const LayoutElement &child) : child_(child.clone()) {}
+  explicit LayoutBottomAlign(const LayoutElement &child)
+      : child_(child.clone()) {}
   LayoutBottomAlign(const LayoutBottomAlign &copy) : child_(copy.child_) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
@@ -402,6 +422,42 @@ public:
 
   LayoutElement::ptr clone() const override {
     return std::make_shared<LayoutBottomAlign>(*this);
+  }
+
+private:
+  LayoutElement::ptr child_;
+};
+
+class LayoutCell : public LayoutElement {
+public:
+  LayoutCell() : child_() {}
+  explicit LayoutCell(const LayoutElement &child) : child_(child.clone()) {}
+  LayoutCell(const LayoutCell &copy) : child_(copy.child_) {}
+
+  void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override {
+    if (!child_) {
+      *width  = 0;
+      *height = 0;
+      return;
+    }
+    child_->size(display, targetWidth, targetHeight, width, height);
+  }
+
+  void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
+            uint16_t targetHeight, uint16_t *width, uint16_t *height) override {
+    if (!child_) {
+      *width  = 0;
+      *height = 0;
+      return;
+    }
+    child_->draw(display, x0, y0, targetWidth, targetHeight, width, height);
+  }
+
+  void set(const LayoutElement &child) { child_ = child.clone(); }
+
+  LayoutElement::ptr clone() const override {
+    return std::make_shared<LayoutCell>(*this);
   }
 
 private:

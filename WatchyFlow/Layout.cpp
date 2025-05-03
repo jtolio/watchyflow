@@ -112,12 +112,12 @@ void LayoutRotate::draw(Display *display, int16_t x0, int16_t y0,
   }
 }
 
-MemArenaAllocator<LayoutCell> allocatorLayoutCell(globalArena);
+MemArenaAllocator<LayoutEntry> allocatorLayoutEntry(globalArena);
 
-LayoutColumns::LayoutColumns(std::initializer_list<LayoutCell> elems)
-    : elems_(allocatorLayoutCell) {
+LayoutColumns::LayoutColumns(std::initializer_list<LayoutEntry> elems)
+    : elems_(allocatorLayoutEntry) {
   elems_.reserve(elems.size());
-  for (const LayoutCell &info : elems) {
+  for (const LayoutEntry &info : elems) {
     elems_.push_back(info);
   }
 }
@@ -190,10 +190,10 @@ void LayoutColumns::draw(Display *display, int16_t x0, int16_t y0,
   }
 }
 
-LayoutRows::LayoutRows(std::initializer_list<LayoutCell> elems)
-    : elems_(allocatorLayoutCell) {
+LayoutRows::LayoutRows(std::initializer_list<LayoutEntry> elems)
+    : elems_(allocatorLayoutEntry) {
   elems_.reserve(elems.size());
-  for (const LayoutCell &info : elems) {
+  for (const LayoutEntry &info : elems) {
     elems_.push_back(info);
   }
 }
@@ -327,6 +327,33 @@ void LayoutHCenter::draw(Display *display, int16_t x0, int16_t y0,
   *width += x0_offset;
   if (*width < targetWidth) {
     *width = targetWidth;
+  }
+}
+
+void LayoutVCenter::size(Display *display, uint16_t targetWidth,
+                         uint16_t targetHeight, uint16_t *width,
+                         uint16_t *height) {
+  child_->size(display, targetWidth, targetHeight, width, height);
+  if (*height < targetHeight) {
+    *height = targetHeight;
+  }
+}
+
+void LayoutVCenter::draw(Display *display, int16_t x0, int16_t y0,
+                         uint16_t targetWidth, uint16_t targetHeight,
+                         uint16_t *width, uint16_t *height) {
+  int16_t y0_offset = 0;
+
+  child_->size(display, targetWidth, targetHeight, width, height);
+  if (*height < targetHeight) {
+    y0_offset = (targetHeight - *height) / 2;
+  }
+
+  child_->draw(display, x0, y0 + y0_offset, *width, *height, width, height);
+
+  *height += y0_offset;
+  if (*height < targetHeight) {
+    *height = targetHeight;
   }
 }
 
