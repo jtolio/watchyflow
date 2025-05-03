@@ -288,7 +288,8 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
       LayoutPad(LayoutText(errorMessage, &Picopixel, color), 2, 2, 2, 2),
       BACKGROUND_COLOR)));
 
-  std::vector<LayoutCell> calColumns;
+  std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> calColumns(
+      allocatorLayoutCell);
   calColumns.reserve(activeCalendarColumns + 1);
   calColumns.push_back(
       LayoutCell(CalendarHourBar(watchy, dayScheduleOffset, color)));

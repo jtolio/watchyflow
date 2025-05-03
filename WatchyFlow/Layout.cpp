@@ -1,5 +1,24 @@
 #include "Layout.h"
 
+static void *LayoutElement::operator new(size_t size) {
+  return globalArena.allocate(size, alignof(LayoutElement));
+}
+static void *LayoutElement::operator new[](size_t size) {
+  return globalArena.allocate(size, alignof(LayoutElement));
+}
+static void LayoutElement::operator delete(void *ptr, size_t size) noexcept {
+  globalArena.deallocate(ptr, size);
+}
+static void LayoutElement::operator delete(void *ptr) noexcept {
+  globalArena.deallocate(ptr, -1);
+}
+static void LayoutElement::operator delete[](void *ptr, size_t size) noexcept {
+  globalArena.deallocate(ptr, size);
+}
+static void LayoutElement::operator delete[](void *ptr) noexcept {
+  globalArena.deallocate(ptr, -1);
+}
+
 void LayoutText::size(Display *display, uint16_t targetWidth,
                       uint16_t targetHeight, uint16_t *width,
                       uint16_t *height) {
@@ -93,7 +112,10 @@ void LayoutRotate::draw(Display *display, int16_t x0, int16_t y0,
   }
 }
 
-LayoutColumns::LayoutColumns(std::initializer_list<LayoutCell> elems) {
+MemArenaAllocator<LayoutCell> allocatorLayoutCell(globalArena);
+
+LayoutColumns::LayoutColumns(std::initializer_list<LayoutCell> elems)
+    : elems_(allocatorLayoutCell) {
   elems_.reserve(elems.size());
   for (const LayoutCell &info : elems) {
     elems_.push_back(info);
@@ -168,7 +190,8 @@ void LayoutColumns::draw(Display *display, int16_t x0, int16_t y0,
   }
 }
 
-LayoutRows::LayoutRows(std::initializer_list<LayoutCell> elems) {
+LayoutRows::LayoutRows(std::initializer_list<LayoutCell> elems)
+    : elems_(allocatorLayoutCell) {
   elems_.reserve(elems.size());
   for (const LayoutCell &info : elems) {
     elems_.push_back(info);

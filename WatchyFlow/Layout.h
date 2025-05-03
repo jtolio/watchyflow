@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Watchy.h"
+#include "Arena.h"
 #include <memory>
 #include <vector>
 #include <initializer_list>
@@ -18,6 +19,13 @@ public:
                     uint16_t *width, uint16_t *height) = 0;
   virtual LayoutElement::ptr clone() const             = 0;
   virtual ~LayoutElement()                             = default;
+
+  static void *operator new(size_t size);
+  static void *operator new[](size_t size);
+  static void operator delete(void *ptr, size_t size) noexcept;
+  static void operator delete(void *ptr) noexcept;
+  static void operator delete[](void *ptr, size_t size) noexcept;
+  static void operator delete[](void *ptr) noexcept;
 
 protected:
   LayoutElement()                                 = default;
@@ -92,10 +100,13 @@ private:
   bool stretch_;
 };
 
+extern MemArenaAllocator<LayoutCell> allocatorLayoutCell;
+
 class LayoutColumns : public LayoutElement {
 public:
   LayoutColumns(std::initializer_list<LayoutCell> elems);
-  LayoutColumns(std::vector<LayoutCell> elems) : elems_(std::move(elems)) {}
+  LayoutColumns(std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> elems)
+      : elems_(std::move(elems)) {}
   LayoutColumns(const LayoutColumns &copy) : elems_(copy.elems_) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
@@ -108,13 +119,14 @@ public:
   }
 
 private:
-  std::vector<LayoutCell> elems_;
+  std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> elems_;
 };
 
 class LayoutRows : public LayoutElement {
 public:
   LayoutRows(std::initializer_list<LayoutCell> elems);
-  LayoutRows(std::vector<LayoutCell> elems) : elems_(std::move(elems)) {}
+  LayoutRows(std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> elems)
+      : elems_(std::move(elems)) {}
   LayoutRows(const LayoutRows &copy) : elems_(copy.elems_) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
@@ -127,7 +139,7 @@ public:
   }
 
 private:
-  std::vector<LayoutCell> elems_;
+  std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> elems_;
 };
 
 class LayoutFill : public LayoutElement {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Watchy.h"
+#include "Arena.h"
 #include <vector>
 #include <initializer_list>
 
@@ -23,12 +24,14 @@ private:
   String name_;
 };
 
+extern MemArenaAllocator<MenuItem> allocatorMenuItem;
+
 class MenuApp : public WatchyApp {
 public:
   MenuApp(menuAppMemory *memory, WatchyApp *mainFace,
           std::initializer_list<MenuItem> elems);
   MenuApp(menuAppMemory *memory, WatchyApp *mainFace,
-          std::vector<MenuItem> elems)
+          std::vector<MenuItem, MemArenaAllocator<MenuItem>> elems)
       : memory_(memory), main_(mainFace), items_(std::move(elems)),
         fullDrawNeeded_(false) {}
 
@@ -47,6 +50,6 @@ private:
 private:
   menuAppMemory *memory_;
   WatchyApp *main_;
-  std::vector<MenuItem> items_;
+  std::vector<MenuItem, MemArenaAllocator<MenuItem>> items_;
   bool fullDrawNeeded_;
 };

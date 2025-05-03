@@ -11,9 +11,12 @@ const GFXfont *FONT       = &FreeSans9pt7b;
 const uint16_t FOREGROUND_COLOR = DARKMODE ? GxEPD_WHITE : GxEPD_BLACK;
 const uint16_t BACKGROUND_COLOR = DARKMODE ? GxEPD_BLACK : GxEPD_WHITE;
 
+MemArenaAllocator<MenuItem> allocatorMenuItem(globalArena);
+
 MenuApp::MenuApp(menuAppMemory *memory, WatchyApp *mainFace,
                  std::initializer_list<MenuItem> elems)
-    : memory_(memory), main_(mainFace), fullDrawNeeded_(false) {
+    : memory_(memory), main_(mainFace), items_(allocatorMenuItem),
+      fullDrawNeeded_(false) {
   items_.reserve(elems.size());
   for (const MenuItem &info : elems) {
     items_.push_back(info);
@@ -137,7 +140,8 @@ bool MenuApp::showMenu(Watchy *watchy, Display *display, bool partialRefresh) {
   display->fillScreen(BACKGROUND_COLOR);
   display->setTextWrap(false);
 
-  std::vector<LayoutCell> menu;
+  std::vector<LayoutCell, MemArenaAllocator<LayoutCell>> menu(
+      allocatorLayoutCell);
   menu.reserve(items_.size() + 2);
 
   menu.push_back(LayoutCell(LayoutBorder(
