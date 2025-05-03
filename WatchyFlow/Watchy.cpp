@@ -348,15 +348,15 @@ time_t Watchy::lastSuccessfulNetworkFetch() {
 }
 
 void Watchy::drawNotice(char *msg) {
-  LayoutText text(msg, NULL, GxEPD_BLACK);
-  LayoutPad pad(&text, 3, 3, 3, 3);
-  LayoutBorder border(&pad, true, true, true, true, GxEPD_BLACK);
-  LayoutBackground background(&border, GxEPD_WHITE);
+  LayoutBackground notice(
+      LayoutBorder(LayoutPad(LayoutText(msg, NULL, GxEPD_BLACK), 3, 3, 3, 3),
+                   true, true, true, true, GxEPD_BLACK),
+      GxEPD_WHITE);
 
   uint16_t w, h;
-  background.size(&display_, 0, 0, &w, &h);
-  background.draw(&display_, display_.width() - w - 3,
-                  display_.height() - h - 3, 0, 0, &w, &h);
+  notice.size(&display_, 0, 0, &w, &h);
+  notice.draw(&display_, display_.width() - w - 3, display_.height() - h - 3, 0,
+              0, &w, &h);
   display_.display(true);
 }
 

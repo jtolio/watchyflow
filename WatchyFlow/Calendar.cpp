@@ -107,9 +107,6 @@ void CalendarMonth::draw(Display *display, int16_t x0, int16_t y0,
   *width  = targetWidth;
   *height = targetHeight;
 
-  LayoutText days[data_->eventCount];
-  LayoutText events[data_->eventCount];
-
   String lastDayStr = "";
 
   for (int i = offset_; i < data_->eventCount; i++) {

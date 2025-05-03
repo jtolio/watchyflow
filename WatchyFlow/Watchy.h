@@ -1,5 +1,4 @@
-#ifndef WATCHY_H
-#define WATCHY_H
+#pragma once
 
 #include <TimeLib.h>
 #include <GxEPD2_BW.h>
@@ -117,5 +116,3 @@ public:
 
   virtual ~WatchyApp() = default;
 };
-
-#endif

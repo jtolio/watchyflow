@@ -95,10 +95,13 @@ void setup() {
   TriggerNetworkFetchApp netFetch;
   TriggerCalendarReset calReset(&app);
   ResetStepCounter resetSteps;
-  WatchyApp *menuItems[] = {&about, &netFetch, &calReset, &resetSteps};
-  String menuNames[]     = {"About", "Network Fetch", "Calendar Reset",
-                            "Reset Steps"};
-  MenuApp menu(&rootMenu, &app, 4, menuItems, menuNames);
+  MenuApp menu(&rootMenu, &app,
+               {
+                   MenuItem("About", &about),
+                   MenuItem("Network Fetch", &netFetch),
+                   MenuItem("Calendar Reset", &calReset),
+                   MenuItem("Reset Steps", &resetSteps),
+               });
   Watchy::wakeup(&menu, watchSettings);
 }
 

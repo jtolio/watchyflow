@@ -1,7 +1,8 @@
-#ifndef MENU_APP_H
-#define MENU_APP_H
+#pragma once
 
 #include "Watchy.h"
+#include <vector>
+#include <initializer_list>
 
 typedef struct menuAppMemory {
   // state == 0 means main app
@@ -11,12 +12,25 @@ typedef struct menuAppMemory {
   uint16_t selected;
 } menuAppMemory;
 
+class MenuItem {
+public:
+  explicit MenuItem(String name, WatchyApp *app) : app_(app), name_(name) {}
+
+  friend class MenuApp;
+
+private:
+  WatchyApp *app_;
+  String name_;
+};
+
 class MenuApp : public WatchyApp {
 public:
-  explicit MenuApp(menuAppMemory *memory, WatchyApp *mainFace,
-                   uint16_t itemCount, WatchyApp *items[], String names[])
-      : memory_(memory), main_(mainFace), itemCount_(itemCount), items_(items),
-        names_(names), fullDrawNeeded_(false) {}
+  MenuApp(menuAppMemory *memory, WatchyApp *mainFace,
+          std::initializer_list<MenuItem> elems);
+  MenuApp(menuAppMemory *memory, WatchyApp *mainFace,
+          std::vector<MenuItem> elems)
+      : memory_(memory), main_(mainFace), items_(std::move(elems)),
+        fullDrawNeeded_(false) {}
 
   bool show(Watchy *watchy, Display *display, bool partialRefresh) override;
   bool fetchNetwork(Watchy *watchy) override;
@@ -33,10 +47,6 @@ private:
 private:
   menuAppMemory *memory_;
   WatchyApp *main_;
-  uint16_t itemCount_;
-  WatchyApp **items_;
-  String *names_;
+  std::vector<MenuItem> items_;
   bool fullDrawNeeded_;
 };
-
-#endif

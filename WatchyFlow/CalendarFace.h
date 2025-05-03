@@ -1,5 +1,4 @@
-#ifndef CALENDAR_FACE_H
-#define CALENDAR_FACE_H
+#pragma once
 
 #include "Watchy.h"
 
@@ -32,5 +31,3 @@ private:
   CalendarSettings settings_;
   bool forceCacheMiss_;
 };
-
-#endif

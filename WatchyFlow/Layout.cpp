@@ -1,27 +1,5 @@
 #include "Layout.h"
 
-LayoutBitmap::LayoutBitmap(const uint8_t *bitmap, uint16_t w, uint16_t h,
-                           uint16_t color)
-    : bitmap_(bitmap), w_(w), h_(h), color_(color) {}
-
-void LayoutBitmap::size(Display *display, uint16_t targetWidth,
-                        uint16_t targetHeight, uint16_t *width,
-                        uint16_t *height) {
-  *width  = w_;
-  *height = h_;
-}
-
-void LayoutBitmap::draw(Display *display, int16_t x0, int16_t y0,
-                        uint16_t targetWidth, uint16_t targetHeight,
-                        uint16_t *width, uint16_t *height) {
-  display->drawBitmap(x0, y0, bitmap_, w_, h_, color_);
-  *width  = w_;
-  *height = h_;
-}
-
-LayoutText::LayoutText(String text, const GFXfont *font, uint16_t color)
-    : text_(text), font_(font), color_(color) {}
-
 void LayoutText::size(Display *display, uint16_t targetWidth,
                       uint16_t targetHeight, uint16_t *width,
                       uint16_t *height) {
@@ -115,9 +93,12 @@ void LayoutRotate::draw(Display *display, int16_t x0, int16_t y0,
   }
 }
 
-LayoutColumns::LayoutColumns(uint16_t columnCount, LayoutElement *columns[],
-                             bool hstretch[])
-    : columnCount_(columnCount), columns_(columns), hstretch_(hstretch) {}
+LayoutColumns::LayoutColumns(std::initializer_list<LayoutCell> elems) {
+  elems_.reserve(elems.size());
+  for (const LayoutCell &info : elems) {
+    elems_.push_back(info);
+  }
+}
 
 void LayoutColumns::size(Display *display, uint16_t targetWidth,
                          uint16_t targetHeight, uint16_t *width,
@@ -126,12 +107,13 @@ void LayoutColumns::size(Display *display, uint16_t targetWidth,
   *width          = 0;
   bool canStretch = false;
 
-  for (uint16_t i = 0; i < columnCount_; i++) {
-    if (hstretch_[i]) {
+  for (uint16_t i = 0; i < elems_.size(); i++) {
+    if (elems_[i].stretch_) {
       canStretch = true;
     }
     uint16_t columnWidth, columnHeight;
-    columns_[i]->size(display, 0, targetHeight, &columnWidth, &columnHeight);
+    elems_[i].elem_->size(display, 0, targetHeight, &columnWidth,
+                          &columnHeight);
     if (columnHeight > *height) {
       *height = columnHeight;
     }
@@ -149,13 +131,13 @@ void LayoutColumns::draw(Display *display, int16_t x0, int16_t y0,
   uint16_t fixedWidth = 0;
   uint16_t splits     = 0;
 
-  for (uint16_t i = 0; i < columnCount_; i++) {
+  for (uint16_t i = 0; i < elems_.size(); i++) {
     uint16_t subwidth, subheight;
-    columns_[i]->size(display, 0, targetHeight, &subwidth, &subheight);
+    elems_[i].elem_->size(display, 0, targetHeight, &subwidth, &subheight);
     if (subheight > targetHeight) {
       targetHeight = subheight;
     }
-    if (hstretch_[i]) {
+    if (elems_[i].stretch_) {
       splits++;
       continue;
     }
@@ -169,16 +151,16 @@ void LayoutColumns::draw(Display *display, int16_t x0, int16_t y0,
 
   *width  = 0;
   *height = 0;
-  for (uint16_t i = 0; i < columnCount_; i++) {
+  for (uint16_t i = 0; i < elems_.size(); i++) {
     uint16_t subTargetWidth = 0;
-    if (hstretch_[i]) {
+    if (elems_[i].stretch_) {
       subTargetWidth = remainingWidth / splits;
       remainingWidth -= subTargetWidth;
       splits--;
     }
     uint16_t subwidth, subheight;
-    columns_[i]->draw(display, x0 + *width, y0, subTargetWidth, targetHeight,
-                      &subwidth, &subheight);
+    elems_[i].elem_->draw(display, x0 + *width, y0, subTargetWidth,
+                          targetHeight, &subwidth, &subheight);
     *width += subwidth;
     if (subheight > *height) {
       *height = subheight;
@@ -186,9 +168,12 @@ void LayoutColumns::draw(Display *display, int16_t x0, int16_t y0,
   }
 }
 
-LayoutRows::LayoutRows(uint16_t rowCount, LayoutElement *rows[],
-                       bool vstretch[])
-    : rowCount_(rowCount), rows_(rows), vstretch_(vstretch) {}
+LayoutRows::LayoutRows(std::initializer_list<LayoutCell> elems) {
+  elems_.reserve(elems.size());
+  for (const LayoutCell &info : elems) {
+    elems_.push_back(info);
+  }
+}
 
 void LayoutRows::size(Display *display, uint16_t targetWidth,
                       uint16_t targetHeight, uint16_t *width,
@@ -197,12 +182,12 @@ void LayoutRows::size(Display *display, uint16_t targetWidth,
   *height         = 0;
   bool canStretch = false;
 
-  for (uint16_t i = 0; i < rowCount_; i++) {
-    if (vstretch_[i]) {
+  for (uint16_t i = 0; i < elems_.size(); i++) {
+    if (elems_[i].stretch_) {
       canStretch = true;
     }
     uint16_t rowWidth, rowHeight;
-    rows_[i]->size(display, targetWidth, 0, &rowWidth, &rowHeight);
+    elems_[i].elem_->size(display, targetWidth, 0, &rowWidth, &rowHeight);
     if (rowWidth > *width) {
       *width = rowWidth;
     }
@@ -220,13 +205,13 @@ void LayoutRows::draw(Display *display, int16_t x0, int16_t y0,
   uint16_t fixedHeight = 0;
   uint16_t splits      = 0;
 
-  for (uint16_t i = 0; i < rowCount_; i++) {
+  for (uint16_t i = 0; i < elems_.size(); i++) {
     uint16_t subwidth, subheight;
-    rows_[i]->size(display, targetWidth, 0, &subwidth, &subheight);
+    elems_[i].elem_->size(display, targetWidth, 0, &subwidth, &subheight);
     if (subwidth > targetWidth) {
       targetWidth = subwidth;
     }
-    if (vstretch_[i]) {
+    if (elems_[i].stretch_) {
       splits++;
       continue;
     }
@@ -240,16 +225,16 @@ void LayoutRows::draw(Display *display, int16_t x0, int16_t y0,
 
   *width  = 0;
   *height = 0;
-  for (uint16_t i = 0; i < rowCount_; i++) {
+  for (uint16_t i = 0; i < elems_.size(); i++) {
     uint16_t subTargetHeight = 0;
-    if (vstretch_[i]) {
+    if (elems_[i].stretch_) {
       subTargetHeight = remainingHeight / splits;
       remainingHeight -= subTargetHeight;
       splits--;
     }
     uint16_t subwidth, subheight;
-    rows_[i]->draw(display, x0, y0 + *height, targetWidth, subTargetHeight,
-                   &subwidth, &subheight);
+    elems_[i].elem_->draw(display, x0, y0 + *height, targetWidth,
+                          subTargetHeight, &subwidth, &subheight);
     *height += subheight;
     if (subwidth > *width) {
       *width = subwidth;
@@ -322,9 +307,9 @@ void LayoutHCenter::draw(Display *display, int16_t x0, int16_t y0,
   }
 }
 
-LayoutPad::LayoutPad(LayoutElement *child, int16_t padTop, int16_t padRight,
-                     int16_t padBottom, int16_t padLeft)
-    : child_(child), padTop_(padTop), padRight_(padRight),
+LayoutPad::LayoutPad(const LayoutElement &child, int16_t padTop,
+                     int16_t padRight, int16_t padBottom, int16_t padLeft)
+    : child_(child.clone()), padTop_(padTop), padRight_(padRight),
       padBottom_(padBottom), padLeft_(padLeft) {}
 
 void LayoutPad::size(Display *display, uint16_t targetWidth,
@@ -355,7 +340,7 @@ void LayoutPad::draw(Display *display, int16_t x0, int16_t y0,
   *height += padTop_ + padBottom_;
 }
 
-LayoutBorder::LayoutBorder(LayoutElement *child, bool top, bool right,
+LayoutBorder::LayoutBorder(const LayoutElement &child, bool top, bool right,
                            bool bottom, bool left, uint16_t color)
     : pad_(child, top ? 1 : 0, right ? 1 : 0, bottom ? 1 : 0, left ? 1 : 0),
       color_(color) {}

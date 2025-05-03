@@ -19,7 +19,7 @@ const uint16_t BACKGROUND_COLOR = DARKMODE ? GxEPD_BLACK : GxEPD_WHITE;
 
 const uint8_t MAX_CALENDAR_COLUMNS                 = 6;
 const uint16_t MAX_SECONDS_BETWEEN_WEATHER_UPDATES = 60 * 60 * 2;
-const int32_t DAY_SCROLL_INCREMENT                 = 2 * 60 * 60;
+const int32_t DAY_SCROLL_INCREMENT                 = 3 * 30 * 60;
 
 RTC_DATA_ATTR dayEventsData calendarDay;
 RTC_DATA_ATTR eventsData calendar[MAX_CALENDAR_COLUMNS];
@@ -230,71 +230,6 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
     dayOfMonthStr = String("0") + dayOfMonthStr;
   }
 
-  LayoutFill elFill;
-  LayoutSpacer elSpacer(5);
-
-  LayoutText elTime(timeStr, &DSEG7_Classic_Bold_25, color);
-  LayoutCenter elTimeCentered(&elTime);
-
-  LayoutBitmap elWifi(wifioff, 26, 18, color);
-  LayoutText elTemp(tempStr, &Seven_Segment10pt7b, color);
-  LayoutElement *elTempOrWifi = &elWifi;
-  if (weatherUpToDate) {
-    elTempOrWifi = &elTemp;
-  }
-  LayoutCenter elTempCentered(&elTemp);
-  LayoutCenter elTempOrWifiCentered(elTempOrWifi);
-
-  LayoutBattery elBattery(watchy, color);
-  LayoutCenter elBatteryCentered(&elBattery);
-
-  LayoutElement *elSmallTopElems[] = {&elTimeCentered, &elFill,
-                                      &elTempOrWifiCentered, &elSpacer,
-                                      &elBatteryCentered};
-  bool elSmallTopStretch[]         = {false, true, false, false, false};
-  LayoutColumns elSmallTop(5, elSmallTopElems, elSmallTopStretch);
-
-  LayoutBitmap elStepsIcon(steps, 19, 23, color);
-  LayoutCenter elStepsIconCentered(&elStepsIcon);
-
-  if (currentTime.Hour == 0 && currentTime.Minute == 0) {
-    watchy->resetStepCounter();
-  }
-  LayoutText elStepsCount(String(watchy->stepCounter()), &Seven_Segment10pt7b,
-                          color);
-  LayoutCenter elStepsCountCentered(&elStepsCount);
-
-  LayoutText elBatteryVoltage(String(watchy->battVoltage()) + "V",
-                              &Seven_Segment10pt7b, color);
-  LayoutCenter elBatteryVoltageCentered(&elBatteryVoltage);
-
-  LayoutWeatherIcon elWeatherIcon(weatherUpToDate, weatherConditionCode, color);
-  LayoutCenter elWeatherIconCentered(&elWeatherIcon);
-
-  LayoutElement *elBatteryRowElems[] = {
-      &elStepsIconCentered,      &elSpacer, &elStepsCountCentered, &elFill,
-      &elBatteryVoltageCentered, &elSpacer, &elBatteryCentered};
-  bool elBatteryRowStretch[] = {false, false, false, true, false, false, false};
-  LayoutColumns elBatteryRow(7, elBatteryRowElems, elBatteryRowStretch);
-
-  LayoutText elBigTime(timeStr, &DSEG7_Classic_Regular_39, color);
-  LayoutCenter elBigTimeCentered(&elBigTime);
-
-  LayoutElement *elWeatherRowElems[] = {
-      &elSpacer, &elBigTimeCentered,    &elSpacer, &elFill, &elTempCentered,
-      &elSpacer, &elWeatherIconCentered};
-  bool elWeatherRowStretch[] = {false, false, false, true, false, false, false};
-  LayoutColumns elWeatherRow(7, elWeatherRowElems, elWeatherRowStretch);
-
-  LayoutElement *elLargeTopElems[] = {&elBatteryRow, &elSpacer, &elWeatherRow};
-  bool elLargeTopStretch[]         = {false, false, false};
-  LayoutRows elLargeTop(3, elLargeTopElems, elLargeTopStretch);
-
-  LayoutElement *elTop = &elSmallTop;
-  if (viewShowAboveCalendar) {
-    elTop = &elLargeTop;
-  }
-
   String errorMessage = calendarError;
   if (errorMessage.length() == 0) {
     if (lastSuccessfulFetch > 0) {
@@ -302,70 +237,118 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
       errorMessage = secondsToReadable(age);
     }
   }
-  LayoutText elError(errorMessage, &Picopixel, color);
 
-  LayoutText elDateWords(dayOfWeekStr + " " + monthStr + " " + dayOfMonthStr,
-                         &Seven_Segment10pt7b, color);
-  LayoutRotate elDateRotated(&elDateWords, 3);
-  LayoutElement *elDateElems[] = {&elDateRotated, &elFill};
-  bool elDateStretch[]         = {false, true};
-  LayoutRows elDate(2, elDateElems, elDateStretch);
+  LayoutText elemTemp(tempStr, &Seven_Segment10pt7b, color);
+  LayoutBitmap elemWiFiOff(wifioff, 26, 18, color);
+  LayoutElement *elemTempOrWiFi =
+      weatherUpToDate ? static_cast<LayoutElement *>(&elemTemp)
+                      : static_cast<LayoutElement *>(&elemWiFiOff);
 
-  CalendarDayEvents elCalendarDay(&calendarDay, watchy, dayScheduleOffset,
-                                  color);
-  CalendarHourBar elCalHourBar(watchy, dayScheduleOffset, color);
-  CalendarColumn elCals[activeCalendarColumns];
-  LayoutElement *elCalColElems[activeCalendarColumns + 1];
-  bool elCalColStretch[activeCalendarColumns + 1];
-  elCalColElems[0]   = &elCalHourBar;
-  elCalColStretch[0] = false;
+  LayoutColumns elemSmallTop({
+      LayoutCell(
+          LayoutCenter(LayoutText(timeStr, &DSEG7_Classic_Bold_25, color))),
+      LayoutCell(LayoutFill(), true),
+      LayoutCell(LayoutCenter(*elemTempOrWiFi)),
+      LayoutCell(LayoutSpacer(5)),
+      LayoutCell(LayoutCenter(LayoutBattery(watchy, color))),
+  });
+
+  LayoutRows elemLargeTop({
+      LayoutCell(LayoutColumns({
+          LayoutCell(LayoutCenter(LayoutBitmap(steps, 19, 23, color))),
+          LayoutCell(LayoutSpacer(5)),
+          LayoutCell(LayoutCenter(LayoutText(String(watchy->stepCounter()),
+                                             &Seven_Segment10pt7b, color))),
+          LayoutCell(LayoutFill(), true),
+          LayoutCell(
+              LayoutCenter(LayoutText(String(watchy->battVoltage()) + "V",
+                                      &Seven_Segment10pt7b, color))),
+          LayoutCell(LayoutSpacer(5)),
+          LayoutCell(LayoutCenter(LayoutBattery(watchy, color))),
+      })),
+      LayoutCell(LayoutSpacer(5)),
+      LayoutCell(LayoutColumns({
+          LayoutCell(LayoutSpacer(5)),
+          LayoutCell(LayoutCenter(
+              LayoutText(timeStr, &DSEG7_Classic_Regular_39, color))),
+          LayoutCell(LayoutSpacer(5)),
+          LayoutCell(LayoutFill(), true),
+          LayoutCell(LayoutCenter(elemTemp)),
+          LayoutCell(LayoutSpacer(5)),
+          LayoutCell(LayoutCenter(
+              LayoutWeatherIcon(weatherUpToDate, weatherConditionCode, color))),
+      })),
+  });
+
+  LayoutElement *elemTop = viewShowAboveCalendar
+                               ? static_cast<LayoutElement *>(&elemLargeTop)
+                               : static_cast<LayoutElement *>(&elemSmallTop);
+
+  LayoutRows elemErrorBottomRight({
+      LayoutCell(LayoutFill(), true),
+      LayoutCell(LayoutColumns({
+          LayoutCell(LayoutFill(), true),
+          LayoutCell(LayoutBackground(
+              LayoutPad(LayoutText(errorMessage, &Picopixel, color), 2, 2, 2,
+                        2),
+              BACKGROUND_COLOR)),
+      })),
+  });
+
+  std::vector<LayoutCell> calColumns;
+  calColumns.reserve(activeCalendarColumns + 1);
+  calColumns.push_back(
+      LayoutCell(CalendarHourBar(watchy, dayScheduleOffset, color)));
   for (int i = 0; i < activeCalendarColumns; i++) {
-    elCals[i] = CalendarColumn(&calendar[i], watchy, dayScheduleOffset, color);
-    elCalColElems[i + 1]   = &elCals[i];
-    elCalColStretch[i + 1] = true;
-  }
-  LayoutColumns elCalColumns(activeCalendarColumns + 1, elCalColElems,
-                             elCalColStretch);
-
-  LayoutElement *elCalendarPartsElems[] = {&elCalendarDay, &elCalColumns};
-  bool elCalendarPartsStretch[]         = {false, true};
-  LayoutRows elCalendarParts(2, elCalendarPartsElems, elCalendarPartsStretch);
-
-  CalendarMonth elCalendarMonth(&calendarDay, watchy, monthEventOffset,
-                                !monthDayAbs, color);
-
-  LayoutElement *elCalendarSelection = &elCalendarParts;
-  if (monthView) {
-    elCalendarSelection = &elCalendarMonth;
+    calColumns.push_back(LayoutCell(
+        CalendarColumn(&calendar[i], watchy, dayScheduleOffset, color), true));
   }
 
-  LayoutPad elErrorPadded(&elError, 2, 2, 2, 2);
-  LayoutBackground elErrorBackground(&elErrorPadded, BACKGROUND_COLOR);
-  LayoutElement *elErrorRightElems[] = {&elFill, &elErrorBackground};
-  bool elErrorRightStretch[]         = {true, false};
-  LayoutColumns elErrorRight(2, elErrorRightElems, elErrorRightStretch);
-  LayoutElement *elErrorBottomRightElems[] = {&elFill, &elErrorRight};
-  bool elErrorBottomRightStretch[]         = {true, false};
-  LayoutRows elErrorBottomRight(2, elErrorBottomRightElems,
-                                elErrorBottomRightStretch);
-  LayoutOverlay elCalWithError(elCalendarSelection, &elErrorBottomRight);
+  LayoutRows elemCalendarDay({
+      LayoutCell(
+          CalendarDayEvents(&calendarDay, watchy, dayScheduleOffset, color)),
+      LayoutCell(LayoutColumns(calColumns), true),
+  });
 
-  LayoutBorder elCalendarBorder(&elCalWithError, true, false, true, true,
-                                color);
+  CalendarMonth elemCalendarMonth(&calendarDay, watchy, monthEventOffset,
+                                  !monthDayAbs, color);
 
-  LayoutElement *elMainElems[] = {&elDate, &elSpacer, &elCalendarBorder};
-  bool elMainStretch[]         = {false, false, true};
-  LayoutColumns elMain(3, elMainElems, elMainStretch);
-
-  CalendarAlarms elAlarms(&alarms, watchy, color);
-
-  LayoutElement *elScreenElems[] = {elTop, &elSpacer, &elMain, &elAlarms};
-  bool elScreenStretch[]         = {false, false, true, false};
-  LayoutRows elScreen(4, elScreenElems, elScreenStretch);
+  LayoutElement *elemCalendar =
+      monthView ? static_cast<LayoutElement *>(&elemCalendarMonth)
+                : static_cast<LayoutElement *>(&elemCalendarDay);
 
   uint16_t w, h;
-  elScreen.draw(display, 0, 0, display->width(), display->height(), &w, &h);
+  LayoutRows(
+      {
+          LayoutCell(*elemTop),
+          LayoutCell(LayoutSpacer(5)),
+          LayoutCell(
+              LayoutColumns({
+                  LayoutCell(LayoutRows({
+                      LayoutCell(LayoutRotate(
+                          LayoutText(dayOfWeekStr + " " + monthStr + " " +
+                                         dayOfMonthStr,
+                                     &Seven_Segment10pt7b, color),
+                          3)),
+                      LayoutCell(LayoutFill(), true),
+                  })),
+                  LayoutCell(LayoutSpacer(5)),
+                  LayoutCell(LayoutBorder(LayoutOverlay(*elemCalendar,
+                                                        elemErrorBottomRight),
+                                          true, false, true, true, color),
+                             true),
+              }),
+              true),
+          LayoutCell(CalendarAlarms(&alarms, watchy, color)),
+      })
+      .draw(display, 0, 0, display->width(), display->height(), &w, &h);
+
   display->display(partialRefresh);
+
+  if (currentTime.Hour == 0 && currentTime.Minute == 0) {
+    watchy->resetStepCounter();
+  }
+
   return true;
 }
 

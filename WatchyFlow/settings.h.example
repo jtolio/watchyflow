@@ -1,5 +1,4 @@
-#ifndef SETTINGS_H
-#define SETTINGS_H
+#pragma once
 
 CalendarSettings calSettings{
     .calendarAccountURL = "https://path/to/calendar/server/with/account",
@@ -39,5 +38,3 @@ WatchySettings watchSettings{
     .emptyVoltage = 3.2,
 #endif
 };
-
-#endif

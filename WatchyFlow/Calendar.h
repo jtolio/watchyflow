@@ -1,5 +1,4 @@
-#ifndef CALENDAR_H
-#define CALENDAR_H
+#pragma once
 
 #include "Layout.h"
 
@@ -46,6 +45,9 @@ public:
   CalendarDayEvents(dayEventsData *data, Watchy *watchy, int32_t offsetSeconds,
                     uint16_t color)
       : data_(data), watchy_(watchy), offset_(offsetSeconds), color_(color) {}
+  CalendarDayEvents(const CalendarDayEvents &copy)
+      : data_(copy.data_), watchy_(copy.watchy_), offset_(copy.offset_),
+        color_(copy.color_) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
@@ -55,6 +57,10 @@ public:
   void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
             uint16_t targetHeight, uint16_t *width, uint16_t *height) override {
     maybeDraw(display, x0, y0, targetWidth, targetHeight, width, height, false);
+  }
+
+  LayoutElement::ptr clone() const override {
+    return std::make_shared<CalendarDayEvents>(*this);
   }
 
 private:
@@ -75,6 +81,9 @@ public:
                 bool dayDelta, uint16_t color)
       : data_(data), watchy_(watchy), offset_(offsetEvents),
         dayDelta_(dayDelta), color_(color) {}
+  CalendarMonth(const CalendarMonth &copy)
+      : data_(copy.data_), watchy_(copy.watchy_), offset_(copy.offset_),
+        dayDelta_(copy.dayDelta_), color_(copy.color_) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
@@ -84,6 +93,10 @@ public:
 
   void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
             uint16_t targetHeight, uint16_t *width, uint16_t *height) override;
+
+  LayoutElement::ptr clone() const override {
+    return std::make_shared<CalendarMonth>(*this);
+  }
 
 private:
   dayEventsData *data_;
@@ -95,11 +108,12 @@ private:
 
 class CalendarColumn : public LayoutElement {
 public:
-  CalendarColumn() : data_(NULL), watchy_(NULL), offset_(0), color_(0) {}
-
   CalendarColumn(eventsData *data, Watchy *watchy, int32_t offsetSeconds,
                  uint16_t color)
       : data_(data), watchy_(watchy), offset_(offsetSeconds), color_(color) {}
+  CalendarColumn(const CalendarColumn &copy)
+      : data_(copy.data_), watchy_(copy.watchy_), offset_(copy.offset_),
+        color_(copy.color_) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
@@ -109,6 +123,10 @@ public:
 
   void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
             uint16_t targetHeight, uint16_t *width, uint16_t *height) override;
+
+  LayoutElement::ptr clone() const override {
+    return std::make_shared<CalendarColumn>(*this);
+  }
 
 private:
   void resizeText(Display *display, char *text, uint8_t buflen, uint16_t width,
@@ -126,6 +144,8 @@ class CalendarHourBar : public LayoutElement {
 public:
   CalendarHourBar(Watchy *watchy, int32_t offsetSeconds, uint16_t color)
       : watchy_(watchy), offset_(offsetSeconds), color_(color) {}
+  CalendarHourBar(const CalendarHourBar &copy)
+      : watchy_(copy.watchy_), offset_(copy.offset_), color_(copy.color_) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
@@ -134,6 +154,10 @@ public:
   void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
             uint16_t targetHeight, uint16_t *width, uint16_t *height) override {
     maybeDraw(display, x0, y0, targetWidth, targetHeight, width, height, false);
+  }
+
+  LayoutElement::ptr clone() const override {
+    return std::make_shared<CalendarHourBar>(*this);
   }
 
 private:
@@ -151,6 +175,8 @@ class CalendarAlarms : public LayoutElement {
 public:
   CalendarAlarms(alarmsData *data, Watchy *watchy, uint16_t color)
       : data_(data), watchy_(watchy), color_(color) {}
+  CalendarAlarms(const CalendarAlarms &copy)
+      : data_(copy.data_), watchy_(copy.watchy_), color_(copy.color_) {}
 
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
             uint16_t *width, uint16_t *height) override {
@@ -159,6 +185,10 @@ public:
   void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
             uint16_t targetHeight, uint16_t *width, uint16_t *height) override {
     maybeDraw(display, x0, y0, targetWidth, targetHeight, width, height, false);
+  }
+
+  LayoutElement::ptr clone() const override {
+    return std::make_shared<CalendarAlarms>(*this);
   }
 
 private:
@@ -171,5 +201,3 @@ private:
   Watchy *watchy_;
   uint16_t color_;
 };
-
-#endif
