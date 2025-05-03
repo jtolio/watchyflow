@@ -284,16 +284,9 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
                                ? static_cast<LayoutElement *>(&elemLargeTop)
                                : static_cast<LayoutElement *>(&elemSmallTop);
 
-  LayoutRows elemErrorBottomRight({
-      LayoutCell(LayoutFill(), true),
-      LayoutCell(LayoutColumns({
-          LayoutCell(LayoutFill(), true),
-          LayoutCell(LayoutBackground(
-              LayoutPad(LayoutText(errorMessage, &Picopixel, color), 2, 2, 2,
-                        2),
-              BACKGROUND_COLOR)),
-      })),
-  });
+  LayoutBottomAlign elemError(LayoutRightAlign(LayoutBackground(
+      LayoutPad(LayoutText(errorMessage, &Picopixel, color), 2, 2, 2, 2),
+      BACKGROUND_COLOR)));
 
   std::vector<LayoutCell> calColumns;
   calColumns.reserve(activeCalendarColumns + 1);
@@ -322,23 +315,22 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
       {
           LayoutCell(*elemTop),
           LayoutCell(LayoutSpacer(5)),
-          LayoutCell(
-              LayoutColumns({
-                  LayoutCell(LayoutRows({
-                      LayoutCell(LayoutRotate(
-                          LayoutText(dayOfWeekStr + " " + monthStr + " " +
-                                         dayOfMonthStr,
-                                     &Seven_Segment10pt7b, color),
-                          3)),
-                      LayoutCell(LayoutFill(), true),
-                  })),
-                  LayoutCell(LayoutSpacer(5)),
-                  LayoutCell(LayoutBorder(LayoutOverlay(*elemCalendar,
-                                                        elemErrorBottomRight),
-                                          true, false, true, true, color),
-                             true),
-              }),
-              true),
+          LayoutCell(LayoutColumns({
+                         LayoutCell(LayoutRows({
+                             LayoutCell(LayoutRotate(
+                                 LayoutText(dayOfWeekStr + " " + monthStr +
+                                                " " + dayOfMonthStr,
+                                            &Seven_Segment10pt7b, color),
+                                 3)),
+                             LayoutCell(LayoutFill(), true),
+                         })),
+                         LayoutCell(LayoutSpacer(5)),
+                         LayoutCell(LayoutBorder(
+                                        LayoutOverlay(*elemCalendar, elemError),
+                                        true, false, true, true, color),
+                                    true),
+                     }),
+                     true),
           LayoutCell(CalendarAlarms(&alarms, watchy, color)),
       })
       .draw(display, 0, 0, display->width(), display->height(), &w, &h);

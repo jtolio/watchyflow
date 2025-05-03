@@ -329,3 +329,69 @@ private:
   LayoutElement::ptr background_;
   LayoutElement::ptr foreground_;
 };
+
+class LayoutRightAlign : public LayoutElement {
+public:
+  LayoutRightAlign(const LayoutElement &child) : child_(child.clone()) {}
+  LayoutRightAlign(const LayoutRightAlign &copy) : child_(copy.child_) {}
+
+  void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override {
+    child_->size(display, targetWidth, targetHeight, width, height);
+    if (*width < targetWidth) {
+      *width = targetWidth;
+    }
+  }
+
+  void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
+            uint16_t targetHeight, uint16_t *width, uint16_t *height) override {
+    child_->size(display, targetWidth, targetHeight, width, height);
+    int16_t adjustment = 0;
+    if (*width < targetWidth) {
+      adjustment = targetWidth - *width;
+    }
+    child_->draw(display, x0 + adjustment, y0, targetWidth - adjustment,
+                 targetHeight, width, height);
+    *width += adjustment;
+  }
+
+  LayoutElement::ptr clone() const override {
+    return std::make_shared<LayoutRightAlign>(*this);
+  }
+
+private:
+  LayoutElement::ptr child_;
+};
+
+class LayoutBottomAlign : public LayoutElement {
+public:
+  LayoutBottomAlign(const LayoutElement &child) : child_(child.clone()) {}
+  LayoutBottomAlign(const LayoutBottomAlign &copy) : child_(copy.child_) {}
+
+  void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
+            uint16_t *width, uint16_t *height) override {
+    child_->size(display, targetWidth, targetHeight, width, height);
+    if (*height < targetHeight) {
+      *height = targetHeight;
+    }
+  }
+
+  void draw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
+            uint16_t targetHeight, uint16_t *width, uint16_t *height) override {
+    child_->size(display, targetWidth, targetHeight, width, height);
+    int16_t adjustment = 0;
+    if (*height < targetHeight) {
+      adjustment = targetHeight - *height;
+    }
+    child_->draw(display, x0, y0 + adjustment, targetWidth,
+                 targetHeight - adjustment, width, height);
+    *height += adjustment;
+  }
+
+  LayoutElement::ptr clone() const override {
+    return std::make_shared<LayoutBottomAlign>(*this);
+  }
+
+private:
+  LayoutElement::ptr child_;
+};
