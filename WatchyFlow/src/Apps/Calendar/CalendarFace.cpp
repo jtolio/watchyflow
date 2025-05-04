@@ -3,10 +3,10 @@
 #include <HTTPClient.h>
 #include <Arduino_JSON.h>
 #include <Fonts/Picopixel.h>
-#include "Layout.h"
-#include "Battery.h"
+#include "../../Layout/Layout.h"
+#include "../../Elements/Battery.h"
 #include "Calendar.h"
-#include "Weather.h"
+#include "../../Elements/Weather.h"
 #include "Seven_Segment10pt7b.h"
 #include "DSEG7_Classic_Bold_25.h"
 #include "DSEG7_Classic_Regular_39.h"

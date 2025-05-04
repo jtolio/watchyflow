@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Watchy.h"
+#include "../../Watchy/Watchy.h"
 
 typedef struct CalendarSettings {
   String calendarAccountURL;

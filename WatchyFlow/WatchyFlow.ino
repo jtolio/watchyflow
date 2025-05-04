@@ -1,8 +1,8 @@
-#include "Watchy.h"
-#include "CalendarFace.h"
-#include "MenuApp.h"
+#include "src/Watchy/Watchy.h"
+#include "src/Apps/Calendar/CalendarFace.h"
+#include "src/Apps/Menu/MenuApp.h"
 #include "settings.h"
-#include "Arena.h"
+#include "src/Layout/Arena.h"
 
 RTC_DATA_ATTR menuAppMemory rootMenu;
 RTC_DATA_ATTR size_t arenaUsed_;

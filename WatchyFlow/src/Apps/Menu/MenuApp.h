@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Watchy.h"
-#include "Arena.h"
+#include "../../Watchy/Watchy.h"
+#include "../../Layout/Arena.h"
 #include <vector>
 #include <initializer_list>
 

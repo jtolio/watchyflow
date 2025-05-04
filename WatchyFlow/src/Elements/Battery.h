@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Watchy.h"
-#include "Layout.h"
+#include "../Watchy/Watchy.h"
+#include "../Layout/Layout.h"
 
 class LayoutBattery : public LayoutElement {
 public:

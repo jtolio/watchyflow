@@ -1,6 +1,6 @@
 #include "Calendar.h"
-#include "Layout.h"
-#include "Watchy.h"
+#include "../../Layout/Layout.h"
+#include "../../Watchy/Watchy.h"
 #include <Fonts/Picopixel.h>
 
 const GFXfont *SMALL_FONT          = NULL;

@@ -1,6 +1,6 @@
 #include "Battery.h"
 #include "icons.h"
-#include "Watchy.h"
+#include "../Watchy/Watchy.h"
 
 void LayoutBattery::size(Display *display, uint16_t targetWidth,
                          uint16_t targetHeight, uint16_t *width,

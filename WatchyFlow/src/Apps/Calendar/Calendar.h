@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Layout.h"
+#include "../../Layout/Layout.h"
 
 const uint8_t MAX_EVENT_NAME_LEN    = 24;
 const uint8_t MAX_EVENTS_PER_COLUMN = 24;
