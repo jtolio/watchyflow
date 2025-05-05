@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Watchy/Watchy.h"
+#include "../../Watchy/WatchyApp.h"
 #include "../../Layout/Arena.h"
 #include <vector>
 #include <initializer_list>
@@ -35,17 +35,17 @@ public:
       : memory_(memory), main_(mainFace), items_(std::move(elems)),
         fullDrawNeeded_(false) {}
 
-  bool show(Watchy *watchy, Display *display, bool partialRefresh) override;
-  bool fetchNetwork(Watchy *watchy) override;
+  AppState show(Watchy *watchy, Display *display, bool partialRefresh) override;
+  FetchState fetchNetwork(Watchy *watchy) override;
 
   void reset(Watchy *watchy) override;
   void buttonUp(Watchy *watchy) override;
   void buttonDown(Watchy *watchy) override;
-  bool buttonSelect(Watchy *watchy) override;
-  bool buttonBack(Watchy *watchy) override;
+  AppState buttonSelect(Watchy *watchy) override;
+  AppState buttonBack(Watchy *watchy) override;
 
 private:
-  bool showMenu(Watchy *watchy, Display *display, bool partialRefresh);
+  void showMenu(Watchy *watchy, Display *display, bool partialRefresh);
 
 private:
   menuAppMemory *memory_;

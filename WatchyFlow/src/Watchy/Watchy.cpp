@@ -33,6 +33,7 @@
 #endif
 
 #include "../Layout/Layout.h"
+#include "WatchyApp.h"
 
 #ifdef ARDUINO_ESP32S3_DEV
 Watchy32KRTC rtc_;
@@ -50,6 +51,7 @@ RTC_DATA_ATTR time_t lastFetchAttempt_;
 RTC_DATA_ATTR time_t lastSuccessfulNetworkFetch_;
 RTC_DATA_ATTR uint8_t fetchTries_;
 RTC_DATA_ATTR time_t timezoneOffset_;
+RTC_DATA_ATTR int lastSuccessfulWiFiIndex_;
 
 void _sensorSetup();
 
@@ -96,15 +98,20 @@ void Watchy::sleep() {
 
 bool connectWiFi(WatchySettings settings) {
   for (int i = 0; i < settings.wifiNetworkCount; i++) {
-    if (WL_CONNECT_FAILED == WiFi.begin(settings.wifiNetworks[i].SSID,
-                                        settings.wifiNetworks[i].Pass)) {
+    int idxToUse = (i + lastSuccessfulWiFiIndex_) % settings.wifiNetworkCount;
+
+    if (WL_CONNECT_FAILED == WiFi.begin(settings.wifiNetworks[idxToUse].SSID,
+                                        settings.wifiNetworks[idxToUse].Pass)) {
       continue;
     }
+
     if (WL_CONNECTED != WiFi.waitForConnectResult()) {
       WiFi.mode(WIFI_OFF);
       btStop();
       continue;
     }
+
+    lastSuccessfulWiFiIndex_ = idxToUse;
     return true;
   }
   return false;
@@ -160,6 +167,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     lastSuccessfulNetworkFetch_ = 0;
     fetchTries_                 = 0;
     timezoneOffset_             = settings.defaultTimezoneOffset;
+    lastSuccessfulWiFiIndex_    = 0;
     break;
   }
 
@@ -179,25 +187,25 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   {
     uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
     if (wakeupBit & MENU_BTN_MASK) {
-      if (settings.flipButtonSides) {
+      if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
         app->buttonDown(&watchy);
       } else {
         app->buttonSelect(&watchy);
       }
     } else if (wakeupBit & BACK_BTN_MASK) {
-      if (settings.flipButtonSides) {
+      if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
         app->buttonUp(&watchy);
       } else {
         app->buttonBack(&watchy);
       }
     } else if (wakeupBit & UP_BTN_MASK) {
-      if (settings.flipButtonSides) {
+      if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
         app->buttonBack(&watchy);
       } else {
         app->buttonUp(&watchy);
       }
     } else if (wakeupBit & DOWN_BTN_MASK) {
-      if (settings.flipButtonSides) {
+      if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
         app->buttonSelect(&watchy);
       } else {
         app->buttonDown(&watchy);
@@ -239,19 +247,20 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   if (connectWiFi(settings)) {
     drawNotice("Loading...   ");
 
-    bool success    = app->fetchNetwork(&watchy);
-    bool ntpSuccess = syncNTP();
-    if (success && ntpSuccess) {
-      lastSuccessfulNetworkFetch_ = now;
-      fetchTries_                 = settings.networkFetchTries;
+    FetchState fetchResult = app->fetchNetwork(&watchy);
+    if (syncNTP()) {
+      rtc_.read(currentTime);
+      watchy.reset(currentTime, WAKEUP_NETFETCH);
+      now = watchy.unixtime();
+      if (fetchResult == FETCH_OK) {
+        lastSuccessfulNetworkFetch_ = now;
+        fetchTries_                 = settings.networkFetchTries;
+      }
     }
 
     WiFi.mode(WIFI_OFF);
     btStop();
   }
-
-  rtc_.read(currentTime);
-  watchy.reset(currentTime, WAKEUP_NETFETCH);
 
   app->show(&watchy, &display_, true);
 }

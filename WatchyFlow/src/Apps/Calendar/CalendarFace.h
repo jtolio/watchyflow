@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Watchy/Watchy.h"
+#include "../../Watchy/WatchyApp.h"
 
 typedef struct CalendarSettings {
   String calendarAccountURL;
@@ -13,14 +13,14 @@ public:
   explicit CalendarFace(CalendarSettings settings)
       : settings_(settings), forceCacheMiss_(false) {}
 
-  bool show(Watchy *watchy, Display *display, bool partialRefresh) override;
-  bool fetchNetwork(Watchy *watchy) override;
+  AppState show(Watchy *watchy, Display *display, bool partialRefresh) override;
+  FetchState fetchNetwork(Watchy *watchy) override;
 
   void reset(Watchy *watchy) override;
 
   void buttonUp(Watchy *watchy) override;
   void buttonDown(Watchy *watchy) override;
-  bool buttonBack(Watchy *watchy) override;
+  AppState buttonBack(Watchy *watchy) override;
 
   void forceCacheMiss() { forceCacheMiss_ = true; }
 

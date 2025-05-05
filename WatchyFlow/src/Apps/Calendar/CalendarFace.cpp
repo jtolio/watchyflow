@@ -7,9 +7,9 @@
 #include "../../Elements/Battery.h"
 #include "Calendar.h"
 #include "../../Elements/Weather.h"
-#include "Seven_Segment10pt7b.h"
-#include "DSEG7_Classic_Bold_25.h"
-#include "DSEG7_Classic_Regular_39.h"
+#include "../../Fonts/Seven_Segment10pt7b.h"
+#include "../../Fonts/DSEG7_Classic_Bold_25.h"
+#include "../../Fonts/DSEG7_Classic_Regular_39.h"
 #include "icons.h"
 
 #define DARKMODE false
@@ -55,8 +55,8 @@ void CalendarFace::reset(Watchy *watchy) {
   zeroError();
 }
 
-bool CalendarFace::fetchNetwork(Watchy *watchy) {
-  bool success = true;
+FetchState CalendarFace::fetchNetwork(Watchy *watchy) {
+  FetchState fetchState = FETCH_OK;
   {
     HTTPClient http;
     http.setConnectTimeout(1000 * 10);
@@ -74,7 +74,7 @@ bool CalendarFace::fetchNetwork(Watchy *watchy) {
       String error(httpResponseCode);
       error.toCharArray(calendarError,
                         sizeof(calendarError) / sizeof(calendarError[0]));
-      success = false;
+      fetchState = FETCH_TRYAGAIN;
     }
     http.end();
   }
@@ -92,12 +92,12 @@ bool CalendarFace::fetchNetwork(Watchy *watchy) {
       weatherConditionCode   = int(responseObject["weather"][0]["id"]);
       watchy->setTimezoneOffset(int(responseObject["timezone"]));
     } else {
-      success = false;
+      fetchState = FETCH_TRYAGAIN;
     }
     http.end();
   }
 
-  return success;
+  return fetchState;
 }
 
 void CalendarFace::parseCalendar(Watchy *watchy, String payload) {
@@ -190,7 +190,8 @@ String secondsToReadable(time_t val) {
   return String(val) + "d";
 }
 
-bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
+AppState CalendarFace::show(Watchy *watchy, Display *display,
+                            bool partialRefresh) {
   display->fillScreen(BACKGROUND_COLOR);
   display->setTextWrap(false);
   tmElements_t currentTime = watchy->localtime();
@@ -341,7 +342,7 @@ bool CalendarFace::show(Watchy *watchy, Display *display, bool partialRefresh) {
     watchy->resetStepCounter();
   }
 
-  return true;
+  return APP_ACTIVE;
 }
 
 void CalendarFace::buttonDown(Watchy *watchy) {
@@ -370,7 +371,7 @@ void CalendarFace::buttonUp(Watchy *watchy) {
   }
 }
 
-bool CalendarFace::buttonBack(Watchy *watchy) {
+AppState CalendarFace::buttonBack(Watchy *watchy) {
   if (dayScheduleOffset == 0) {
     monthView = !monthView;
   } else {
@@ -378,5 +379,5 @@ bool CalendarFace::buttonBack(Watchy *watchy) {
   }
   dayScheduleOffset = 0;
   monthEventOffset  = 0;
-  return false;
+  return APP_ACTIVE;
 }

@@ -28,7 +28,7 @@ WatchySettings watchSettings{
     // EST. will get fixed by weather api for EDT.
     .defaultTimezoneOffset = -5 * 60 * 60,
 
-    .flipButtonSides = false,
+    .buttonConfig = BUTTONS_SELECT_BACK_LEFT,
 
 #ifdef IS_WATCHY_V3
     .fullVoltage  = 3.99,

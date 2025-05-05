@@ -1,5 +1,6 @@
 #include "MenuApp.h"
 #include "../../Layout/Layout.h"
+#include "../../Elements/Buttons.h"
 #include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSansBold9pt7b.h>
 
@@ -23,7 +24,7 @@ MenuApp::MenuApp(menuAppMemory *memory, WatchyApp *mainFace,
   }
 }
 
-bool MenuApp::show(Watchy *watchy, Display *display, bool partialRefresh) {
+AppState MenuApp::show(Watchy *watchy, Display *display, bool partialRefresh) {
   if (fullDrawNeeded_) {
     partialRefresh = false;
   }
@@ -31,30 +32,28 @@ bool MenuApp::show(Watchy *watchy, Display *display, bool partialRefresh) {
 
   uint16_t state = memory_->state % (items_.size() + 2);
   if (state > 1) {
-    if (items_[state - 2].app_->show(watchy, display, partialRefresh)) {
-      return true;
+    if (items_[state - 2].app_->show(watchy, display, partialRefresh) ==
+        APP_ACTIVE) {
+      return APP_ACTIVE;
     }
     memory_->state = state = 0;
     partialRefresh         = false;
   }
   if (state == 1) {
-    if (showMenu(watchy, display, partialRefresh)) {
-      return true;
-    }
-    memory_->state = state = 0;
-    partialRefresh         = false;
+    showMenu(watchy, display, partialRefresh);
+    return APP_ACTIVE;
   }
   return main_->show(watchy, display, partialRefresh);
 }
 
-bool MenuApp::fetchNetwork(Watchy *watchy) {
-  bool success = main_->fetchNetwork(watchy);
+FetchState MenuApp::fetchNetwork(Watchy *watchy) {
+  FetchState fetchState = main_->fetchNetwork(watchy);
   for (uint16_t i = 0; i < items_.size(); i++) {
-    if (!items_[i].app_->fetchNetwork(watchy)) {
-      success = false;
+    if (items_[i].app_->fetchNetwork(watchy) == FETCH_TRYAGAIN) {
+      fetchState = FETCH_TRYAGAIN;
     }
   }
-  return success;
+  return fetchState;
 }
 
 void MenuApp::reset(Watchy *watchy) {
@@ -96,47 +95,47 @@ void MenuApp::buttonDown(Watchy *watchy) {
   }
 }
 
-bool MenuApp::buttonSelect(Watchy *watchy) {
+AppState MenuApp::buttonSelect(Watchy *watchy) {
   uint16_t state    = memory_->state % (items_.size() + 2);
   uint16_t selected = memory_->selected;
   switch (state) {
   default:
-    if (items_[state - 2].app_->buttonSelect(watchy)) {
+    if (items_[state - 2].app_->buttonSelect(watchy) != APP_ACTIVE) {
       memory_->state  = 1;
       fullDrawNeeded_ = true;
     }
-    return false;
+    return APP_ACTIVE;
   case 1:
     selected        = selected % items_.size();
     memory_->state  = selected + 2;
     fullDrawNeeded_ = true;
-    return false;
+    return APP_ACTIVE;
   case 0:
     memory_->state  = 1;
     fullDrawNeeded_ = true;
-    return false;
+    return APP_ACTIVE;
   }
 }
 
-bool MenuApp::buttonBack(Watchy *watchy) {
+AppState MenuApp::buttonBack(Watchy *watchy) {
   uint16_t state = memory_->state % (items_.size() + 2);
   switch (state) {
   default:
-    if (items_[state - 2].app_->buttonBack(watchy)) {
+    if (items_[state - 2].app_->buttonBack(watchy) != APP_ACTIVE) {
       memory_->state  = 1;
       fullDrawNeeded_ = true;
     }
-    return false;
+    return APP_ACTIVE;
   case 1:
     memory_->state  = 0;
     fullDrawNeeded_ = true;
-    return false;
+    return APP_ACTIVE;
   case 0:
     return main_->buttonBack(watchy);
   }
 }
 
-bool MenuApp::showMenu(Watchy *watchy, Display *display, bool partialRefresh) {
+void MenuApp::showMenu(Watchy *watchy, Display *display, bool partialRefresh) {
   display->fillScreen(BACKGROUND_COLOR);
   display->setTextWrap(false);
 
@@ -164,8 +163,9 @@ bool MenuApp::showMenu(Watchy *watchy, Display *display, bool partialRefresh) {
   menu.push_back(LayoutEntry(LayoutFill(), true));
 
   uint16_t w, h;
-  LayoutRows(menu).draw(display, 0, 0, display->width(), display->height(), &w,
-                        &h);
+
+  LayoutButtonLabels(watchy, "Back", "Select", "->", "<-", NULL,
+                     FOREGROUND_COLOR, true, LayoutRows(menu))
+      .draw(display, 0, 0, display->width(), display->height(), &w, &h);
   display->display(partialRefresh);
-  return true;
 }

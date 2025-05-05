@@ -10,6 +10,8 @@
 #define IS_WATCHY_V2
 #endif
 
+#include "Settings.h"
+
 class WatchyApp;
 
 typedef GxEPD2_BW<WatchyDisplay, WatchyDisplay::HEIGHT> Display;
@@ -27,29 +29,6 @@ typedef enum WakeupReason {
   WAKEUP_USB      = 3,
   WAKEUP_NETFETCH = 4,
 } WakeupReason;
-
-typedef struct WiFiConfig {
-  String SSID;
-  String Pass;
-} WiFiConfig;
-
-typedef struct WatchySettings {
-  // number of seconds between network fetch attempts
-  int networkFetchIntervalSeconds;
-  // number of failing network fetch tries before giving up until the next
-  // interval.
-  int networkFetchTries;
-
-  WiFiConfig *wifiNetworks;
-  int wifiNetworkCount;
-
-  time_t defaultTimezoneOffset;
-
-  bool flipButtonSides;
-
-  float fullVoltage;
-  float emptyVoltage;
-} WatchySettings;
 
 class Watchy {
 public:
@@ -85,6 +64,8 @@ public:
   bool accel(AccelData &acc);
   uint8_t direction();
 
+  ButtonConfiguration buttonConfig() { return settings_.buttonConfig; }
+
 protected:
   Watchy(const tmElements_t &currentTime, WakeupReason wakeup,
          WatchySettings settings)
@@ -101,18 +82,4 @@ private:
   time_t unixtime_;
   WakeupReason wakeup_;
   WatchySettings settings_;
-};
-
-class WatchyApp {
-public:
-  virtual bool show(Watchy *watchy, Display *display, bool partialRefresh) = 0;
-  virtual bool fetchNetwork(Watchy *watchy) { return true; }
-
-  virtual void reset(Watchy *watchy) {}
-  virtual void buttonUp(Watchy *watchy) {}
-  virtual void buttonDown(Watchy *watchy) {}
-  virtual bool buttonSelect(Watchy *watchy) { return false; }
-  virtual bool buttonBack(Watchy *watchy) { return true; }
-
-  virtual ~WatchyApp() = default;
 };
