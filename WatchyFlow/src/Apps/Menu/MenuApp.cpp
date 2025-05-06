@@ -14,9 +14,9 @@ const uint16_t BACKGROUND_COLOR = DARKMODE ? GxEPD_BLACK : GxEPD_WHITE;
 
 MemArenaAllocator<MenuItem> allocatorMenuItem(globalArena);
 
-MenuApp::MenuApp(menuAppMemory *memory, WatchyApp *mainFace,
+MenuApp::MenuApp(menuAppMemory *memory, const char *title,
                  std::initializer_list<MenuItem> elems)
-    : memory_(memory), main_(mainFace), items_(allocatorMenuItem),
+    : memory_(memory), title_(title), items_(allocatorMenuItem),
       fullDrawNeeded_(false) {
   items_.reserve(elems.size());
   for (const MenuItem &info : elems) {
@@ -30,24 +30,22 @@ AppState MenuApp::show(Watchy *watchy, Display *display, bool partialRefresh) {
   }
   fullDrawNeeded_ = false;
 
-  uint16_t state = memory_->state % (items_.size() + 2);
-  if (state > 1) {
-    if (items_[state - 2].app_->show(watchy, display, partialRefresh) ==
+  uint16_t index = memory_->index % items_.size();
+
+  if (memory_->inApp) {
+    if (items_[index].app_->show(watchy, display, partialRefresh) ==
         APP_ACTIVE) {
       return APP_ACTIVE;
     }
-    memory_->state = state = 0;
-    partialRefresh         = false;
+    memory_->inApp = false;
+    return APP_EXIT;
   }
-  if (state == 1) {
-    showMenu(watchy, display, partialRefresh);
-    return APP_ACTIVE;
-  }
-  return main_->show(watchy, display, partialRefresh);
+  showMenu(watchy, display, partialRefresh);
+  return APP_ACTIVE;
 }
 
 FetchState MenuApp::fetchNetwork(Watchy *watchy) {
-  FetchState fetchState = main_->fetchNetwork(watchy);
+  FetchState fetchState = FETCH_OK;
   for (uint16_t i = 0; i < items_.size(); i++) {
     if (items_[i].app_->fetchNetwork(watchy) == FETCH_TRYAGAIN) {
       fetchState = FETCH_TRYAGAIN;
@@ -57,82 +55,53 @@ FetchState MenuApp::fetchNetwork(Watchy *watchy) {
 }
 
 void MenuApp::reset(Watchy *watchy) {
-  memory_->state    = 0;
-  memory_->selected = 0;
-  main_->reset(watchy);
+  memory_->inApp = false;
+  memory_->index = 0;
   for (uint16_t i = 0; i < items_.size(); i++) {
     items_[i].app_->reset(watchy);
   }
 }
 
 void MenuApp::buttonUp(Watchy *watchy) {
-  uint16_t state = memory_->state % (items_.size() + 2);
-  switch (state) {
-  default:
-    items_[state - 2].app_->buttonUp(watchy);
-    return;
-  case 1:
-    memory_->selected = (memory_->selected + items_.size() - 1) % items_.size();
-    return;
-  case 0:
-    main_->buttonUp(watchy);
+  if (memory_->inApp) {
+    items_[memory_->index % items_.size()].app_->buttonUp(watchy);
     return;
   }
+  memory_->index = (memory_->index + items_.size() - 1) % items_.size();
 }
 
 void MenuApp::buttonDown(Watchy *watchy) {
-  uint16_t state = memory_->state % (items_.size() + 2);
-  switch (state) {
-  default:
-    items_[state - 2].app_->buttonDown(watchy);
-    return;
-  case 1:
-    memory_->selected = (memory_->selected + 1) % items_.size();
-    return;
-  case 0:
-    main_->buttonDown(watchy);
+  if (memory_->inApp) {
+    items_[memory_->index % items_.size()].app_->buttonDown(watchy);
     return;
   }
+  memory_->index = (memory_->index + 1) % items_.size();
 }
 
 AppState MenuApp::buttonSelect(Watchy *watchy) {
-  uint16_t state    = memory_->state % (items_.size() + 2);
-  uint16_t selected = memory_->selected;
-  switch (state) {
-  default:
-    if (items_[state - 2].app_->buttonSelect(watchy) != APP_ACTIVE) {
-      memory_->state  = 1;
+  uint16_t index = memory_->index % items_.size();
+  if (memory_->inApp) {
+    if (items_[index].app_->buttonSelect(watchy) != APP_ACTIVE) {
+      memory_->inApp  = false;
       fullDrawNeeded_ = true;
     }
     return APP_ACTIVE;
-  case 1:
-    selected        = selected % items_.size();
-    memory_->state  = selected + 2;
-    fullDrawNeeded_ = true;
-    return APP_ACTIVE;
-  case 0:
-    memory_->state  = 1;
-    fullDrawNeeded_ = true;
-    return APP_ACTIVE;
   }
+  memory_->inApp  = true;
+  fullDrawNeeded_ = true;
+  return APP_ACTIVE;
 }
 
 AppState MenuApp::buttonBack(Watchy *watchy) {
-  uint16_t state = memory_->state % (items_.size() + 2);
-  switch (state) {
-  default:
-    if (items_[state - 2].app_->buttonBack(watchy) != APP_ACTIVE) {
-      memory_->state  = 1;
+  uint16_t index = memory_->index % items_.size();
+  if (memory_->inApp) {
+    if (items_[index].app_->buttonBack(watchy) != APP_ACTIVE) {
+      memory_->inApp  = false;
       fullDrawNeeded_ = true;
     }
     return APP_ACTIVE;
-  case 1:
-    memory_->state  = 0;
-    fullDrawNeeded_ = true;
-    return APP_ACTIVE;
-  case 0:
-    return main_->buttonBack(watchy);
   }
+  return APP_EXIT;
 }
 
 void MenuApp::showMenu(Watchy *watchy, Display *display, bool partialRefresh) {
@@ -144,12 +113,12 @@ void MenuApp::showMenu(Watchy *watchy, Display *display, bool partialRefresh) {
   menu.reserve(items_.size() + 2);
 
   menu.push_back(LayoutEntry(LayoutBorder(
-      LayoutHCenter(LayoutPad(LayoutText("Menu", TITLE_FONT, FOREGROUND_COLOR),
+      LayoutHCenter(LayoutPad(LayoutText(title_, TITLE_FONT, FOREGROUND_COLOR),
                               3, 0, 3, 0)),
       false, false, true, false, FOREGROUND_COLOR)));
 
   for (int i = 0; i < items_.size(); i++) {
-    if (i != memory_->selected) {
+    if (i != memory_->index) {
       menu.push_back(LayoutEntry(LayoutHCenter(LayoutPad(
           LayoutText(items_[i].name_, FONT, FOREGROUND_COLOR), 3, 0, 3, 0))));
     } else {

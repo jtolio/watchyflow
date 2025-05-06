@@ -6,11 +6,8 @@
 #include <initializer_list>
 
 typedef struct menuAppMemory {
-  // state == 0 means main app
-  // state == 1 means menu
-  // state == n means item n-2
-  uint16_t state;
-  uint16_t selected;
+  bool inApp;
+  uint16_t index;
 } menuAppMemory;
 
 class MenuItem {
@@ -28,11 +25,11 @@ extern MemArenaAllocator<MenuItem> allocatorMenuItem;
 
 class MenuApp : public WatchyApp {
 public:
-  MenuApp(menuAppMemory *memory, WatchyApp *mainFace,
+  MenuApp(menuAppMemory *memory, const char *title,
           std::initializer_list<MenuItem> elems);
-  MenuApp(menuAppMemory *memory, WatchyApp *mainFace,
+  MenuApp(menuAppMemory *memory, const char *title,
           std::vector<MenuItem, MemArenaAllocator<MenuItem>> elems)
-      : memory_(memory), main_(mainFace), items_(std::move(elems)),
+      : memory_(memory), title_(title), items_(std::move(elems)),
         fullDrawNeeded_(false) {}
 
   AppState show(Watchy *watchy, Display *display, bool partialRefresh) override;
@@ -49,7 +46,7 @@ private:
 
 private:
   menuAppMemory *memory_;
-  WatchyApp *main_;
+  const char *title_;
   std::vector<MenuItem, MemArenaAllocator<MenuItem>> items_;
   bool fullDrawNeeded_;
 };
