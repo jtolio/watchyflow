@@ -189,17 +189,7 @@ void CalendarColumn::draw(Display *display, int16_t x0, int16_t y0,
       continue;
     }
     if (eventStart >= windowEnd) {
-      continue;
-    }
-
-    tmElements_t eventStarttm = watchy_->toLocalTime(eventStart);
-    if (eventStarttm.Minute == currentTime.Minute &&
-        eventStarttm.Hour == currentTime.Hour &&
-        eventStarttm.Day == currentTime.Day &&
-        watchy_->wakeupReason() == WAKEUP_CLOCK &&
-        // TODO: configurable
-        currentTime.Hour >= 6 && currentTime.Hour < 22) {
-      watchy_->vibrate(75, 5);
+      break;
     }
 
     if (eventEnd - eventStart < SMALLEST_EVENT) {
@@ -244,6 +234,28 @@ void CalendarColumn::draw(Display *display, int16_t x0, int16_t y0,
       display->print(event->summary);
     }
   }
+}
+
+bool CalendarColumn::shouldVibrateOnEventStart(Watchy *watchy,
+                                               eventsData *data) {
+  time_t tooOld = watchy->unixtime() - 60;
+  time_t tooNew = tooOld + 120;
+  for (int i = 0; i < data->eventCount; i++) {
+    eventData *event  = &(data->events[i]);
+    time_t eventStart = event->start;
+    if (eventStart < tooOld) {
+      continue;
+    }
+    if (eventStart > tooNew) {
+      break;
+    }
+    tmElements_t currentTime  = watchy->localtime();
+    tmElements_t eventStarttm = watchy->toLocalTime(eventStart);
+    if (eventStarttm.Minute == currentTime.Minute) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void CalendarColumn::resizeText(Display *display, char *text, uint8_t buflen,
@@ -306,7 +318,7 @@ void CalendarHourBar::maybeDraw(Display *display, int16_t x0, int16_t y0,
       continue;
     }
     if (hourTime >= windowEnd) {
-      continue;
+      break;
     }
 
     int hourNum = ((currentHourNum + i + 11) % 12) + 1;
@@ -369,7 +381,7 @@ void CalendarAlarms::maybeDraw(Display *display, int16_t x0, int16_t y0,
       continue;
     }
     if (alarm->start > windowEnd) {
-      continue;
+      break;
     }
     tmElements_t alarmtm = watchy_->toLocalTime(alarm->start);
     if (!noop && alarmtm.Minute == currentTime.Minute &&
@@ -403,4 +415,27 @@ void CalendarAlarms::maybeDraw(Display *display, int16_t x0, int16_t y0,
   if (*height > 0) {
     *height += EVENT_PADDING;
   }
+}
+
+bool CalendarAlarms::shouldVibrateOnEventStart(Watchy *watchy,
+                                               alarmsData *data) {
+  time_t now         = watchy->unixtime();
+  time_t windowStart = now - 60;
+  time_t windowEnd   = now + 60;
+  for (int i = 0; i < data->alarmCount; i++) {
+    alarmData *alarm = &(data->alarms[i]);
+    if (alarm->start < windowStart) {
+      continue;
+    }
+    if (alarm->start > windowEnd) {
+      break;
+    }
+    tmElements_t currentTime = watchy->localtime();
+    tmElements_t alarmtm     = watchy->toLocalTime(alarm->start);
+    if (alarmtm.Minute == currentTime.Minute &&
+        alarmtm.Hour == currentTime.Hour) {
+      return true;
+    }
+  }
+  return false;
 }

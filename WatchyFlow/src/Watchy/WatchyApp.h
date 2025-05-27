@@ -25,5 +25,7 @@ public:
   virtual AppState buttonSelect(Watchy *watchy) { return APP_ACTIVE; }
   virtual AppState buttonBack(Watchy *watchy) { return APP_EXIT; }
 
+  virtual void tick(Watchy *watchy) {}
+
   virtual ~WatchyApp() = default;
 };

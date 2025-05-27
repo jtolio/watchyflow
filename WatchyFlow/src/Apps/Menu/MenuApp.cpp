@@ -54,6 +54,12 @@ FetchState MenuApp::fetchNetwork(Watchy *watchy) {
   return fetchState;
 }
 
+void MenuApp::tick(Watchy *watchy) {
+  for (uint16_t i = 0; i < items_.size(); i++) {
+    items_[i].app_->tick(watchy);
+  }
+}
+
 void MenuApp::reset(Watchy *watchy) {
   memory_->inApp = false;
   memory_->index = 0;

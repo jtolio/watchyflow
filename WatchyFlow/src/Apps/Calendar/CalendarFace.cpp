@@ -190,6 +190,31 @@ String secondsToReadable(time_t val) {
   return String(val) + "d";
 }
 
+void CalendarFace::tick(Watchy *watchy) {
+  tmElements_t currentTime = watchy->localtime();
+
+  if (CalendarAlarms::shouldVibrateOnEventStart(watchy, &alarms)) {
+    // TODO: queue vibrating instead of just vibrating
+    // to deduplicate vibrate calls from other apps.
+    watchy->vibrate(100, 10);
+    return;
+  }
+
+  // TODO: configurable silence window
+  if (currentTime.Hour < 6 || currentTime.Hour > 22) {
+    return;
+  }
+
+  for (int i = 0; i < activeCalendarColumns; i++) {
+    if (CalendarColumn::shouldVibrateOnEventStart(watchy, &calendar[i])) {
+      // TODO: queue vibrating instead of just vibrating
+      // to deduplicate vibrate calls from other apps.
+      watchy->vibrate(75, 5);
+      return;
+    }
+  }
+}
+
 AppState CalendarFace::show(Watchy *watchy, Display *display,
                             bool partialRefresh) {
   display->fillScreen(BACKGROUND_COLOR);

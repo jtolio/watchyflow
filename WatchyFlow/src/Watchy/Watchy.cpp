@@ -52,6 +52,7 @@ RTC_DATA_ATTR time_t lastSuccessfulNetworkFetch_;
 RTC_DATA_ATTR uint8_t fetchTries_;
 RTC_DATA_ATTR time_t timezoneOffset_;
 RTC_DATA_ATTR int lastSuccessfulWiFiIndex_;
+RTC_DATA_ATTR uint8_t lastMinute_;
 
 void _sensorSetup();
 
@@ -223,6 +224,10 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   }
 
   app->show(&watchy, &display_, partialRefresh);
+  if (currentTime.Minute != lastMinute_) {
+    lastMinute_ = currentTime.Minute;
+    app->tick(&watchy);
+  }
 
   time_t now       = watchy.unixtime();
   time_t staleTime = now - settings.networkFetchIntervalSeconds;

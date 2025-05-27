@@ -19,6 +19,7 @@ public:
   void buttonDown(Watchy *watchy) override;
   AppState buttonSelect(Watchy *watchy) override;
   AppState buttonBack(Watchy *watchy) override;
+  void tick(Watchy *watchy) override;
 
 private:
   altAppMemory *memory_;

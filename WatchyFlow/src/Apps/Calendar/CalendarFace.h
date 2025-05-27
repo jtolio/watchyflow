@@ -24,6 +24,8 @@ public:
 
   void forceCacheMiss() { forceCacheMiss_ = true; }
 
+  void tick(Watchy *watchy) override;
+
 private:
   void parseCalendar(Watchy *watchy, String payload);
 

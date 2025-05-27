@@ -34,7 +34,7 @@ String durationToString(time_t total) {
   time_t minutes = total % 60;
   time_t hours   = total / 60;
   if (hours > 9) {
-    return "MAX";
+    return "-------";
   }
   return String(hours) + ":" + twoDigit(minutes) + ":" + twoDigit(seconds);
 }

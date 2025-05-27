@@ -41,6 +41,8 @@ public:
   AppState buttonSelect(Watchy *watchy) override;
   AppState buttonBack(Watchy *watchy) override;
 
+  void tick(Watchy *watchy) override;
+
 private:
   void showMenu(Watchy *watchy, Display *display, bool partialRefresh);
 

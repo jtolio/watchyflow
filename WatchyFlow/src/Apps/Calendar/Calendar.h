@@ -128,6 +128,8 @@ public:
     return std::make_shared<CalendarColumn>(*this);
   }
 
+  static bool shouldVibrateOnEventStart(Watchy *watchy, eventsData *data);
+
 private:
   void resizeText(Display *display, char *text, uint8_t buflen, uint16_t width,
                   uint16_t height, int16_t *x1, int16_t *y1, uint16_t *tw,
@@ -190,6 +192,8 @@ public:
   LayoutElement::ptr clone() const override {
     return std::make_shared<CalendarAlarms>(*this);
   }
+
+  static bool shouldVibrateOnEventStart(Watchy *watchy, alarmsData *data);
 
 private:
   void maybeDraw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,

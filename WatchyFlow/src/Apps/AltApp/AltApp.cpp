@@ -24,6 +24,11 @@ FetchState AltApp::fetchNetwork(Watchy *watchy) {
   return fetchState;
 }
 
+void AltApp::tick(Watchy *watchy) {
+  main_->tick(watchy);
+  alt_->tick(watchy);
+}
+
 void AltApp::reset(Watchy *watchy) {
   memory_->altApp = false;
   main_->reset(watchy);
