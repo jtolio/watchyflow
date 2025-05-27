@@ -384,11 +384,6 @@ void CalendarAlarms::maybeDraw(Display *display, int16_t x0, int16_t y0,
       break;
     }
     tmElements_t alarmtm = watchy_->toLocalTime(alarm->start);
-    if (!noop && alarmtm.Minute == currentTime.Minute &&
-        alarmtm.Hour == currentTime.Hour &&
-        watchy_->wakeupReason() == WAKEUP_CLOCK) {
-      watchy_->vibrate(100, 10);
-    }
     String text;
     int hourNum = ((alarmtm.Hour + 11) % 12) + 1;
     if (hourNum < 10) {

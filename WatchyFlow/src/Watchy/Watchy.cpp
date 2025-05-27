@@ -225,11 +225,12 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     break;
   }
 
-  app->show(&watchy, &display_, partialRefresh);
   if (currentTime.Minute != lastMinute_) {
     lastMinute_ = currentTime.Minute;
     app->tick(&watchy);
   }
+  app->show(&watchy, &display_, partialRefresh);
+  watchy.queuedVibrate();
 
   time_t now       = watchy.unixtime();
   time_t staleTime = now - settings.networkFetchIntervalSeconds;
@@ -270,12 +271,30 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   }
 
   app->show(&watchy, &display_, true);
+  watchy.queuedVibrate();
 }
 
 void Watchy::reset(const tmElements_t &currentTime, WakeupReason wakeup) {
   localtime_ = currentTime;
   unixtime_  = toUnixTime(currentTime);
   wakeup_    = wakeup;
+}
+
+void Watchy::queueVibrate(uint8_t intervalMs, uint8_t length) {
+  if (vibrateIntervalMs_ < intervalMs) {
+    vibrateIntervalMs_ = intervalMs;
+  }
+  if (vibrateLength_ < length) {
+    vibrateLength_ = length;
+  }
+}
+
+void Watchy::queuedVibrate() {
+  if (vibrateIntervalMs_ > 0 && vibrateLength_ > 0) {
+    vibrate(vibrateIntervalMs_, vibrateLength_);
+    vibrateIntervalMs_ = 0;
+    vibrateLength_     = 0;
+  }
 }
 
 void Watchy::vibrate(uint8_t intervalMs, uint8_t length) {

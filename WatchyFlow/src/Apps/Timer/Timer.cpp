@@ -47,9 +47,7 @@ void TimerApp::tick(Watchy *watchy) {
   time_t now = watchy->unixtime();
   if (running_ && expiry_ <= now) {
     running_ = false;
-    // TODO: queue vibrating instead of just vibrating
-    // to deduplicate vibrate calls from other apps.
-    watchy->vibrate(100, 10);
+    watchy->queueVibrate(100, 10);
   }
 }
 

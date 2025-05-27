@@ -196,22 +196,31 @@ void CalendarFace::tick(Watchy *watchy) {
   tmElements_t currentTime = watchy->localtime();
 
   if (CalendarAlarms::shouldVibrateOnEventStart(watchy, &alarms)) {
-    // TODO: queue vibrating instead of just vibrating
-    // to deduplicate vibrate calls from other apps.
-    watchy->vibrate(100, 10);
+    watchy->queueVibrate(100, 10);
     return;
   }
 
-  // TODO: configurable silence window
-  if (currentTime.Hour < 6 || currentTime.Hour > 22) {
-    return;
+  if (settings_.silenceWindowHourEnd < settings_.silenceWindowHourStart) {
+    // the silence window starts on one day and ends on the next. we will
+    // join with OR.
+    if (settings_.silenceWindowHourStart <= currentTime.Hour ||
+        currentTime.Hour < settings_.silenceWindowHourEnd) {
+      return;
+    }
+  } else if (settings_.silenceWindowHourStart < settings_.silenceWindowHourEnd) {
+    // the silence window begins and ends on the same day. we will
+    // join with AND.
+    if (settings_.silenceWindowHourStart <= currentTime.Hour &&
+      currentTime.Hour < settings_.silenceWindowHourEnd) {
+      return;
+    }
+  } else {
+    // the silence window hours are the same. disabled.
   }
 
   for (int i = 0; i < activeCalendarColumns; i++) {
     if (CalendarColumn::shouldVibrateOnEventStart(watchy, &calendar[i])) {
-      // TODO: queue vibrating instead of just vibrating
-      // to deduplicate vibrate calls from other apps.
-      watchy->vibrate(75, 5);
+      watchy->queueVibrate(75, 5);
       return;
     }
   }

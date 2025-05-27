@@ -44,7 +44,7 @@ public:
 
   WakeupReason wakeupReason() { return wakeup_; }
 
-  void vibrate(uint8_t intervalMs = 100, uint8_t length = 20);
+  void queueVibrate(uint8_t intervalMs = 100, uint8_t length = 20);
 
   float battVoltage();
   int battPercent();
@@ -70,9 +70,12 @@ protected:
   Watchy(const tmElements_t &currentTime, WakeupReason wakeup,
          WatchySettings settings)
       : localtime_(currentTime), unixtime_(toUnixTime(currentTime)),
-        wakeup_(wakeup), settings_(settings) {}
+        wakeup_(wakeup), settings_(settings), vibrateIntervalMs_(0),
+        vibrateLength_(0) {}
 
   void reset(const tmElements_t &currentTime, WakeupReason wakeup);
+  void queuedVibrate();
+  void vibrate(uint8_t intervalMs = 100, uint8_t length = 20);
 
   static bool syncNTP();
   static void drawNotice(char *msg);
@@ -82,4 +85,6 @@ private:
   time_t unixtime_;
   WakeupReason wakeup_;
   WatchySettings settings_;
+  uint8_t vibrateIntervalMs_;
+  uint8_t vibrateLength_;
 };

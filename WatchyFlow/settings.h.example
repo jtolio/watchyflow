@@ -5,6 +5,13 @@ CalendarSettings calSettings{
     .metric             = false,
     .weatherURL         = "http://api.openweathermap.org/data/2.5/"
                           "weather?lat=0.0&lon=0.0&lang=en&units=imperial&appid=APIKEY",
+
+    // if these values are set, then at local hour `silenceWindowHourStart`,
+    // calendar event start vibrations will be silenced, and at
+    // `silenceWindowHourEnd` they will start again. Note that this does not
+    // affect "WATCHY ALARM" calendar events, as they are handled separately.
+    .silenceWindowHourStart = 22,
+    .silenceWindowHourEnd   = 6,
 };
 
 WiFiConfig wifiNetworks[] = {

@@ -6,6 +6,8 @@ typedef struct CalendarSettings {
   String calendarAccountURL;
   bool metric;
   String weatherURL;
+  int8_t silenceWindowHourStart;
+  int8_t silenceWindowHourEnd;
 } CalendarSettings;
 
 class CalendarFace : public WatchyApp {
