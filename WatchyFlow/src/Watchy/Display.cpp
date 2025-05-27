@@ -20,7 +20,9 @@
 
 #include "Display.h"
 
+namespace {
 RTC_DATA_ATTR bool displayFullInit = true;
+}
 
 void WatchyDisplay::busyCallback(const void *) {
   gpio_wakeup_enable((gpio_num_t)DISPLAY_BUSY, GPIO_INTR_LOW_LEVEL);

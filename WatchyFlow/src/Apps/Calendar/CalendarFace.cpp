@@ -21,6 +21,7 @@ const uint8_t MAX_CALENDAR_COLUMNS                 = 6;
 const uint16_t MAX_SECONDS_BETWEEN_WEATHER_UPDATES = 60 * 60 * 2;
 const int32_t DAY_SCROLL_INCREMENT                 = 3 * 30 * 60;
 
+namespace {
 RTC_DATA_ATTR dayEventsData calendarDay;
 RTC_DATA_ATTR eventsData calendar[MAX_CALENDAR_COLUMNS];
 RTC_DATA_ATTR alarmsData alarms;
@@ -33,6 +34,7 @@ RTC_DATA_ATTR int32_t monthEventOffset;
 RTC_DATA_ATTR bool viewShowAboveCalendar;
 RTC_DATA_ATTR bool monthView;
 RTC_DATA_ATTR bool monthDayAbs;
+} // namespace
 
 void zeroError() {
   for (int i = 0; i < (sizeof(calendarError) / sizeof(calendarError[0])); i++) {

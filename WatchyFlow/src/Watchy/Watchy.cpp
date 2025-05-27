@@ -35,6 +35,7 @@
 #include "../Layout/Layout.h"
 #include "WatchyApp.h"
 
+namespace {
 #ifdef ARDUINO_ESP32S3_DEV
 Watchy32KRTC rtc_;
 #define ACTIVE_LOW 0
@@ -53,6 +54,7 @@ RTC_DATA_ATTR uint8_t fetchTries_;
 RTC_DATA_ATTR time_t timezoneOffset_;
 RTC_DATA_ATTR int lastSuccessfulWiFiIndex_;
 RTC_DATA_ATTR uint8_t lastMinute_;
+} // namespace
 
 void _sensorSetup();
 

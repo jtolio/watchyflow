@@ -5,6 +5,7 @@
 #include "src/Apps/Menu/MenuApp.h"
 #include "src/Apps/AltApp/AltApp.h"
 #include "src/Apps/Stopwatch/Stopwatch.h"
+#include "src/Apps/Timer/Timer.h"
 #include "settings.h"
 
 RTC_DATA_ATTR menuAppMemory rootMenuMem;
@@ -20,6 +21,7 @@ void setup() {
   ResetStepCounter resetSteps;
 
   StopwatchApp stopwatch;
+  TimerApp timer;
 
   MenuApp toolMenu(&toolMenuMem, "Tools",
                    {
@@ -30,6 +32,7 @@ void setup() {
 
   MenuApp rootMenu(&rootMenuMem, "Menu",
                    {
+                       MenuItem("Timer", &timer),
                        MenuItem("Stopwatch", &stopwatch),
                        MenuItem("Tools", &toolMenu),
                        MenuItem("About", &about),

@@ -9,17 +9,11 @@
 const uint16_t FOREGROUND_COLOR = DARKMODE ? GxEPD_WHITE : GxEPD_BLACK;
 const uint16_t BACKGROUND_COLOR = DARKMODE ? GxEPD_BLACK : GxEPD_WHITE;
 
+namespace {
 RTC_DATA_ATTR time_t start_;
 RTC_DATA_ATTR time_t elapsed_;
 RTC_DATA_ATTR bool running_;
 RTC_DATA_ATTR time_t split_;
-
-void StopwatchApp::reset(Watchy *watchy) {
-  start_   = 0;
-  elapsed_ = 0;
-  split_   = 0;
-  running_ = false;
-}
 
 String twoDigit(time_t val) {
   if (val >= 0 && val < 10) {
@@ -37,6 +31,14 @@ String durationToString(time_t total) {
     return "-------";
   }
   return String(hours) + ":" + twoDigit(minutes) + ":" + twoDigit(seconds);
+}
+} // namespace
+
+void StopwatchApp::reset(Watchy *watchy) {
+  start_   = 0;
+  elapsed_ = 0;
+  split_   = 0;
+  running_ = false;
 }
 
 AppState StopwatchApp::show(Watchy *watchy, Display *display,

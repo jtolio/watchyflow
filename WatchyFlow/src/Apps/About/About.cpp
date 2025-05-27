@@ -1,8 +1,10 @@
 #include "About.h"
 #include "../../Layout/Arena.h"
 
+namespace {
 RTC_DATA_ATTR size_t arenaUsed_;
 RTC_DATA_ATTR size_t arenaRemaining_;
+} // namespace
 
 void AboutApp::reset(Watchy *watchy) {
   arenaUsed_      = 0;
