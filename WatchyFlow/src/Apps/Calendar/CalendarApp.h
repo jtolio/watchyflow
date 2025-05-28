@@ -11,9 +11,9 @@ typedef struct CalendarSettings {
   int8_t silenceWindowHourEnd;
 } CalendarSettings;
 
-class CalendarFace : public WatchyApp {
+class CalendarApp : public WatchyApp {
 public:
-  explicit CalendarFace(CalendarSettings settings)
+  explicit CalendarApp(CalendarSettings settings)
       : settings_(settings), forceCacheMiss_(false) {}
 
   AppState show(Watchy *watchy, Display *display, bool partialRefresh) override;

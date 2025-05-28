@@ -9,6 +9,7 @@ import argparse
 import datetime
 import json
 import logging
+import threading
 import time
 import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -25,6 +26,7 @@ HOURS_PAST = 1
 HOURS_FUTURE = 36
 DAYS_FUTURE = 31
 MINIMUM_MINUTES_PER_COLUMN = 30
+CACHE_STALE_WINDOW_MINUTES = 5
 
 
 class CalendarProcessor:
@@ -316,12 +318,33 @@ def main():
     with open(args.cals, "rb") as fh:
         server.cals = json.load(fh)
 
+    stop = False
+
+    def precache_loop():
+        # since the server is single threaded, we can trigger the precache event
+        # by just requesting it in a background thread.
+        nonlocal stop
+        while not stop:
+            try:
+                requests.get(f"http://127.0.0.1:{port}/v0/precache/")
+            except:
+                pass
+            for i in range(CACHE_STALE_WINDOW_MINUTES * 60 // 5):
+                if stop:
+                    return
+                time.sleep(5)
+
+    bg = threading.Thread(target=precache_loop)
+    bg.start()
+
     try:
         logging.info(f"Starting server on {host}:{port}")
         server.serve_forever()
     except KeyboardInterrupt:
+        stop = True
         server.server_close()
         logging.info("Server stopped")
+    bg.join()
 
 
 if __name__ == "__main__":

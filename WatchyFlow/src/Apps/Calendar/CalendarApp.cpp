@@ -1,4 +1,4 @@
-#include "CalendarFace.h"
+#include "CalendarApp.h"
 
 #include <HTTPClient.h>
 #include <Arduino_JSON.h>
@@ -42,7 +42,7 @@ void zeroError() {
   }
 }
 
-void CalendarFace::reset(Watchy *watchy) {
+void CalendarApp::reset(Watchy *watchy) {
   activeCalendarColumns = 1;
   ::reset(&calendar[0]);
   ::reset(&alarms);
@@ -57,7 +57,7 @@ void CalendarFace::reset(Watchy *watchy) {
   zeroError();
 }
 
-FetchState CalendarFace::fetchNetwork(Watchy *watchy) {
+FetchState CalendarApp::fetchNetwork(Watchy *watchy) {
   FetchState fetchState = FETCH_OK;
   {
     HTTPClient http;
@@ -102,7 +102,7 @@ FetchState CalendarFace::fetchNetwork(Watchy *watchy) {
   return fetchState;
 }
 
-void CalendarFace::parseCalendar(Watchy *watchy, String payload) {
+void CalendarApp::parseCalendar(Watchy *watchy, String payload) {
   JSONVar parsed = JSON.parse(payload);
   if (!parsed.hasOwnProperty("status")) {
     return;
@@ -192,7 +192,7 @@ String secondsToReadable(time_t val) {
   return String(val) + "d";
 }
 
-void CalendarFace::tick(Watchy *watchy) {
+void CalendarApp::tick(Watchy *watchy) {
   tmElements_t currentTime = watchy->localtime();
 
   if (CalendarAlarms::shouldVibrateOnEventStart(watchy, &alarms)) {
@@ -227,8 +227,8 @@ void CalendarFace::tick(Watchy *watchy) {
   }
 }
 
-AppState CalendarFace::show(Watchy *watchy, Display *display,
-                            bool partialRefresh) {
+AppState CalendarApp::show(Watchy *watchy, Display *display,
+                           bool partialRefresh) {
   display->fillScreen(BACKGROUND_COLOR);
   display->setTextWrap(false);
   tmElements_t currentTime = watchy->localtime();
@@ -382,7 +382,7 @@ AppState CalendarFace::show(Watchy *watchy, Display *display,
   return APP_ACTIVE;
 }
 
-void CalendarFace::buttonDown(Watchy *watchy) {
+void CalendarApp::buttonDown(Watchy *watchy) {
   if (monthView) {
     monthDayAbs = !monthDayAbs;
     return;
@@ -397,7 +397,7 @@ void CalendarFace::buttonDown(Watchy *watchy) {
   }
 }
 
-void CalendarFace::buttonUp(Watchy *watchy) {
+void CalendarApp::buttonUp(Watchy *watchy) {
   if (monthView || dayScheduleOffset == 0) {
     viewShowAboveCalendar = !viewShowAboveCalendar;
     return;
@@ -408,7 +408,7 @@ void CalendarFace::buttonUp(Watchy *watchy) {
   }
 }
 
-AppState CalendarFace::buttonBack(Watchy *watchy) {
+AppState CalendarApp::buttonBack(Watchy *watchy) {
   if (dayScheduleOffset == 0) {
     monthView = !monthView;
   } else {

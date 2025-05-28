@@ -1,7 +1,7 @@
 #include "src/Watchy/Watchy.h"
 #include "src/Apps/About/About.h"
 #include "src/Apps/Tools/Tools.h"
-#include "src/Apps/Calendar/CalendarFace.h"
+#include "src/Apps/Calendar/CalendarApp.h"
 #include "src/Apps/Menu/MenuApp.h"
 #include "src/Apps/HomeApp/HomeApp.h"
 #include "src/Apps/Stopwatch/Stopwatch.h"
@@ -13,12 +13,12 @@ RTC_DATA_ATTR menuAppMemory toolMenuMem;
 RTC_DATA_ATTR homeAppMemory rootMem;
 
 void setup() {
-  CalendarFace calApp(calSettings);
+  CalendarApp calApp(calSettings);
 
   AboutApp about;
   TriggerNetworkFetchApp netFetch;
-  TriggerCalendarReset calReset(&calApp);
-  ResetStepCounter resetSteps;
+  TriggerCalendarResetApp calReset(&calApp);
+  ResetStepCounterApp resetSteps;
 
   StopwatchApp stopwatch;
   TimerApp timer;

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "../../Watchy/WatchyApp.h"
-#include "../Calendar/CalendarFace.h"
+#include "../Calendar/CalendarApp.h"
 
-class ResetStepCounter : public WatchyApp {
+class ResetStepCounterApp : public WatchyApp {
 public:
   virtual AppState show(Watchy *watchy, Display *display,
                         bool partialRefresh) override {
@@ -21,9 +21,9 @@ public:
   }
 };
 
-class TriggerCalendarReset : public WatchyApp {
+class TriggerCalendarResetApp : public WatchyApp {
 public:
-  explicit TriggerCalendarReset(CalendarFace *cal) : cal_(cal) {}
+  explicit TriggerCalendarResetApp(CalendarApp *cal) : cal_(cal) {}
   virtual AppState show(Watchy *watchy, Display *display,
                         bool partialRefresh) override {
     cal_->forceCacheMiss();
@@ -32,5 +32,5 @@ public:
   }
 
 private:
-  CalendarFace *cal_;
+  CalendarApp *cal_;
 };

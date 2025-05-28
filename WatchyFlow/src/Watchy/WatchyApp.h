@@ -32,14 +32,15 @@ public:
   // established (usually once an hour). If the app has network operations it
   // needs to perform from time to time, it should do so in this call. Returning
   // FETCH_TRYAGAIN means that the call failed, and fetchNetwork would like
-  // the Watchy to try again reasonably soon. show will be called after this
-  // call.
+  // the Watchy to try again reasonably soon. If the app is active, show() will
+  // be called after this call.
   virtual FetchState fetchNetwork(Watchy *watchy) { return FETCH_OK; }
 
   // tick() is called once a minute and calls to tick should be passed through
   // to all child apps, active or no. Where show() is only called if the app
   // is active, tick() should be called so apps can do background bookkeeping
-  // or trigger alarms.
+  // or trigger alarms. If the app is active, show() will be called after this
+  // call.
   virtual void tick(Watchy *watchy) {}
 
   // reset is called whenever the watchy is initialized. If your app has
