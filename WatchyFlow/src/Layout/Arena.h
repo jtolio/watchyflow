@@ -3,6 +3,11 @@
 #include <memory>
 #include <stdexcept>
 
+// The idea behind this memory arena is that the Watchy is just going to
+// tell its ESP32 hardware to deep sleep, and so who cares about freeing
+// heap space? If we're going to use the heap, we might as well not worry
+// about spending time deallocating and keeping the memory pool tidy.
+// So this is a no-op deallocating memory arena.
 class MemArena {
 public:
   explicit MemArena(size_t size);
@@ -27,6 +32,7 @@ private:
 
 extern MemArena globalArena;
 
+// This makes it so the Memory Arena can be used for std containers.
 template <typename T> class MemArenaAllocator {
 public:
   using value_type = T;

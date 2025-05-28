@@ -23,6 +23,12 @@ private:
 
 extern MemArenaAllocator<MenuItem> allocatorMenuItem;
 
+// MenuApp will take a list of WatchyApps and names and provide a new higher
+// level WatchyApp that keeps track of which app is active and lets the user
+// select between them. If the App becomes inactive during the show() call,
+// the MenuApp will also become inactive, allowing fast travel out of deep
+// menus when an action app (like the app that resets the step counter) is
+// triggered.
 class MenuApp : public WatchyApp {
 public:
   MenuApp(menuAppMemory *memory, const char *title,

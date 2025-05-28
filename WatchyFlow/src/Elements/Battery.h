@@ -3,6 +3,8 @@
 #include "../Watchy/Watchy.h"
 #include "../Layout/Layout.h"
 
+// LayoutBattery will show a battery icon that represents the amount of charge
+// the Watchy has.
 class LayoutBattery : public LayoutElement {
 public:
   explicit LayoutBattery(Watchy *watchy, uint16_t color)

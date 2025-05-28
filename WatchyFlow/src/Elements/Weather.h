@@ -2,6 +2,9 @@
 
 #include "../Layout/Layout.h"
 
+// LayoutWeatherIcon will show an icon that represents the current weather
+// condition code, if the condition code is considered up to date, and a standin
+// icon otherwise.
 class LayoutWeatherIcon : public LayoutElement {
 public:
   explicit LayoutWeatherIcon(bool upToDate, int16_t conditionCode,

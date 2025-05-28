@@ -207,11 +207,12 @@ void CalendarFace::tick(Watchy *watchy) {
         currentTime.Hour < settings_.silenceWindowHourEnd) {
       return;
     }
-  } else if (settings_.silenceWindowHourStart < settings_.silenceWindowHourEnd) {
+  } else if (settings_.silenceWindowHourStart <
+             settings_.silenceWindowHourEnd) {
     // the silence window begins and ends on the same day. we will
     // join with AND.
     if (settings_.silenceWindowHourStart <= currentTime.Hour &&
-      currentTime.Hour < settings_.silenceWindowHourEnd) {
+        currentTime.Hour < settings_.silenceWindowHourEnd) {
       return;
     }
   } else {

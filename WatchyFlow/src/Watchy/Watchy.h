@@ -30,28 +30,59 @@ typedef enum WakeupReason {
   WAKEUP_NETFETCH = 4,
 } WakeupReason;
 
+// Watchy is the main type that manages the Watchy device. It is created through
+// the static wakeup() call and passed to your app as it manages your app's
+// lifecycle. It should be used from the core Arduino main file like so:
+//
+//     #include "src/Watchy/Watchy.h"
+//     #include "settings.h"
+//
+//     void setup() {
+//       MyApp myapp;
+//       Watchy::wakeup(&myapp, watchSettings);
+//     }
+//
+//     void loop() {
+//       Watchy::sleep();
+//     }
+//
 class Watchy {
 public:
+  // wakeup() creates a Watchy and calls the appropriate things on your
+  // WatchyApp.
   static void wakeup(WatchyApp *app, WatchySettings settings);
+
+  // sleep puts the ESP32 back into deep sleep with appropriate settings to
+  // restart.
   static void sleep();
 
 public:
+  // the core methods - these return what time it is!
+  // localtime() is in your local timezone.
   tmElements_t localtime() { return localtime_; }
+  // unixtime() is in UTC.
   time_t unixtime() { return unixtime_; }
 
+  // these methods convert between the time types. they use your current
+  // timezone to do so.
   tmElements_t toLocalTime(time_t unix);
   time_t toUnixTime(const tmElements_t &local);
 
-  WakeupReason wakeupReason() { return wakeup_; }
+  // offset is the offset in seconds that the local time is from UTC.
+  // e.g., EST is (-5 * 60 * 60). EDT is (-4 * 60 * 60).
+  void setTimezoneOffset(time_t offset);
 
+  // to deduplicate different apps calling vibrate, queueVibrate will save
+  // the longest vibration requested, and perform that when the screen has
+  // drawn.
   void queueVibrate(uint8_t intervalMs = 100, uint8_t length = 20);
 
-  float battVoltage();
+  // battery information. battPercent is preferred where possible.
   int battPercent();
+  float battVoltage();
 
-  // offset is the offset in seconds that the local time is from UTC.
-  // e.g., EST is (-5 * 60 * 60).
-  void setTimezoneOffset(time_t offset);
+  // Why did the watchy wake up? It might not be due to the clock.
+  WakeupReason wakeupReason() { return wakeup_; }
 
   void triggerNetworkFetch();
   time_t lastSuccessfulNetworkFetch();

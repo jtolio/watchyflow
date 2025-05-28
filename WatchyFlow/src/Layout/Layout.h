@@ -6,20 +6,41 @@
 #include <vector>
 #include <initializer_list>
 
+// This is the base class for a LayoutElement. You can compose a whole view
+// in terms of a hierarchy of LayoutElements, which will then align and orient
+// themselves as their parents request.
 class LayoutElement {
 public:
   typedef std::shared_ptr<LayoutElement> ptr;
 
 public:
+  // Every LayoutElement must implement size(). size() is given a targetWidth
+  // and a targetHeight. If the parent wants to shrink this element as small
+  // as possible, these values might be small, maybe even zero. If the parent
+  // wants this element to take up a lot of space, the space it wants it to take
+  // will be the targetWidth and targetHeight. It is expected that this
+  // LayoutElement will provide the smallest or largest size that it can do but
+  // no smaller or larger. The output values are given in *width and *height.
+  // size() should always set *width and *height. display is provided to convey
+  // the overall display size, but should not be drawn on.
   virtual void size(Display *display, uint16_t targetWidth,
                     uint16_t targetHeight, uint16_t *width,
-                    uint16_t *height)                  = 0;
+                    uint16_t *height) = 0;
+
+  // Every LayoutElement must implement draw(). draw() is similar to size() in
+  // terms of targetWidth, targetHeight, width, and height. However, draw() also
+  // is expected to manifest this element onto display at offset x0, y0.
   virtual void draw(Display *display, int16_t x0, int16_t y0,
                     uint16_t targetWidth, uint16_t targetHeight,
                     uint16_t *width, uint16_t *height) = 0;
-  virtual LayoutElement::ptr clone() const             = 0;
-  virtual ~LayoutElement()                             = default;
 
+  // Every LayoutElement must implement clone, which should return a
+  // std::shared_ptr of the concrete descendent type. See some concrete
+  // LayoutElements for examples.
+  virtual LayoutElement::ptr clone() const = 0;
+
+  // virtual destructor and arena memory management
+  virtual ~LayoutElement() = default;
   static void *operator new(size_t size);
   static void *operator new[](size_t size);
   static void operator delete(void *ptr, size_t size) noexcept;
@@ -35,6 +56,8 @@ protected:
   LayoutElement &operator=(LayoutElement &&)      = delete;
 };
 
+// LayoutBitmap takes a pointer to an array of bytes representing a bitmap,
+// and the width and height of that bitmap.
 class LayoutBitmap : public LayoutElement {
 public:
   LayoutBitmap(const uint8_t *bitmap, uint16_t w, uint16_t h, uint16_t color)
@@ -65,6 +88,7 @@ private:
   uint16_t color_;
 };
 
+// LayoutText takes a string, a font, and a color.
 class LayoutText : public LayoutElement {
 public:
   LayoutText(String text, const GFXfont *font, uint16_t color)
@@ -87,6 +111,9 @@ private:
   uint16_t color_;
 };
 
+// LayoutEntry is a container type for lists of cells in LayoutRows or
+// LayoutColumns. If stretch is true, it tells the LayoutRows or LayoutColumns
+// container to stretch this entry if there is extra space.
 class LayoutEntry {
 public:
   explicit LayoutEntry(const LayoutElement &elem, bool stretch = false)
@@ -102,6 +129,11 @@ private:
 
 extern MemArenaAllocator<LayoutEntry> allocatorLayoutEntry;
 
+// LayoutColumns is an element made up of zero or more columns. Column entries
+// can either be stretch=true or stretch=false (see LayoutEntry). If
+// stretch=false, the column will take up the least amount of space that its
+// corresponding column element can. The remaining stretch=true elements will
+// be given an equal share of the remaining space.
 class LayoutColumns : public LayoutElement {
 public:
   LayoutColumns(std::initializer_list<LayoutEntry> elems);
@@ -122,6 +154,8 @@ private:
   std::vector<LayoutEntry, MemArenaAllocator<LayoutEntry>> elems_;
 };
 
+// LayoutRows is just like LayoutColumns but a vertical collection instead of
+// a horizontal collection.
 class LayoutRows : public LayoutElement {
 public:
   LayoutRows(std::initializer_list<LayoutEntry> elems);
@@ -142,6 +176,9 @@ private:
   std::vector<LayoutEntry, MemArenaAllocator<LayoutEntry>> elems_;
 };
 
+// LayoutFill is an empty element that will take whatever space it is given.
+// This can be useful for an empty stretch=true cell in a LayoutRows or
+// LayoutColumns.
 class LayoutFill : public LayoutElement {
 public:
   void size(Display *display, uint16_t targetWidth, uint16_t targetHeight,
@@ -161,6 +198,8 @@ public:
   }
 };
 
+// LayoutCenter will take another element and center it, vertically and
+// horizontally, within the available space.
 class LayoutCenter : public LayoutElement {
 public:
   explicit LayoutCenter(const LayoutElement &child) : child_(child.clone()) {}
@@ -179,6 +218,8 @@ private:
   LayoutElement::ptr child_;
 };
 
+// LayoutHCenter will take another element and horizontally center it in the
+// available space.
 class LayoutHCenter : public LayoutElement {
 public:
   explicit LayoutHCenter(const LayoutElement &child) : child_(child.clone()) {}
@@ -197,6 +238,8 @@ private:
   LayoutElement::ptr child_;
 };
 
+// LayoutVCenter will take another element and vertically center it in the
+// available space.
 class LayoutVCenter : public LayoutElement {
 public:
   explicit LayoutVCenter(const LayoutElement &child) : child_(child.clone()) {}
@@ -215,6 +258,8 @@ private:
   LayoutElement::ptr child_;
 };
 
+// LayoutPad will add padding to the top, right, bottom, and left of another
+// element.
 class LayoutPad : public LayoutElement {
 public:
   LayoutPad(const LayoutElement &child, int16_t padTop, int16_t padRight,
@@ -246,6 +291,9 @@ private:
   int16_t padLeft_;
 };
 
+// LayoutSpacer is a non-drawing element that will only take up a small square
+// of the requested size. Useful for adding empty padded cells in a LayoutRows
+// or LayoutColumns.
 class LayoutSpacer : public LayoutElement {
 public:
   LayoutSpacer(const LayoutSpacer &copy) : size_(copy.size_) {}
@@ -271,6 +319,8 @@ private:
   uint16_t size_;
 };
 
+// LayoutRotate will rotate the child. 0 means no rotation, 1 means 90 degrees
+// clockwise, 2 means 180, 3 means 270. the value is taken % 4.
 class LayoutRotate : public LayoutElement {
 public:
   LayoutRotate(const LayoutElement &child, uint8_t rotate)
@@ -293,6 +343,8 @@ private:
   uint8_t rotate_;
 };
 
+// LayoutBorder will draw a 1 pixel border along each requested side of a
+// child element.
 class LayoutBorder : public LayoutElement {
 public:
   LayoutBorder(const LayoutElement &child, bool top, bool right, bool bottom,
@@ -315,6 +367,7 @@ private:
   uint16_t color_;
 };
 
+// LayoutBackground will draw a solid color behind the child.
 class LayoutBackground : public LayoutElement {
 public:
   LayoutBackground(const LayoutElement &child, uint16_t color)
@@ -337,6 +390,8 @@ private:
   uint16_t color_;
 };
 
+// LayoutOverlay will let you place one child in front of another child.
+// This allows you to draw text or notification boxes on top of other things.
 class LayoutOverlay : public LayoutElement {
 public:
   LayoutOverlay(const LayoutElement &background,
@@ -360,6 +415,8 @@ private:
   LayoutElement::ptr foreground_;
 };
 
+// LayoutRightAlign will have the child element fill available space with
+// empty space on the left.
 class LayoutRightAlign : public LayoutElement {
 public:
   explicit LayoutRightAlign(const LayoutElement &child)
@@ -394,6 +451,8 @@ private:
   LayoutElement::ptr child_;
 };
 
+// LayoutBottomAlign will have the child element fill available space with
+// empty space on the top.
 class LayoutBottomAlign : public LayoutElement {
 public:
   explicit LayoutBottomAlign(const LayoutElement &child)
@@ -428,6 +487,10 @@ private:
   LayoutElement::ptr child_;
 };
 
+// LayoutCell is a mutable LayoutElement that holds another child. This can
+// be useful if you are constructing large hierarchies of elements, and then
+// need to perform some logic to determine some node in the hierarchy tree.
+// LayoutCell's notable method is set().
 class LayoutCell : public LayoutElement {
 public:
   LayoutCell() : child_() {}

@@ -3,14 +3,14 @@
 #include "src/Apps/Tools/Tools.h"
 #include "src/Apps/Calendar/CalendarFace.h"
 #include "src/Apps/Menu/MenuApp.h"
-#include "src/Apps/AltApp/AltApp.h"
+#include "src/Apps/HomeApp/HomeApp.h"
 #include "src/Apps/Stopwatch/Stopwatch.h"
 #include "src/Apps/Timer/Timer.h"
 #include "settings.h"
 
 RTC_DATA_ATTR menuAppMemory rootMenuMem;
 RTC_DATA_ATTR menuAppMemory toolMenuMem;
-RTC_DATA_ATTR altAppMemory rootMem;
+RTC_DATA_ATTR homeAppMemory rootMem;
 
 void setup() {
   CalendarFace calApp(calSettings);
@@ -38,7 +38,7 @@ void setup() {
                        MenuItem("About", &about),
                    });
 
-  AltApp root(&rootMem, &calApp, &rootMenu);
+  HomeApp root(&rootMem, &calApp, &rootMenu);
   Watchy::wakeup(&root, watchSettings);
 }
 

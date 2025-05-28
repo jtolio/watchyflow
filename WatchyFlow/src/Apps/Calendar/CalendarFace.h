@@ -2,6 +2,7 @@
 
 #include "../../Watchy/WatchyApp.h"
 
+// see settings.h.example for documentation and an example
 typedef struct CalendarSettings {
   String calendarAccountURL;
   bool metric;
@@ -17,6 +18,7 @@ public:
 
   AppState show(Watchy *watchy, Display *display, bool partialRefresh) override;
   FetchState fetchNetwork(Watchy *watchy) override;
+  void tick(Watchy *watchy) override;
 
   void reset(Watchy *watchy) override;
 
@@ -24,9 +26,9 @@ public:
   void buttonDown(Watchy *watchy) override;
   AppState buttonBack(Watchy *watchy) override;
 
+  // if set, the next network fetch will tell the calendar server to clear
+  // the server's cache.
   void forceCacheMiss() { forceCacheMiss_ = true; }
-
-  void tick(Watchy *watchy) override;
 
 private:
   void parseCalendar(Watchy *watchy, String payload);
