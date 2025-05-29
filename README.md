@@ -166,8 +166,16 @@ Watchy Apps exist:
  * `TriggerCalendarResetApp` - a menu item for telling the calendar server to
   clear its cache
 
-You can implement your own! Just subclass the `WatchyApp` abstract base class
-and read the notes in the `WatchyApp.h` header file.
+You can implement your own! Just subclass the `WatchyApp` abstract base class.
+
+The main documentation is found in the following header files:
+
+ * [WatchyApp.h](https://github.com/jtolio/watchyflow/blob/main/WatchyFlow/src/Watchy/WatchyApp.h)
+ * [Watchy.h](https://github.com/jtolio/watchyflow/blob/main/WatchyFlow/src/Watchy/Watchy.h)
+ * [Layout.h](https://github.com/jtolio/watchyflow/blob/main/WatchyFlow/src/Layout/Layout.h)
+
+A good example app is the
+[Stopwatch app](https://github.com/jtolio/watchyflow/blob/main/WatchyFlow/src/Apps/Stopwatch/Stopwatch.cpp).
 
 ## Licensing
 
