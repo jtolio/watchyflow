@@ -4,7 +4,6 @@ profiles:
     platforms:
       - platform: esp32:esp32 (2.0.17)
     libraries:
-      - WiFiManager (2.0.17)
       - NTPClient (3.2.1)
       - Arduino_JSON (0.2.0)
       - GxEPD2 (1.6.2)
@@ -18,7 +17,6 @@ profiles:
     platforms:
       - platform: esp32:esp32 (2.0.17)
     libraries:
-      - WiFiManager (2.0.17)
       - NTPClient (3.2.1)
       - Arduino_JSON (0.2.0)
       - GxEPD2 (1.6.2)

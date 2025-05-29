@@ -1,7 +1,6 @@
 #include "Watchy.h"
 
 #include <Arduino.h>
-#include <WiFiManager.h>
 #include <HTTPClient.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
@@ -343,12 +342,13 @@ void Watchy::setTimezoneOffset(time_t seconds) {
 }
 
 time_t Watchy::toUnixTime(const tmElements_t &local) {
-  // the system clock is stored in the local timezone and not UTC, like most
+  // the system clock is stored in the local timezone and not UTC unlike most
   // unix systems.
   // the unix timestamp calculation is therefore off by the local timezone
   // offset from UTC, so to fix it we need to subtract the timezoneOffset.
   // note that time_t may be 32 bits, and may have a Y2038 problem. it may
-  // only make sense to use time_t for time deltas.
+  // only make sense to use time_t for time deltas. with any luck i'll have a
+  // new watch that can know about the year 2039 before 2039.
   return makeTime(local) - timezoneOffset_;
 }
 
