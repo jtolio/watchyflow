@@ -195,6 +195,10 @@ String secondsToReadable(time_t val) {
 void CalendarApp::tick(Watchy *watchy) {
   tmElements_t currentTime = watchy->localtime();
 
+  if (currentTime.Hour == 0 && currentTime.Minute == 0) {
+    watchy->resetStepCounter();
+  }
+
   if (CalendarAlarms::shouldVibrateOnEventStart(watchy, &alarms)) {
     watchy->queueVibrate(100, 10);
     return;
@@ -374,10 +378,6 @@ AppState CalendarApp::show(Watchy *watchy, Display *display,
       .draw(display, 0, 0, display->width(), display->height(), &w, &h);
 
   display->display(partialRefresh);
-
-  if (currentTime.Hour == 0 && currentTime.Minute == 0) {
-    watchy->resetStepCounter();
-  }
 
   return APP_ACTIVE;
 }
