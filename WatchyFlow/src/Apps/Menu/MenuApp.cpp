@@ -4,13 +4,8 @@
 #include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSansBold9pt7b.h>
 
-#define DARKMODE false
-
 const GFXfont *TITLE_FONT = &FreeSansBold9pt7b;
 const GFXfont *FONT       = &FreeSans9pt7b;
-
-const uint16_t FOREGROUND_COLOR = DARKMODE ? GxEPD_WHITE : GxEPD_BLACK;
-const uint16_t BACKGROUND_COLOR = DARKMODE ? GxEPD_BLACK : GxEPD_WHITE;
 
 MemArenaAllocator<MenuItem> allocatorMenuItem(globalArena);
 
@@ -111,6 +106,9 @@ AppState MenuApp::buttonBack(Watchy *watchy) {
 }
 
 void MenuApp::showMenu(Watchy *watchy, Display *display, bool partialRefresh) {
+  const uint16_t FOREGROUND_COLOR = watchy->foregroundColor();
+  const uint16_t BACKGROUND_COLOR = watchy->backgroundColor();
+
   display->fillScreen(BACKGROUND_COLOR);
   display->setTextWrap(false);
 

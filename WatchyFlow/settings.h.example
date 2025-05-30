@@ -44,4 +44,6 @@ WatchySettings watchSettings{
     .fullVoltage  = 4.2,
     .emptyVoltage = 3.2,
 #endif
+
+    .darkMode = false,
 };

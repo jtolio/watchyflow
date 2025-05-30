@@ -39,4 +39,7 @@ typedef struct WatchySettings {
   float fullVoltage;
   // what voltage below which is the battery considered 0%?
   float emptyVoltage;
+
+  // if true, colors are inverted.
+  bool darkMode;
 } WatchySettings;

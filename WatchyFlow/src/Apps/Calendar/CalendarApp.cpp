@@ -12,11 +12,6 @@
 #include "../../Fonts/DSEG7_Classic_Regular_39.h"
 #include "icons.h"
 
-#define DARKMODE false
-
-const uint16_t FOREGROUND_COLOR = DARKMODE ? GxEPD_WHITE : GxEPD_BLACK;
-const uint16_t BACKGROUND_COLOR = DARKMODE ? GxEPD_BLACK : GxEPD_WHITE;
-
 const uint8_t MAX_CALENDAR_COLUMNS                 = 6;
 const uint16_t MAX_SECONDS_BETWEEN_WEATHER_UPDATES = 60 * 60 * 2;
 const int32_t DAY_SCROLL_INCREMENT                 = 3 * 30 * 60;
@@ -233,11 +228,12 @@ void CalendarApp::tick(Watchy *watchy) {
 
 AppState CalendarApp::show(Watchy *watchy, Display *display,
                            bool partialRefresh) {
+  const uint16_t BACKGROUND_COLOR = watchy->backgroundColor();
   display->fillScreen(BACKGROUND_COLOR);
   display->setTextWrap(false);
   tmElements_t currentTime = watchy->localtime();
 
-  uint16_t color = FOREGROUND_COLOR;
+  uint16_t color = watchy->foregroundColor();
 
   int displayHour = ((currentTime.Hour + 11) % 12) + 1;
   String timeStr  = String(displayHour) + ":";

@@ -57,11 +57,11 @@ public:
   static void sleep();
 
 public:
-  // the core methods - these return what time it is!
+  // the core methods - these return at what time the watch woke up
   // localtime() is in your local timezone.
-  tmElements_t localtime() { return localtime_; }
+  tmElements_t localtime() const { return localtime_; }
   // unixtime() is in UTC.
-  time_t unixtime() { return unixtime_; }
+  time_t unixtime() const { return unixtime_; }
 
   // these methods convert between the time types. they use your current
   // timezone to do so.
@@ -82,7 +82,7 @@ public:
   float battVoltage();
 
   // Why did the watchy wake up? It might not be due to the clock.
-  WakeupReason wakeupReason() { return wakeup_; }
+  WakeupReason wakeupReason() const { return wakeup_; }
 
   void triggerNetworkFetch();
   time_t lastSuccessfulNetworkFetch();
@@ -95,7 +95,10 @@ public:
   bool accel(AccelData &acc);
   uint8_t direction();
 
-  ButtonConfiguration buttonConfig() { return settings_.buttonConfig; }
+  ButtonConfiguration buttonConfig() const { return settings_.buttonConfig; }
+
+  uint16_t foregroundColor() const;
+  uint16_t backgroundColor() const;
 
 protected:
   Watchy(const tmElements_t &currentTime, WakeupReason wakeup,
@@ -109,7 +112,9 @@ protected:
   void vibrate(uint8_t intervalMs = 100, uint8_t length = 20);
 
   static bool syncNTP();
-  static void drawNotice(char *msg);
+  void drawNotice(char *msg);
+
+  void updateScreen(WatchyApp *app, bool partialRefresh);
 
 private:
   tmElements_t localtime_;

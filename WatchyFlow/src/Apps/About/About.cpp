@@ -12,9 +12,9 @@ void AboutApp::reset(Watchy *watchy) {
 }
 
 AppState AboutApp::show(Watchy *watchy, Display *display, bool partialRefresh) {
-  display->fillScreen(GxEPD_WHITE);
+  display->fillScreen(watchy->backgroundColor());
   display->setTextWrap(true);
-  display->setTextColor(GxEPD_BLACK);
+  display->setTextColor(watchy->foregroundColor());
   display->setCursor(0, 0);
   display->println("github.com/jtolio/watchyflow");
 

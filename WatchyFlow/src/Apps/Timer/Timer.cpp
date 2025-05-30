@@ -5,10 +5,6 @@
 #include "../../Fonts/Seven_Segment10pt7b.h"
 #include <Fonts/FreeSans9pt7b.h>
 
-#define DARKMODE false
-const uint16_t FOREGROUND_COLOR = DARKMODE ? GxEPD_WHITE : GxEPD_BLACK;
-const uint16_t BACKGROUND_COLOR = DARKMODE ? GxEPD_BLACK : GxEPD_WHITE;
-
 namespace {
 RTC_DATA_ATTR int16_t minutes_;
 RTC_DATA_ATTR int16_t increment0_;
@@ -52,7 +48,8 @@ void TimerApp::tick(Watchy *watchy) {
 }
 
 AppState TimerApp::show(Watchy *watchy, Display *display, bool partialRefresh) {
-  display->fillScreen(BACKGROUND_COLOR);
+  const uint16_t FOREGROUND_COLOR = watchy->foregroundColor();
+  display->fillScreen(watchy->backgroundColor());
   display->setTextWrap(false);
 
   time_t now       = watchy->unixtime();

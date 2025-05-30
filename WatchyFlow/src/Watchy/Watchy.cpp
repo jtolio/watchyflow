@@ -228,8 +228,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     lastMinute_ = currentTime.Minute;
     app->tick(&watchy);
   }
-  app->show(&watchy, &display_, partialRefresh);
-  watchy.queuedVibrate();
+  watchy.updateScreen(app, partialRefresh);
 
   time_t now       = watchy.unixtime();
   time_t staleTime = now - settings.networkFetchIntervalSeconds;
@@ -249,10 +248,10 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   lastFetchAttempt_ = now;
   fetchTries_++;
 
-  drawNotice("Connecting...");
+  watchy.drawNotice("Connecting...");
 
   if (connectWiFi(settings)) {
-    drawNotice("Loading...   ");
+    watchy.drawNotice("Loading...   ");
 
     FetchState fetchResult = app->fetchNetwork(&watchy);
     if (syncNTP()) {
@@ -269,8 +268,12 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     btStop();
   }
 
-  app->show(&watchy, &display_, true);
-  watchy.queuedVibrate();
+  watchy.updateScreen(app, true);
+}
+
+void Watchy::updateScreen(WatchyApp *app, bool partialRefresh) {
+  app->show(this, &display_, partialRefresh);
+  queuedVibrate();
 }
 
 void Watchy::reset(const tmElements_t &currentTime, WakeupReason wakeup) {
@@ -384,9 +387,10 @@ time_t Watchy::lastSuccessfulNetworkFetch() {
 
 void Watchy::drawNotice(char *msg) {
   LayoutBackground notice(
-      LayoutBorder(LayoutPad(LayoutText(msg, NULL, GxEPD_BLACK), 3, 3, 3, 3),
-                   true, true, true, true, GxEPD_BLACK),
-      GxEPD_WHITE);
+      LayoutBorder(
+          LayoutPad(LayoutText(msg, NULL, foregroundColor()), 3, 3, 3, 3), true,
+          true, true, true, foregroundColor()),
+      backgroundColor());
 
   uint16_t w, h;
   notice.size(&display_, 0, 0, &w, &h);
@@ -472,4 +476,12 @@ void _sensorSetup() {
   sensor_.enableStepCountInterrupt();
   sensor_.enableTiltInterrupt();
   sensor_.enableWakeupInterrupt();
+}
+
+uint16_t Watchy::foregroundColor() const {
+  return settings_.darkMode ? GxEPD_WHITE : GxEPD_BLACK;
+}
+
+uint16_t Watchy::backgroundColor() const {
+  return settings_.darkMode ? GxEPD_BLACK : GxEPD_WHITE;
 }
