@@ -29,6 +29,7 @@ RTC_DATA_ATTR int32_t monthEventOffset;
 RTC_DATA_ATTR bool viewShowAboveCalendar;
 RTC_DATA_ATTR bool monthView;
 RTC_DATA_ATTR bool monthDayAbs;
+RTC_DATA_ATTR int8_t activeLocation;
 } // namespace
 
 void zeroError() {
@@ -50,7 +51,10 @@ void CalendarApp::reset(Watchy *watchy) {
   monthDayAbs           = false;
   monthEventOffset      = 0;
   zeroError();
+  setActiveLocation(0);
 }
+
+void CalendarApp::setActiveLocation(int location) { activeLocation = location; }
 
 FetchState CalendarApp::fetchNetwork(Watchy *watchy) {
   FetchState fetchState = FETCH_OK;
@@ -80,7 +84,7 @@ FetchState CalendarApp::fetchNetwork(Watchy *watchy) {
     HTTPClient http;
     http.setConnectTimeout(1000 * 10);
     http.setTimeout(1000 * 10);
-    String weatherQueryURL = settings_.weatherURL;
+    String weatherQueryURL = settings_.locations[activeLocation].weatherURL;
     http.begin(weatherQueryURL.c_str());
     if (http.GET() == 200) {
       String payload         = http.getString();

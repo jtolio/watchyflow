@@ -1,10 +1,16 @@
 #pragma once
 
+LocationConfig locations[] = {
+    {
+        .name       = "Home",
+        .weatherURL = "http://api.openweathermap.org/data/2.5/weather?"
+                      "lat=0.0&lon=0.0&lang=en&units=imperial&appid=APIKEY",
+    },
+};
+
 CalendarSettings calSettings{
     .calendarAccountURL = "https://path/to/calendar/server/with/account",
     .metric             = false,
-    .weatherURL         = "http://api.openweathermap.org/data/2.5/"
-                          "weather?lat=0.0&lon=0.0&lang=en&units=imperial&appid=APIKEY",
 
     // if these values are set, then at local hour `silenceWindowHourStart`,
     // calendar event start vibrations will be silenced, and at
@@ -12,6 +18,9 @@ CalendarSettings calSettings{
     // affect "WATCHY ALARM" calendar events, as they are handled separately.
     .silenceWindowHourStart = 22,
     .silenceWindowHourEnd   = 6,
+
+    .locations     = locations,
+    .locationCount = sizeof(locations) / sizeof(locations[0]),
 };
 
 WiFiConfig wifiNetworks[] = {
