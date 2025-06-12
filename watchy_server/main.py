@@ -143,6 +143,7 @@ class CalendarProcessor:
         end_time_converted = self.convert_time(end_time)
 
         all_events = []
+        added_events = set()
         event_edges = []
 
         for url in calendar_urls:
@@ -180,6 +181,11 @@ class CalendarProcessor:
 
                     if event["summary"] in self.excluded_events:
                         continue
+
+                    event_key = repr(event)
+                    if event_key in added_events:
+                        continue
+                    added_events.add(event_key)
 
                     event_id = len(all_events)
                     event_edges.append((event["start"], "1", event["end"], event_id))
