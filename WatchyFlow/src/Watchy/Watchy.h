@@ -105,7 +105,7 @@ protected:
          WatchySettings settings)
       : localtime_(currentTime), unixtime_(toUnixTime(currentTime)),
         wakeup_(wakeup), settings_(settings), vibrateIntervalMs_(0),
-        vibrateLength_(0) {}
+        vibrateLength_(0), fetchOnButton_(false) {}
 
   void reset(const tmElements_t &currentTime, WakeupReason wakeup);
   void queuedVibrate();
@@ -123,4 +123,5 @@ private:
   WatchySettings settings_;
   uint8_t vibrateIntervalMs_;
   uint8_t vibrateLength_;
+  bool fetchOnButton_;
 };

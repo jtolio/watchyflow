@@ -230,6 +230,12 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   }
   watchy.updateScreen(app, partialRefresh);
 
+  // don't do a network fetch if it's a user event that didn't trigger one.
+  if (!watchy.fetchOnButton_ && (wakeup_reason_enum == WAKEUP_BUTTON ||
+                                 wakeup_reason_enum == WAKEUP_USB)) {
+    return;
+  }
+
   time_t now       = watchy.unixtime();
   time_t staleTime = now - settings.networkFetchIntervalSeconds;
 
@@ -337,6 +343,7 @@ int Watchy::battPercent() {
 void Watchy::triggerNetworkFetch() {
   lastFetchAttempt_ = 0;
   fetchTries_       = 0;
+  fetchOnButton_    = true;
 }
 
 void Watchy::setTimezoneOffset(time_t seconds) {
