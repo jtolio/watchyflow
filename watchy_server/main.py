@@ -100,7 +100,7 @@ class CalendarProcessor:
         start = event["DTSTART"].dt
         end = event["DTEND"].dt
         rv = {
-            "summary": event["SUMMARY"],
+            "summary": event["SUMMARY"].encode("ascii", "ignore").decode("ascii"),
             "day": (
                 (
                     not isinstance(start, datetime.datetime)
