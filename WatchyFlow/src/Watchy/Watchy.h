@@ -71,6 +71,7 @@ public:
   // offset is the offset in seconds that the local time is from UTC.
   // e.g., EST is (-5 * 60 * 60). EDT is (-4 * 60 * 60).
   void setTimezoneOffset(time_t offset);
+  time_t timezoneOffset();
 
   // to deduplicate different apps calling vibrate, queueVibrate will save
   // the longest vibration requested, and perform that when the screen has

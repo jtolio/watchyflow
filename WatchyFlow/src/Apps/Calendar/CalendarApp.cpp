@@ -58,27 +58,7 @@ void CalendarApp::setActiveLocation(int location) { activeLocation = location; }
 
 FetchState CalendarApp::fetchNetwork(Watchy *watchy) {
   FetchState fetchState = FETCH_OK;
-  {
-    HTTPClient http;
-    http.setConnectTimeout(1000 * 10);
-    http.setTimeout(1000 * 10);
-    String calQueryURL = settings_.calendarAccountURL;
-    if (forceCacheMiss_) {
-      calQueryURL += "?force_cache_miss=true";
-    }
-    http.begin(calQueryURL.c_str());
-    int httpResponseCode = http.GET();
-    if (httpResponseCode == 200) {
-      zeroError();
-      parseCalendar(watchy, http.getString());
-    } else {
-      String error(httpResponseCode);
-      error.toCharArray(calendarError,
-                        sizeof(calendarError) / sizeof(calendarError[0]));
-      fetchState = FETCH_TRYAGAIN;
-    }
-    http.end();
-  }
+  time_t timezoneOffset = watchy->timezoneOffset();
 
   {
     HTTPClient http;
@@ -91,8 +71,35 @@ FetchState CalendarApp::fetchNetwork(Watchy *watchy) {
       JSONVar responseObject = JSON.parse(payload);
       lastTemperature        = int(responseObject["main"]["temp"]);
       weatherConditionCode   = int(responseObject["weather"][0]["id"]);
-      watchy->setTimezoneOffset(int(responseObject["timezone"]));
+      timezoneOffset         = int(responseObject["timezone"]);
+      watchy->setTimezoneOffset(timezoneOffset);
     } else {
+      fetchState = FETCH_TRYAGAIN;
+    }
+    http.end();
+  }
+
+  {
+    HTTPClient http;
+    http.setConnectTimeout(1000 * 10);
+    http.setTimeout(1000 * 10);
+    String calQueryURL = settings_.calendarAccountURL;
+    if (forceCacheMiss_) {
+      calQueryURL += "?force_cache_miss=true&tz=";
+      calQueryURL += int(timezoneOffset);
+    } else {
+      calQueryURL += "?tz=";
+      calQueryURL += int(timezoneOffset);
+    }
+    http.begin(calQueryURL.c_str());
+    int httpResponseCode = http.GET();
+    if (httpResponseCode == 200) {
+      zeroError();
+      parseCalendar(watchy, http.getString());
+    } else {
+      String error(httpResponseCode);
+      error.toCharArray(calendarError,
+                        sizeof(calendarError) / sizeof(calendarError[0]));
       fetchState = FETCH_TRYAGAIN;
     }
     http.end();

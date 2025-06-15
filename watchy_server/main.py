@@ -85,20 +85,18 @@ class CalendarProcessor:
 
         return False
 
-    def convert_time(self, dt):
+    def convert_time(self, dt, tz):
         if isinstance(dt, datetime.datetime):
-            return int(dt.astimezone(TIMEZONE).timestamp())
+            return int(dt.astimezone(tz).timestamp())
         assert isinstance(dt, datetime.date)
         return int(
             datetime.datetime.combine(
                 dt,
-                datetime.time(
-                    hour=0, minute=0, second=0, microsecond=0, tzinfo=TIMEZONE
-                ),
+                datetime.time(hour=0, minute=0, second=0, microsecond=0, tzinfo=tz),
             ).timestamp()
         )
 
-    def event_to_dict(self, event):
+    def event_to_dict(self, event, tz):
         start = event["DTSTART"].dt
         end = event["DTEND"].dt
         rv = {
@@ -113,10 +111,13 @@ class CalendarProcessor:
                     and isinstance(end, datetime.date)
                 )
             ),
-            "start": self.convert_time(start),
-            "end": self.convert_time(end),
+            "start": self.convert_time(start, tz),
+            "end": self.convert_time(end, tz),
             "column-end": self.convert_time(
-                max(end, start + datetime.timedelta(minutes=MINIMUM_MINUTES_PER_COLUMN))
+                max(
+                    end, start + datetime.timedelta(minutes=MINIMUM_MINUTES_PER_COLUMN)
+                ),
+                tz,
             ),
         }
         return rv
@@ -134,13 +135,14 @@ class CalendarProcessor:
         end_time=None,
         day_end_time=None,
         force_cache_miss=False,
+        tz=TIMEZONE,
     ):
         if end_time is None:
             end_time = start_time + datetime.timedelta(hours=HOURS_FUTURE)
         if day_end_time is None:
             day_end_time = start_time + datetime.timedelta(hours=(24 * DAYS_FUTURE))
 
-        end_time_converted = self.convert_time(end_time)
+        end_time_converted = self.convert_time(end_time, tz)
 
         all_events = []
         added_events = set()
@@ -171,7 +173,7 @@ class CalendarProcessor:
                     if "STATUS" in event and event["STATUS"] != "CONFIRMED":
                         continue
 
-                    event = self.event_to_dict(event)
+                    event = self.event_to_dict(event, tz)
 
                     if event["end"] <= event["start"]:
                         continue
@@ -277,9 +279,14 @@ class CalHandler(BaseHTTPRequestHandler):
         ical_urls = account.get("ical-urls", [])
         excluded_events = account.get("excluded-events", [])
 
+        tz_offset = (query.get("tz") or [None])[-1]
+        tz = TIMEZONE
+        if tz_offset is not None:
+            tz = datetime.timezone(datetime.timedelta(seconds=int(tz_offset)))
+
         when = (query.get("time") or ["now"])[-1]
         if when == "now":
-            when = datetime.datetime.now().astimezone(TIMEZONE)
+            when = datetime.datetime.now().astimezone(tz)
         else:
             when = dateutil.parser.parse(when)
 
@@ -289,7 +296,7 @@ class CalHandler(BaseHTTPRequestHandler):
         )
         force_cache_miss = (query.get("force_cache_miss") or ["false"])[-1] == "true"
         all_events, columns = processor.get_events(
-            ical_urls, start, force_cache_miss=force_cache_miss
+            ical_urls, start, force_cache_miss=force_cache_miss, tz=tz
         )
 
         self.send_response(200)

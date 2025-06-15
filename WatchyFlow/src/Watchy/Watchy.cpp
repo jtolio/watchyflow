@@ -351,6 +351,11 @@ void Watchy::setTimezoneOffset(time_t seconds) {
   timezoneOffset_ = seconds;
 }
 
+time_t Watchy::timezoneOffset() {
+  // see comments in syncNTP and toUnixTime.
+  return timezoneOffset_;
+}
+
 time_t Watchy::toUnixTime(const tmElements_t &local) {
   // the system clock is stored in the local timezone and not UTC unlike most
   // unix systems.
