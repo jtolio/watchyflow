@@ -10,15 +10,19 @@ typedef struct menuAppMemory {
   uint16_t index;
 } menuAppMemory;
 
+class MenuApp;
+
 class MenuItem {
 public:
-  explicit MenuItem(String name, WatchyApp *app) : app_(app), name_(name) {}
+  explicit MenuItem(String name, MenuApp *app);
+  explicit MenuItem(String name, WatchyApp *app);
 
   friend class MenuApp;
 
 private:
   WatchyApp *app_;
   String name_;
+  bool submenu_;
 };
 
 extern MemArenaAllocator<MenuItem> allocatorMenuItem;
@@ -51,6 +55,7 @@ public:
 
 private:
   void showMenu(Watchy *watchy, Display *display, bool partialRefresh);
+  bool isSubMenu(int index);
 
 private:
   menuAppMemory *memory_;

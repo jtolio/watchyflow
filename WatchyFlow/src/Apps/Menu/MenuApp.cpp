@@ -7,6 +7,12 @@
 const GFXfont *TITLE_FONT = &FreeSansBold9pt7b;
 const GFXfont *FONT       = &FreeSans9pt7b;
 
+MenuItem::MenuItem(String name, MenuApp *app)
+    : app_(app), name_(name), submenu_(true) {}
+
+MenuItem::MenuItem(String name, WatchyApp *app)
+    : app_(app), name_(name), submenu_(false) {}
+
 MemArenaAllocator<MenuItem> allocatorMenuItem(globalArena);
 
 MenuApp::MenuApp(menuAppMemory *memory, const char *title,
@@ -63,6 +69,8 @@ void MenuApp::reset(Watchy *watchy) {
   }
 }
 
+bool MenuApp::isSubMenu(int index) { return items_[index].submenu_; }
+
 void MenuApp::buttonUp(Watchy *watchy) {
   if (memory_->inApp) {
     items_[memory_->index % items_.size()].app_->buttonUp(watchy);
@@ -81,24 +89,26 @@ void MenuApp::buttonDown(Watchy *watchy) {
 
 AppState MenuApp::buttonSelect(Watchy *watchy) {
   uint16_t index = memory_->index % items_.size();
+  bool submenu   = isSubMenu(index);
   if (memory_->inApp) {
     if (items_[index].app_->buttonSelect(watchy) != APP_ACTIVE) {
       memory_->inApp  = false;
-      fullDrawNeeded_ = true;
+      fullDrawNeeded_ = !submenu;
     }
     return APP_ACTIVE;
   }
   memory_->inApp  = true;
-  fullDrawNeeded_ = true;
+  fullDrawNeeded_ = !submenu;
   return APP_ACTIVE;
 }
 
 AppState MenuApp::buttonBack(Watchy *watchy) {
   uint16_t index = memory_->index % items_.size();
+  bool submenu   = isSubMenu(index);
   if (memory_->inApp) {
     if (items_[index].app_->buttonBack(watchy) != APP_ACTIVE) {
       memory_->inApp  = false;
-      fullDrawNeeded_ = true;
+      fullDrawNeeded_ = !submenu;
     }
     return APP_ACTIVE;
   }
