@@ -84,12 +84,12 @@ FetchState CalendarApp::fetchNetwork(Watchy *watchy) {
     http.setConnectTimeout(1000 * 10);
     http.setTimeout(1000 * 10);
     String calQueryURL = settings_.calendarAccountURL;
+    calQueryURL += "?tz=";
+    calQueryURL += int(timezoneOffset);
+    calQueryURL += "&steps=";
+    calQueryURL += watchy->stepCounter();
     if (forceCacheMiss_) {
-      calQueryURL += "?force_cache_miss=true&tz=";
-      calQueryURL += int(timezoneOffset);
-    } else {
-      calQueryURL += "?tz=";
-      calQueryURL += int(timezoneOffset);
+      calQueryURL += "&force_cache_miss=true";
     }
     http.begin(calQueryURL.c_str());
     int httpResponseCode = http.GET();
