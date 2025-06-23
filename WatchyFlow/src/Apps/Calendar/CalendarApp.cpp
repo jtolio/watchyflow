@@ -205,7 +205,8 @@ void CalendarApp::tick(Watchy *watchy) {
     watchy->resetStepCounter();
   }
 
-  if (CalendarAlarms::shouldVibrateOnEventStart(watchy, &alarms)) {
+  if (CalendarAlarms::shouldVibrateOnEventStart(watchy, &alarms, alerts_)) {
+    // safe to do twice, even if alerts_ takes care of it. will get debounced.
     watchy->queueVibrate(100, 10);
     return;
   }

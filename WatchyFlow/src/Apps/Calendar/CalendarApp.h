@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../Watchy/WatchyApp.h"
+#include "../Alerts/AlertsApp.h"
 
 typedef struct LocationConfig {
   String name;
@@ -22,7 +23,9 @@ typedef struct CalendarSettings {
 class CalendarApp : public WatchyApp {
 public:
   explicit CalendarApp(CalendarSettings settings)
-      : settings_(settings), forceCacheMiss_(false) {}
+      : settings_(settings), forceCacheMiss_(false), alerts_(NULL) {}
+  CalendarApp(CalendarSettings settings, AlertsApp *alerts)
+      : settings_(settings), forceCacheMiss_(false), alerts_(alerts) {}
 
   AppState show(Watchy *watchy, Display *display, bool partialRefresh) override;
   FetchState fetchNetwork(Watchy *watchy) override;
@@ -47,4 +50,5 @@ private:
 private:
   CalendarSettings settings_;
   bool forceCacheMiss_;
+  AlertsApp *alerts_;
 };

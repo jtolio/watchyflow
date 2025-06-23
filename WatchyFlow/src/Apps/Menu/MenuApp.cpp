@@ -4,8 +4,10 @@
 #include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSansBold9pt7b.h>
 
+namespace {
 const GFXfont *TITLE_FONT = &FreeSansBold9pt7b;
 const GFXfont *FONT       = &FreeSans9pt7b;
+} // namespace
 
 MenuItem::MenuItem(String name, MenuApp *app)
     : app_(app), name_(name), submenu_(true) {}

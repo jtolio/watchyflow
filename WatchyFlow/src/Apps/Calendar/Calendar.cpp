@@ -1,6 +1,7 @@
 #include "Calendar.h"
 #include "../../Layout/Layout.h"
 #include "../../Watchy/Watchy.h"
+#include "../Alerts/AlertsApp.h"
 #include <Fonts/Picopixel.h>
 
 const GFXfont *SMALL_FONT          = NULL;
@@ -412,11 +413,12 @@ void CalendarAlarms::maybeDraw(Display *display, int16_t x0, int16_t y0,
   }
 }
 
-bool CalendarAlarms::shouldVibrateOnEventStart(Watchy *watchy,
-                                               alarmsData *data) {
+bool CalendarAlarms::shouldVibrateOnEventStart(Watchy *watchy, alarmsData *data,
+                                               AlertsApp *alerts) {
   time_t now         = watchy->unixtime();
   time_t windowStart = now - 60;
   time_t windowEnd   = now + 60;
+  bool found         = false;
   for (int i = 0; i < data->alarmCount; i++) {
     alarmData *alarm = &(data->alarms[i]);
     if (alarm->start < windowStart) {
@@ -429,8 +431,11 @@ bool CalendarAlarms::shouldVibrateOnEventStart(Watchy *watchy,
     tmElements_t alarmtm     = watchy->toLocalTime(alarm->start);
     if (alarmtm.Minute == currentTime.Minute &&
         alarmtm.Hour == currentTime.Hour) {
-      return true;
+      if (alerts != NULL) {
+        alerts->addAlert(alarm->summary, alarm->start);
+      }
+      found = true;
     }
   }
-  return false;
+  return found;
 }

@@ -6,6 +6,7 @@
 #include "src/Apps/HomeApp/HomeApp.h"
 #include "src/Apps/Stopwatch/Stopwatch.h"
 #include "src/Apps/Timer/Timer.h"
+#include "src/Apps/Alerts/AlertsApp.h"
 #include "settings.h"
 
 RTC_DATA_ATTR menuAppMemory rootMenuMem;
@@ -14,7 +15,8 @@ RTC_DATA_ATTR menuAppMemory locationMenuMem;
 RTC_DATA_ATTR homeAppMemory rootMem;
 
 void setup() {
-  CalendarApp calApp(calSettings);
+  AlertsApp alerts;
+  CalendarApp calApp(calSettings, &alerts);
 
   AboutApp about;
   TriggerNetworkFetchApp netFetch;
@@ -22,7 +24,7 @@ void setup() {
   ResetStepCounterApp resetSteps;
 
   StopwatchApp stopwatch;
-  TimerApp timer;
+  TimerApp timer(&alerts);
 
   SetCalendarLocationApp locationApps[calSettings.locationCount];
   std::vector<MenuItem, MemArenaAllocator<MenuItem>> locationSetters(
@@ -52,7 +54,8 @@ void setup() {
                    });
 
   HomeApp root(&rootMem, &calApp, &rootMenu);
-  Watchy::wakeup(&root, watchSettings);
+  alerts.setApp(&root);
+  Watchy::wakeup(&alerts, watchSettings);
 }
 
 void loop() {

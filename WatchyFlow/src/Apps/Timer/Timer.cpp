@@ -43,6 +43,10 @@ void TimerApp::tick(Watchy *watchy) {
   time_t now = watchy->unixtime();
   if (running_ && expiry_ <= now) {
     running_ = false;
+    if (alerts_ != NULL) {
+      alerts_->addAlert("Timer done.", now);
+    }
+    // safe to do twice, even if alerts_ takes care of it. will get debounced.
     watchy->queueVibrate(100, 10);
   }
 }

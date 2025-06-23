@@ -2,6 +2,8 @@
 
 #include "../../Layout/Layout.h"
 
+class AlertsApp;
+
 const uint8_t MAX_EVENT_NAME_LEN    = 24;
 const uint8_t MAX_EVENTS_PER_COLUMN = 24;
 const uint8_t MAX_ALARMS            = 24;
@@ -193,7 +195,8 @@ public:
     return std::make_shared<CalendarAlarms>(*this);
   }
 
-  static bool shouldVibrateOnEventStart(Watchy *watchy, alarmsData *data);
+  static bool shouldVibrateOnEventStart(Watchy *watchy, alarmsData *data,
+                                        AlertsApp *alerts);
 
 private:
   void maybeDraw(Display *display, int16_t x0, int16_t y0, uint16_t targetWidth,
