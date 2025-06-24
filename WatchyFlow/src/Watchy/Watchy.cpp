@@ -53,6 +53,7 @@ RTC_DATA_ATTR uint8_t fetchTries_;
 RTC_DATA_ATTR time_t timezoneOffset_;
 RTC_DATA_ATTR int lastSuccessfulWiFiIndex_;
 RTC_DATA_ATTR uint8_t lastMinute_;
+RTC_DATA_ATTR uint32_t totalSteps_;
 } // namespace
 
 void _sensorSetup();
@@ -170,6 +171,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     fetchTries_                 = 0;
     timezoneOffset_             = settings.defaultTimezoneOffset;
     lastSuccessfulWiFiIndex_    = 0;
+    totalSteps_                 = 0;
     break;
   }
 
@@ -289,11 +291,10 @@ void Watchy::reset(const tmElements_t &currentTime, WakeupReason wakeup) {
 }
 
 void Watchy::queueVibrate(uint8_t intervalMs, uint8_t length) {
-  if (vibrateIntervalMs_ < intervalMs) {
+  if (int(vibrateIntervalMs_) * int(vibrateLength_) <
+      int(intervalMs) * int(length)) {
     vibrateIntervalMs_ = intervalMs;
-  }
-  if (vibrateLength_ < length) {
-    vibrateLength_ = length;
+    vibrateLength_     = length;
   }
 }
 
@@ -413,7 +414,14 @@ void Watchy::drawNotice(char *msg) {
 
 uint32_t Watchy::stepCounter() { return sensor_.getCounter(); }
 
-void Watchy::resetStepCounter() { sensor_.resetStepCounter(); }
+void Watchy::resetStepCounter() {
+  totalSteps_ += sensor_.getCounter();
+  sensor_.resetStepCounter();
+}
+
+uint32_t Watchy::totalStepCounter() {
+  return totalSteps_ + sensor_.getCounter();
+}
 
 uint8_t Watchy::temperature() { return sensor_.readTemperature(); }
 

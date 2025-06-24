@@ -87,7 +87,7 @@ FetchState CalendarApp::fetchNetwork(Watchy *watchy) {
     calQueryURL += "?tz=";
     calQueryURL += int(timezoneOffset);
     calQueryURL += "&steps=";
-    calQueryURL += watchy->stepCounter();
+    calQueryURL += watchy->totalStepCounter();
     if (forceCacheMiss_) {
       calQueryURL += "&force_cache_miss=true";
     }

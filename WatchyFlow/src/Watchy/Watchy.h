@@ -88,8 +88,11 @@ public:
   void triggerNetworkFetch();
   time_t lastSuccessfulNetworkFetch();
 
+  // stepCounter and resetStepCounter manage the current counter.
   uint32_t stepCounter();
   void resetStepCounter();
+  // totalStepCounter attempts to count all steps since reset.
+  uint32_t totalStepCounter();
 
   uint8_t temperature(); // celsius
 
