@@ -403,8 +403,14 @@ void CalendarApp::buttonDown(Watchy *watchy) {
 }
 
 void CalendarApp::buttonUp(Watchy *watchy) {
-  if (monthView || dayScheduleOffset == 0) {
+  if (monthView) {
     viewShowAboveCalendar = !viewShowAboveCalendar;
+    return;
+  }
+  if (dayScheduleOffset == 0) {
+    if (!viewShowAboveCalendar) {
+      viewShowAboveCalendar = true;
+    }
     return;
   }
   dayScheduleOffset -= DAY_SCROLL_INCREMENT;
