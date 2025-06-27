@@ -30,6 +30,15 @@ typedef enum WakeupReason {
   WAKEUP_NETFETCH = 4,
 } WakeupReason;
 
+typedef enum WatchDirection {
+  DIRECTION_TOP_EDGE_UP    = 0,
+  DIRECTION_BOTTOM_EDGE_UP = 1,
+  DIRECTION_LEFT_EDGE_UP   = 2,
+  DIRECTION_RIGHT_EDGE_UP  = 3,
+  DIRECTION_DISPLAY_UP     = 4,
+  DIRECTION_DISPLAY_DOWN   = 5
+} WatchDirection;
+
 // Watchy is the main type that manages the Watchy device. It is created through
 // the static wakeup() call and passed to your app as it manages your app's
 // lifecycle. It should be used from the core Arduino main file like so:
@@ -97,7 +106,7 @@ public:
   uint8_t temperature(); // celsius
 
   bool accel(AccelData &acc);
-  uint8_t direction();
+  WatchDirection direction();
 
   ButtonConfiguration buttonConfig() const { return settings_.buttonConfig; }
 

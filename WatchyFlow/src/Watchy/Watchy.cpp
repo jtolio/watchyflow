@@ -54,6 +54,7 @@ RTC_DATA_ATTR time_t timezoneOffset_;
 RTC_DATA_ATTR int lastSuccessfulWiFiIndex_;
 RTC_DATA_ATTR uint8_t lastMinute_;
 RTC_DATA_ATTR uint32_t totalSteps_;
+RTC_DATA_ATTR bool sleeping_;
 } // namespace
 
 void _sensorSetup();
@@ -129,10 +130,6 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   Wire.begin(SDA, SCL); // init i2c
 #endif
   rtc_.init();
-  display_.epd2.initWatchy();
-  display_.cp437(true);
-  display_.setFullWindow();
-  display_.epd2.asyncPowerOn();
 
   WakeupReason wakeup_reason_enum = WAKEUP_RESET;
 
@@ -172,6 +169,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     timezoneOffset_             = settings.defaultTimezoneOffset;
     lastSuccessfulWiFiIndex_    = 0;
     totalSteps_                 = 0;
+    sleeping_                   = false;
     break;
   }
 
@@ -230,6 +228,26 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     lastMinute_ = currentTime.Minute;
     app->tick(&watchy);
   }
+
+  uint8_t watchDir = sensor_.getDirection();
+
+  if (sleeping_ && watchDir == DIRECTION_DISP_DOWN) {
+    // already sleeping, stay sleeping.
+    return;
+  }
+
+  display_.epd2.initWatchy();
+  display_.cp437(true);
+  display_.setFullWindow();
+  display_.epd2.asyncPowerOn();
+
+  sleeping_ = (watchDir == DIRECTION_DISP_DOWN);
+  if (sleeping_) {
+    display_.fillScreen(watchy.backgroundColor());
+    watchy.drawNotice("Sleeping...");
+    return;
+  }
+
   watchy.updateScreen(app, partialRefresh);
 
   // don't do a network fetch if it's a user event that didn't trigger one.
@@ -249,7 +267,8 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
       // nothing to do.
       return;
     }
-    // okay it's been long enough that we should start over on our try counter.
+    // okay it's been long enough that we should start over on our try
+    // counter.
     fetchTries_ = 0;
   }
 
@@ -435,7 +454,17 @@ bool Watchy::accel(AccelData &acc) {
   return rv;
 }
 
-uint8_t Watchy::direction() { return sensor_.getDirection(); }
+WatchDirection Watchy::direction() {
+  return (WatchDirection)sensor_.getDirection();
+}
+
+static_assert((DIRECTION_TOP_EDGE_UP == DIRECTION_TOP_EDGE &&
+               DIRECTION_BOTTOM_EDGE_UP == DIRECTION_BOTTOM_EDGE &&
+               DIRECTION_LEFT_EDGE_UP == DIRECTION_LEFT_EDGE &&
+               DIRECTION_RIGHT_EDGE_UP == DIRECTION_RIGHT_EDGE &&
+               DIRECTION_DISPLAY_UP == DIRECTION_DISP_UP &&
+               DIRECTION_DISPLAY_DOWN == DIRECTION_DISP_DOWN),
+              "bma.h enum no longer matches watchy direction enum");
 
 uint16_t _readRegister(uint8_t address, uint8_t reg, uint8_t *data,
                        uint16_t len) {
