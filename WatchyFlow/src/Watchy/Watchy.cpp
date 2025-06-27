@@ -186,34 +186,35 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
 #endif
     break;
   case ESP_SLEEP_WAKEUP_EXT1: // button Press
-  {
-    uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
-    if (wakeupBit & MENU_BTN_MASK) {
-      if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
-        app->buttonDown(&watchy);
-      } else {
-        app->buttonSelect(&watchy);
-      }
-    } else if (wakeupBit & BACK_BTN_MASK) {
-      if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
-        app->buttonUp(&watchy);
-      } else {
-        app->buttonBack(&watchy);
-      }
-    } else if (wakeupBit & UP_BTN_MASK) {
-      if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
-        app->buttonBack(&watchy);
-      } else {
-        app->buttonUp(&watchy);
-      }
-    } else if (wakeupBit & DOWN_BTN_MASK) {
-      if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
-        app->buttonSelect(&watchy);
-      } else {
-        app->buttonDown(&watchy);
+    if (!sleeping_) {
+      uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
+      if (wakeupBit & MENU_BTN_MASK) {
+        if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
+          app->buttonDown(&watchy);
+        } else {
+          app->buttonSelect(&watchy);
+        }
+      } else if (wakeupBit & BACK_BTN_MASK) {
+        if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
+          app->buttonUp(&watchy);
+        } else {
+          app->buttonBack(&watchy);
+        }
+      } else if (wakeupBit & UP_BTN_MASK) {
+        if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
+          app->buttonBack(&watchy);
+        } else {
+          app->buttonUp(&watchy);
+        }
+      } else if (wakeupBit & DOWN_BTN_MASK) {
+        if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
+          app->buttonSelect(&watchy);
+        } else {
+          app->buttonDown(&watchy);
+        }
       }
     }
-  } break;
+    break;
 #ifdef ARDUINO_ESP32S3_DEV
   case ESP_SLEEP_WAKEUP_EXT0: // USB plug in
     break;
