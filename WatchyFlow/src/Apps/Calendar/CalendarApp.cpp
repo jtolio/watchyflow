@@ -62,8 +62,8 @@ FetchState CalendarApp::fetchNetwork(Watchy *watchy) {
 
   {
     HTTPClient http;
-    http.setConnectTimeout(1000 * 10);
-    http.setTimeout(1000 * 10);
+    http.setConnectTimeout(1000 * 30);
+    http.setTimeout(1000 * 30);
     String weatherQueryURL = settings_.locations[activeLocation].weatherURL;
     http.begin(weatherQueryURL.c_str());
     if (http.GET() == 200) {
@@ -81,8 +81,8 @@ FetchState CalendarApp::fetchNetwork(Watchy *watchy) {
 
   {
     HTTPClient http;
-    http.setConnectTimeout(1000 * 10);
-    http.setTimeout(1000 * 10);
+    http.setConnectTimeout(1000 * 30);
+    http.setTimeout(1000 * 30);
     String calQueryURL = settings_.calendarAccountURL;
     calQueryURL += "?tz=";
     calQueryURL += int(timezoneOffset);
