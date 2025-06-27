@@ -19,31 +19,24 @@ MemArenaAllocator<MenuItem> allocatorMenuItem(globalArena);
 
 MenuApp::MenuApp(menuAppMemory *memory, const char *title,
                  std::initializer_list<MenuItem> elems)
-    : memory_(memory), title_(title), items_(allocatorMenuItem),
-      fullDrawNeeded_(false) {
+    : memory_(memory), title_(title), items_(allocatorMenuItem) {
   items_.reserve(elems.size());
   for (const MenuItem &info : elems) {
     items_.push_back(info);
   }
 }
 
-AppState MenuApp::show(Watchy *watchy, Display *display, bool partialRefresh) {
-  if (fullDrawNeeded_) {
-    partialRefresh = false;
-  }
-  fullDrawNeeded_ = false;
-
+AppState MenuApp::show(Watchy *watchy, Display *display) {
   uint16_t index = memory_->index % items_.size();
 
   if (memory_->inApp) {
-    if (items_[index].app_->show(watchy, display, partialRefresh) ==
-        APP_ACTIVE) {
+    if (items_[index].app_->show(watchy, display) == APP_ACTIVE) {
       return APP_ACTIVE;
     }
     memory_->inApp = false;
     return APP_EXIT;
   }
-  showMenu(watchy, display, partialRefresh);
+  showMenu(watchy, display);
   return APP_ACTIVE;
 }
 
@@ -94,13 +87,11 @@ AppState MenuApp::buttonSelect(Watchy *watchy) {
   bool submenu   = isSubMenu(index);
   if (memory_->inApp) {
     if (items_[index].app_->buttonSelect(watchy) != APP_ACTIVE) {
-      memory_->inApp  = false;
-      fullDrawNeeded_ = !submenu;
+      memory_->inApp = false;
     }
     return APP_ACTIVE;
   }
-  memory_->inApp  = true;
-  fullDrawNeeded_ = !submenu;
+  memory_->inApp = true;
   return APP_ACTIVE;
 }
 
@@ -109,15 +100,14 @@ AppState MenuApp::buttonBack(Watchy *watchy) {
   bool submenu   = isSubMenu(index);
   if (memory_->inApp) {
     if (items_[index].app_->buttonBack(watchy) != APP_ACTIVE) {
-      memory_->inApp  = false;
-      fullDrawNeeded_ = !submenu;
+      memory_->inApp = false;
     }
     return APP_ACTIVE;
   }
   return APP_EXIT;
 }
 
-void MenuApp::showMenu(Watchy *watchy, Display *display, bool partialRefresh) {
+void MenuApp::showMenu(Watchy *watchy, Display *display) {
   const uint16_t FOREGROUND_COLOR = watchy->foregroundColor();
   const uint16_t BACKGROUND_COLOR = watchy->backgroundColor();
 
@@ -152,5 +142,4 @@ void MenuApp::showMenu(Watchy *watchy, Display *display, bool partialRefresh) {
   LayoutButtonLabels(watchy, "Back", "Select", "->", "<-", NULL,
                      FOREGROUND_COLOR, true, LayoutRows(menu))
       .draw(display, 0, 0, display->width(), display->height(), &w, &h);
-  display->display(partialRefresh);
 }

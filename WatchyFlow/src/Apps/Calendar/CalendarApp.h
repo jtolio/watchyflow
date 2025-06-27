@@ -27,7 +27,7 @@ public:
   CalendarApp(CalendarSettings settings, AlertsApp *alerts)
       : settings_(settings), forceCacheMiss_(false), alerts_(alerts) {}
 
-  AppState show(Watchy *watchy, Display *display, bool partialRefresh) override;
+  AppState show(Watchy *watchy, Display *display) override;
   FetchState fetchNetwork(Watchy *watchy) override;
   void tick(Watchy *watchy) override;
 

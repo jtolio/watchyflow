@@ -9,7 +9,7 @@ public:
   explicit TimerApp(AlertsApp *alerts) : alerts_(alerts) {}
 
   void reset(Watchy *watchy) override;
-  AppState show(Watchy *watchy, Display *display, bool partialRefresh) override;
+  AppState show(Watchy *watchy, Display *display) override;
   void tick(Watchy *watchy) override;
 
   void buttonUp(Watchy *watchy) override;

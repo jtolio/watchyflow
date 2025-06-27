@@ -11,7 +11,7 @@ void AboutApp::reset(Watchy *watchy) {
   arenaRemaining_ = 0;
 }
 
-AppState AboutApp::show(Watchy *watchy, Display *display, bool partialRefresh) {
+AppState AboutApp::show(Watchy *watchy, Display *display) {
   display->fillScreen(watchy->backgroundColor());
   display->setTextWrap(true);
   display->setTextColor(watchy->foregroundColor());
@@ -60,7 +60,6 @@ AppState AboutApp::show(Watchy *watchy, Display *display, bool partialRefresh) {
     display->println(accel.z);
   }
 
-  display->display(partialRefresh);
   return APP_ACTIVE;
 }
 

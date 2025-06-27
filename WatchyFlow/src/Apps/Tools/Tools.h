@@ -5,8 +5,7 @@
 
 class ResetStepCounterApp : public WatchyApp {
 public:
-  virtual AppState show(Watchy *watchy, Display *display,
-                        bool partialRefresh) override {
+  virtual AppState show(Watchy *watchy, Display *display) override {
     watchy->resetStepCounter();
     return APP_EXIT;
   }
@@ -14,8 +13,7 @@ public:
 
 class TriggerNetworkFetchApp : public WatchyApp {
 public:
-  virtual AppState show(Watchy *watchy, Display *display,
-                        bool partialRefresh) override {
+  virtual AppState show(Watchy *watchy, Display *display) override {
     watchy->triggerNetworkFetch();
     return APP_EXIT;
   }
@@ -24,8 +22,7 @@ public:
 class TriggerCalendarResetApp : public WatchyApp {
 public:
   explicit TriggerCalendarResetApp(CalendarApp *cal) : cal_(cal) {}
-  virtual AppState show(Watchy *watchy, Display *display,
-                        bool partialRefresh) override {
+  virtual AppState show(Watchy *watchy, Display *display) override {
     cal_->forceCacheMiss();
     watchy->triggerNetworkFetch();
     return APP_EXIT;
@@ -43,8 +40,7 @@ public:
 
   explicit SetCalendarLocationApp(CalendarApp *cal, int loc)
       : cal_(cal), loc_(loc) {}
-  virtual AppState show(Watchy *watchy, Display *display,
-                        bool partialRefresh) override {
+  virtual AppState show(Watchy *watchy, Display *display) override {
     if (cal_ != NULL) {
       cal_->setActiveLocation(loc_);
     }

@@ -1,19 +1,13 @@
 #include "HomeApp.h"
 
-AppState HomeApp::show(Watchy *watchy, Display *display, bool partialRefresh) {
-  if (fullDrawNeeded_) {
-    partialRefresh = false;
-  }
-  fullDrawNeeded_ = false;
-
+AppState HomeApp::show(Watchy *watchy, Display *display) {
   if (!memory_->homeApp) {
-    if (menu_->show(watchy, display, partialRefresh) == APP_ACTIVE) {
+    if (menu_->show(watchy, display) == APP_ACTIVE) {
       return APP_ACTIVE;
     }
     memory_->homeApp = true;
-    partialRefresh   = false;
   }
-  return home_->show(watchy, display, partialRefresh);
+  return home_->show(watchy, display);
 }
 
 FetchState HomeApp::fetchNetwork(Watchy *watchy) {
@@ -47,11 +41,9 @@ AppState HomeApp::buttonSelect(Watchy *watchy) {
   if (!memory_->homeApp) {
     if (menu_->buttonSelect(watchy) != APP_ACTIVE) {
       memory_->homeApp = true;
-      fullDrawNeeded_  = true;
     }
   } else {
     memory_->homeApp = false;
-    fullDrawNeeded_  = true;
   }
   return APP_ACTIVE;
 }
@@ -60,7 +52,6 @@ AppState HomeApp::buttonBack(Watchy *watchy) {
   if (!memory_->homeApp) {
     if (menu_->buttonBack(watchy) != APP_ACTIVE) {
       memory_->homeApp = true;
-      fullDrawNeeded_  = true;
     }
     return APP_ACTIVE;
   }

@@ -9,7 +9,7 @@ public:
   AlertsApp() : app_(NULL) {}
   explicit AlertsApp(WatchyApp *wrapped) : app_(wrapped) {}
 
-  AppState show(Watchy *watchy, Display *display, bool partialRefresh) override;
+  AppState show(Watchy *watchy, Display *display) override;
   FetchState fetchNetwork(Watchy *watchy) override {
     return app_->fetchNetwork(watchy);
   }

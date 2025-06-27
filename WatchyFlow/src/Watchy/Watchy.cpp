@@ -280,7 +280,8 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
 }
 
 void Watchy::updateScreen(WatchyApp *app, bool partialRefresh) {
-  app->show(this, &display_, partialRefresh);
+  app->show(this, &display_);
+  display_.display(partialRefresh);
   queuedVibrate();
 }
 

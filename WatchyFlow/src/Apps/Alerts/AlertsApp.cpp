@@ -13,14 +13,10 @@ RTC_DATA_ATTR bool alertsShown_;
 RTC_DATA_ATTR uint8_t highlightedAlert_;
 } // namespace
 
-AppState AlertsApp::show(Watchy *watchy, Display *display,
-                         bool partialRefresh) {
-  if (alertsShown_ != (alerts_.alarmCount > 0)) {
-    partialRefresh = false;
-  }
+AppState AlertsApp::show(Watchy *watchy, Display *display) {
   alertsShown_ = alerts_.alarmCount > 0;
   if (!alertsShown_) {
-    return app_->show(watchy, display, partialRefresh);
+    return app_->show(watchy, display);
   }
 
   const uint16_t color = watchy->foregroundColor();
@@ -58,7 +54,6 @@ AppState AlertsApp::show(Watchy *watchy, Display *display,
                      LayoutRows(alerts))
       .draw(display, 0, 0, display->width(), display->height(), &w, &h);
 
-  display->display(partialRefresh);
   return APP_ACTIVE;
 }
 

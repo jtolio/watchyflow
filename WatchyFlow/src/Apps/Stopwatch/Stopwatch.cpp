@@ -37,8 +37,7 @@ void StopwatchApp::reset(Watchy *watchy) {
   running_ = false;
 }
 
-AppState StopwatchApp::show(Watchy *watchy, Display *display,
-                            bool partialRefresh) {
+AppState StopwatchApp::show(Watchy *watchy, Display *display) {
   const uint16_t FOREGROUND_COLOR = watchy->foregroundColor();
   display->fillScreen(watchy->backgroundColor());
   display->setTextWrap(false);
@@ -68,7 +67,6 @@ AppState StopwatchApp::show(Watchy *watchy, Display *display,
       })))
       .draw(display, 0, 0, display->width(), display->height(), &w, &h);
 
-  display->display(partialRefresh);
   return APP_ACTIVE;
 }
 

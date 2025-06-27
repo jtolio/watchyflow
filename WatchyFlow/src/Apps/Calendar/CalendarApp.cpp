@@ -238,8 +238,7 @@ void CalendarApp::tick(Watchy *watchy) {
   }
 }
 
-AppState CalendarApp::show(Watchy *watchy, Display *display,
-                           bool partialRefresh) {
+AppState CalendarApp::show(Watchy *watchy, Display *display) {
   const uint16_t BACKGROUND_COLOR = watchy->backgroundColor();
   display->fillScreen(BACKGROUND_COLOR);
   display->setTextWrap(false);
@@ -384,8 +383,6 @@ AppState CalendarApp::show(Watchy *watchy, Display *display,
                  LayoutEntry(CalendarAlarms(&alarms, watchy, color)),
              })
       .draw(display, 0, 0, display->width(), display->height(), &w, &h);
-
-  display->display(partialRefresh);
 
   return APP_ACTIVE;
 }

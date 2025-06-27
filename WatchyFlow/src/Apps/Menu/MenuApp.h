@@ -39,10 +39,9 @@ public:
           std::initializer_list<MenuItem> elems);
   MenuApp(menuAppMemory *memory, const char *title,
           std::vector<MenuItem, MemArenaAllocator<MenuItem>> elems)
-      : memory_(memory), title_(title), items_(std::move(elems)),
-        fullDrawNeeded_(false) {}
+      : memory_(memory), title_(title), items_(std::move(elems)) {}
 
-  AppState show(Watchy *watchy, Display *display, bool partialRefresh) override;
+  AppState show(Watchy *watchy, Display *display) override;
   FetchState fetchNetwork(Watchy *watchy) override;
 
   void reset(Watchy *watchy) override;
@@ -54,12 +53,11 @@ public:
   void tick(Watchy *watchy) override;
 
 private:
-  void showMenu(Watchy *watchy, Display *display, bool partialRefresh);
+  void showMenu(Watchy *watchy, Display *display);
   bool isSubMenu(int index);
 
 private:
   menuAppMemory *memory_;
   const char *title_;
   std::vector<MenuItem, MemArenaAllocator<MenuItem>> items_;
-  bool fullDrawNeeded_;
 };

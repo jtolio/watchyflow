@@ -21,12 +21,7 @@ public:
   // App is active, it is assumed to have drawn something to the display.
   // If the App has exited, it is a signal to a higher app that it should take
   // over. Note that if the root app exits, it will continue to be displayed.
-  // Active apps are expected to call display->display(). If partialRefresh
-  // is false, the display->display() call should do a full draw. If
-  // partialRefresh is true, then the call to display->display() may do a
-  // partial draw if it chooses.
-  virtual AppState show(Watchy *watchy, Display *display,
-                        bool partialRefresh) = 0;
+  virtual AppState show(Watchy *watchy, Display *display) = 0;
 
   // fetchNetwork is called when an active WiFi connection is already
   // established (usually once an hour). If the app has network operations it

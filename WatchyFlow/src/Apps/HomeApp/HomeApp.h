@@ -12,9 +12,9 @@ typedef struct homeAppMemory {
 class HomeApp : public WatchyApp {
 public:
   HomeApp(homeAppMemory *memory, WatchyApp *home, WatchyApp *menu)
-      : memory_(memory), home_(home), menu_(menu), fullDrawNeeded_(false) {}
+      : memory_(memory), home_(home), menu_(menu) {}
 
-  AppState show(Watchy *watchy, Display *display, bool partialRefresh) override;
+  AppState show(Watchy *watchy, Display *display) override;
   FetchState fetchNetwork(Watchy *watchy) override;
 
   void reset(Watchy *watchy) override;
@@ -28,5 +28,4 @@ private:
   homeAppMemory *memory_;
   WatchyApp *home_;
   WatchyApp *menu_;
-  bool fullDrawNeeded_;
 };
