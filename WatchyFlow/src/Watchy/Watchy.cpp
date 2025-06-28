@@ -34,6 +34,8 @@
 #include "../Layout/Layout.h"
 #include "WatchyApp.h"
 
+#define SLEEP_CHECKS_BEFORE_SLEEP 3
+
 namespace {
 #ifdef ARDUINO_ESP32S3_DEV
 Watchy32KRTC rtc_;
@@ -55,6 +57,7 @@ RTC_DATA_ATTR int lastSuccessfulWiFiIndex_;
 RTC_DATA_ATTR uint8_t lastMinute_;
 RTC_DATA_ATTR uint32_t totalSteps_;
 RTC_DATA_ATTR bool sleeping_;
+RTC_DATA_ATTR uint8_t sleepChecks_;
 } // namespace
 
 void _sensorSetup();
@@ -170,6 +173,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     lastSuccessfulWiFiIndex_    = 0;
     totalSteps_                 = 0;
     sleeping_                   = false;
+    sleepChecks_                = 0;
     break;
   }
 
@@ -242,7 +246,13 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   display_.setFullWindow();
   display_.epd2.asyncPowerOn();
 
-  sleeping_ = (watchDir == DIRECTION_DISP_DOWN);
+  if (watchDir == DIRECTION_DISP_DOWN) {
+    sleeping_ = (++sleepChecks_) >= SLEEP_CHECKS_BEFORE_SLEEP;
+  } else {
+    sleeping_    = false;
+    sleepChecks_ = 0;
+  }
+
   if (sleeping_) {
     display_.fillScreen(watchy.backgroundColor());
     watchy.drawNotice("Sleeping...");
