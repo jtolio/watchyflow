@@ -2,9 +2,11 @@
 
 LocationConfig locations[] = {
     {
-        .name       = "Home",
-        .weatherURL = "http://api.openweathermap.org/data/2.5/weather?"
-                      "lat=0.0&lon=0.0&lang=en&units=imperial&appid=APIKEY",
+        .name          = "Home",
+        .weatherURL    = "http://api.openweathermap.org/data/2.5/weather?"
+                         "lat=0.0&lon=0.0&lang=en&units=imperial&appid=APIKEY",
+        .airQualityURL = "https://api.purpleair.com/v1/sensors/<sensorid>?"
+                         "api_key=<api_key>&fields=pm2.5_30minute",
     },
 };
 

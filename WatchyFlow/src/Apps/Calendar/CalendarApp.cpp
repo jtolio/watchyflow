@@ -24,6 +24,7 @@ RTC_DATA_ATTR uint8_t activeCalendarColumns;
 RTC_DATA_ATTR char calendarError[32];
 RTC_DATA_ATTR uint16_t lastTemperature;
 RTC_DATA_ATTR int16_t weatherConditionCode;
+RTC_DATA_ATTR float airQualityPM25;
 RTC_DATA_ATTR int32_t dayScheduleOffset;
 RTC_DATA_ATTR int32_t monthEventOffset;
 RTC_DATA_ATTR bool viewShowAboveCalendar;
@@ -45,6 +46,7 @@ void CalendarApp::reset(Watchy *watchy) {
   ::reset(&calendarDay);
   lastTemperature       = 0;
   weatherConditionCode  = -1;
+  airQualityPM25        = -1;
   dayScheduleOffset     = 0;
   viewShowAboveCalendar = true;
   monthView             = false;
@@ -77,6 +79,36 @@ FetchState CalendarApp::fetchNetwork(Watchy *watchy) {
       fetchState = FETCH_TRYAGAIN;
     }
     http.end();
+  }
+
+  {
+    String weatherQueryURL = settings_.locations[activeLocation].airQualityURL;
+    if (weatherQueryURL.length() == 0) {
+      airQualityPM25 = -1;
+    } else {
+      HTTPClient http;
+      http.setConnectTimeout(1000 * 30);
+      http.setTimeout(1000 * 30);
+      http.begin(weatherQueryURL.c_str());
+      if (http.GET() == 200) {
+        airQualityPM25         = -1;
+        String payload         = http.getString();
+        JSONVar responseObject = JSON.parse(payload);
+        if (responseObject.hasOwnProperty("sensor")) {
+          auto sensor = responseObject["sensor"];
+          if (sensor.hasOwnProperty("stats")) {
+            auto stats = sensor["stats"];
+            if (stats.hasOwnProperty("pm2.5_30minute")) {
+              airQualityPM25 =
+                  float(static_cast<double>(stats["pm2.5_30minute"]));
+            }
+          }
+        }
+      } else {
+        fetchState = FETCH_TRYAGAIN;
+      }
+      http.end();
+    }
   }
 
   {
@@ -238,6 +270,9 @@ void CalendarApp::tick(Watchy *watchy) {
   }
 }
 
+String calcAQI(float Cp, float Ih, float Il, float BPh, float BPl);
+String aqiConvert(float pm25);
+
 AppState CalendarApp::show(Watchy *watchy, Display *display) {
   const uint16_t BACKGROUND_COLOR = watchy->backgroundColor();
   display->fillScreen(BACKGROUND_COLOR);
@@ -296,6 +331,20 @@ AppState CalendarApp::show(Watchy *watchy, Display *display) {
 
   LayoutCell elemTop;
   if (viewShowAboveCalendar) {
+    LayoutCell elemTempAndAirQuality;
+    if (airQualityPM25 >= 0 && weatherUpToDate) {
+      elemTempAndAirQuality.set(LayoutRows({
+          LayoutEntry(
+              LayoutCenter(LayoutText(tempStr, &Seven_Segment10pt7b, color))),
+          LayoutEntry(LayoutSpacer(3)),
+          LayoutEntry(LayoutCenter(LayoutText(aqiConvert(airQualityPM25),
+                                              &Seven_Segment10pt7b, color))),
+      }));
+    } else {
+      elemTempAndAirQuality.set(
+          LayoutText(tempStr, &Seven_Segment10pt7b, color));
+    }
+
     elemTop.set(LayoutRows({
         LayoutEntry(LayoutColumns({
             LayoutEntry(LayoutVCenter(LayoutBitmap(steps, 19, 23, color))),
@@ -315,8 +364,7 @@ AppState CalendarApp::show(Watchy *watchy, Display *display) {
                 LayoutText(timeStr, &DSEG7_Classic_Regular_39, color))),
             LayoutEntry(LayoutSpacer(5)),
             LayoutEntry(LayoutFill(), true),
-            LayoutEntry(LayoutVCenter(
-                LayoutText(tempStr, &Seven_Segment10pt7b, color))),
+            LayoutEntry(LayoutVCenter(elemTempAndAirQuality)),
             LayoutEntry(LayoutSpacer(5)),
             LayoutEntry(LayoutVCenter(LayoutWeatherIcon(
                 weatherUpToDate, weatherConditionCode, color))),
@@ -428,4 +476,55 @@ AppState CalendarApp::buttonBack(Watchy *watchy) {
   dayScheduleOffset = 0;
   monthEventOffset  = 0;
   return APP_ACTIVE;
+}
+
+String aqiConvert(float pm25) {
+  if (pm25 > 1000) {
+    return "?";
+  }
+  /*                                  AQI         RAW PM2.5
+  Good                               0 - 50   |   0.0 – 12.0
+  Moderate                          51 - 100  |  12.1 – 35.4
+  Unhealthy for Sensitive Groups   101 – 150  |  35.5 – 55.4
+  Unhealthy                        151 – 200  |  55.5 – 150.4
+  Very Unhealthy                   201 – 300  |  150.5 – 250.4
+  Hazardous                        301 – 400  |  250.5 – 350.4
+  Hazardous                        401 – 500  |  350.5 – 500.4
+  */
+  if (pm25 > 350.5) {
+    // Hazardous
+    return calcAQI(pm25, 500, 401, 500.4, 350.5);
+  }
+  if (pm25 > 250.5) {
+    // Hazardous
+    return calcAQI(pm25, 400, 301, 350.4, 250.5);
+  }
+  if (pm25 > 150.5) {
+    // Very Unhealthy
+    return calcAQI(pm25, 300, 201, 250.4, 150.5);
+  }
+  if (pm25 > 55.5) {
+    // Unhealthy
+    return calcAQI(pm25, 200, 151, 150.4, 55.5);
+  }
+  if (pm25 > 35.5) {
+    // Unhealthy for Sensitive Groups
+    return calcAQI(pm25, 150, 101, 55.4, 35.5);
+  }
+  if (pm25 > 12.1) {
+    // Moderate
+    return calcAQI(pm25, 100, 51, 35.4, 12.1);
+  }
+  if (pm25 >= 0) {
+    // Good
+    return calcAQI(pm25, 50, 0, 12, 0);
+  }
+  return "?";
+}
+
+String calcAQI(float Cp, float Ih, float Il, float BPh, float BPl) {
+  float a = (Ih - Il);
+  float b = (BPh - BPl);
+  float c = (Cp - BPl);
+  return String(int16_t((a / b) * c + Il));
 }

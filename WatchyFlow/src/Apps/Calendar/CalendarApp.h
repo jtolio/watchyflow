@@ -6,6 +6,7 @@
 typedef struct LocationConfig {
   String name;
   String weatherURL;
+  String airQualityURL; // can be empty.
 } LocationConfig;
 
 // see settings.h.example for documentation and an example
