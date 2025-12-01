@@ -266,6 +266,10 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
                                  wakeup_reason_enum == WAKEUP_USB)) {
     return;
   }
+  if (watchy.suppressFetch_) {
+    // if set, stop trying to make fetch happen. it's not going to happen!
+    return;
+  }
 
   time_t now       = watchy.unixtime();
   time_t staleTime = now - settings.networkFetchIntervalSeconds;

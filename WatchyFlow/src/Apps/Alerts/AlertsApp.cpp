@@ -19,6 +19,8 @@ AppState AlertsApp::show(Watchy *watchy, Display *display) {
     return app_->show(watchy, display);
   }
 
+  watchy->suppressFetch();
+
   const uint16_t color = watchy->foregroundColor();
   display->fillScreen(watchy->backgroundColor());
   display->setTextWrap(false);

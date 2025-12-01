@@ -113,12 +113,16 @@ public:
   uint16_t foregroundColor() const;
   uint16_t backgroundColor() const;
 
+  // if called, this wake will skip network fetching. useful if an alert
+  // requires immediate user interaction.
+  void suppressFetch() { suppressFetch_ = true; }
+
 protected:
   Watchy(const tmElements_t &currentTime, WakeupReason wakeup,
          WatchySettings settings)
       : localtime_(currentTime), unixtime_(toUnixTime(currentTime)),
         wakeup_(wakeup), settings_(settings), vibrateIntervalMs_(0),
-        vibrateLength_(0), fetchOnButton_(false) {}
+        vibrateLength_(0), fetchOnButton_(false), suppressFetch_(false) {}
 
   void reset(const tmElements_t &currentTime, WakeupReason wakeup);
   void queuedVibrate();
@@ -137,4 +141,5 @@ private:
   uint8_t vibrateIntervalMs_;
   uint8_t vibrateLength_;
   bool fetchOnButton_;
+  bool suppressFetch_;
 };
