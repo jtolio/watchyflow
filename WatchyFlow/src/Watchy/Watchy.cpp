@@ -345,6 +345,9 @@ void Watchy::vibrate(uint8_t intervalMs, uint8_t length) {
     digitalWrite(VIB_MOTOR_PIN, motorOn);
     delay(intervalMs);
   }
+  if (motorOn) {
+    digitalWrite(VIB_MOTOR_PIN, false);
+  }
 }
 
 float Watchy::battVoltage() {
