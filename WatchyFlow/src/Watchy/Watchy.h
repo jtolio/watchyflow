@@ -71,6 +71,9 @@ public:
   tmElements_t localtime() const { return localtime_; }
   // unixtime() is in UTC.
   time_t unixtime() const { return unixtime_; }
+  // timeValid() returns false if the clock hasn't been set by NTP yet
+  // (e.g. after a v3 power loss). Year < 2024 is the sentinel.
+  bool timeValid() const { return localtime_.Year >= 54; } // tmElements_t Year is offset from 1970
 
   // these methods convert between the time types. they use your current
   // timezone to do so.

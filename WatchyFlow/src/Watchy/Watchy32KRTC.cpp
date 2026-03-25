@@ -18,7 +18,7 @@ void Watchy32KRTC::config(
 
   // Parse the time string
   if (strptime(datetime.c_str(), "%Y:%m:%d:%H:%M:%S", &timeInfo) == NULL) {
-    // Failed to parse the time string
+    return; // No valid time to set; leave system clock as-is.
   }
 
   // Convert tm to timeval
