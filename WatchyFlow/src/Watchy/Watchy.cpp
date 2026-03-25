@@ -192,31 +192,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
   case ESP_SLEEP_WAKEUP_EXT1: // button Press
     if (!sleeping_) {
       uint64_t wakeupBit = esp_sleep_get_ext1_wakeup_status();
-      if (wakeupBit & MENU_BTN_MASK) {
-        if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
-          app->buttonDown(&watchy);
-        } else {
-          app->buttonSelect(&watchy);
-        }
-      } else if (wakeupBit & BACK_BTN_MASK) {
-        if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
-          app->buttonUp(&watchy);
-        } else {
-          app->buttonBack(&watchy);
-        }
-      } else if (wakeupBit & UP_BTN_MASK) {
-        if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
-          app->buttonBack(&watchy);
-        } else {
-          app->buttonUp(&watchy);
-        }
-      } else if (wakeupBit & DOWN_BTN_MASK) {
-        if (settings.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
-          app->buttonSelect(&watchy);
-        } else {
-          app->buttonDown(&watchy);
-        }
-      }
+      watchy.handleButton(app, wakeupBit);
     }
     break;
 #ifdef ARDUINO_ESP32S3_DEV
@@ -323,7 +299,11 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
 void Watchy::updateScreen(WatchyApp *app, bool partialRefresh) {
   app->show(this, &display_);
   display_.display(partialRefresh);
-  queuedVibrate();
+  uint64_t btn = queuedVibrate();
+  if (btn != 0) {
+    handleButton(app, btn);
+    updateScreen(app, true);
+  }
 }
 
 void Watchy::reset(const tmElements_t &currentTime, WakeupReason wakeup) {
@@ -340,24 +320,70 @@ void Watchy::queueVibrate(uint8_t intervalMs, uint8_t length) {
   }
 }
 
-void Watchy::queuedVibrate() {
+uint64_t Watchy::queuedVibrate() {
+  uint64_t btn = 0;
   if (vibrateIntervalMs_ > 0 && vibrateLength_ > 0) {
-    vibrate(vibrateIntervalMs_, vibrateLength_);
+    btn = vibrate(vibrateIntervalMs_, vibrateLength_);
     vibrateIntervalMs_ = 0;
     vibrateLength_     = 0;
   }
+  return btn;
 }
 
-void Watchy::vibrate(uint8_t intervalMs, uint8_t length) {
+uint64_t Watchy::vibrate(uint8_t intervalMs, uint8_t length) {
   pinMode(VIB_MOTOR_PIN, OUTPUT);
   bool motorOn = false;
   for (int i = 0; i < length; i++) {
     motorOn = !motorOn;
     digitalWrite(VIB_MOTOR_PIN, motorOn);
     delay(intervalMs);
+
+    // Check if a button was pressed during this vibration step.
+#ifdef IS_WATCHY_V3
+    // V3: buttons are active low with pullups.
+    if (digitalRead(MENU_BTN_PIN) == LOW) { digitalWrite(VIB_MOTOR_PIN, false); return MENU_BTN_MASK; }
+    if (digitalRead(BACK_BTN_PIN) == LOW) { digitalWrite(VIB_MOTOR_PIN, false); return BACK_BTN_MASK; }
+    if (digitalRead(UP_BTN_PIN) == LOW)   { digitalWrite(VIB_MOTOR_PIN, false); return UP_BTN_MASK; }
+    if (digitalRead(DOWN_BTN_PIN) == LOW) { digitalWrite(VIB_MOTOR_PIN, false); return DOWN_BTN_MASK; }
+#else
+    // V2: buttons are active high.
+    if (digitalRead(MENU_BTN_PIN) == HIGH) { digitalWrite(VIB_MOTOR_PIN, false); return MENU_BTN_MASK; }
+    if (digitalRead(BACK_BTN_PIN) == HIGH) { digitalWrite(VIB_MOTOR_PIN, false); return BACK_BTN_MASK; }
+    if (digitalRead(UP_BTN_PIN) == HIGH)   { digitalWrite(VIB_MOTOR_PIN, false); return UP_BTN_MASK; }
+    if (digitalRead(DOWN_BTN_PIN) == HIGH) { digitalWrite(VIB_MOTOR_PIN, false); return DOWN_BTN_MASK; }
+#endif
   }
   if (motorOn) {
     digitalWrite(VIB_MOTOR_PIN, false);
+  }
+  return 0;
+}
+
+void Watchy::handleButton(WatchyApp *app, uint64_t btnMask) {
+  if (btnMask & MENU_BTN_MASK) {
+    if (settings_.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
+      app->buttonDown(this);
+    } else {
+      app->buttonSelect(this);
+    }
+  } else if (btnMask & BACK_BTN_MASK) {
+    if (settings_.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
+      app->buttonUp(this);
+    } else {
+      app->buttonBack(this);
+    }
+  } else if (btnMask & UP_BTN_MASK) {
+    if (settings_.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
+      app->buttonBack(this);
+    } else {
+      app->buttonUp(this);
+    }
+  } else if (btnMask & DOWN_BTN_MASK) {
+    if (settings_.buttonConfig == BUTTONS_SELECT_BACK_RIGHT) {
+      app->buttonSelect(this);
+    } else {
+      app->buttonDown(this);
+    }
   }
 }
 

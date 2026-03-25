@@ -125,8 +125,9 @@ protected:
         vibrateLength_(0), fetchOnButton_(false), suppressFetch_(false) {}
 
   void reset(const tmElements_t &currentTime, WakeupReason wakeup);
-  void queuedVibrate();
-  void vibrate(uint8_t intervalMs = 100, uint8_t length = 20);
+  uint64_t queuedVibrate();
+  uint64_t vibrate(uint8_t intervalMs = 100, uint8_t length = 20);
+  void handleButton(WatchyApp *app, uint64_t btnMask);
 
   static bool syncNTP();
   void drawNotice(char *msg);
