@@ -281,12 +281,17 @@ AppState CalendarApp::show(Watchy *watchy, Display *display) {
 
   uint16_t color = watchy->foregroundColor();
 
-  int displayHour = ((currentTime.Hour + 11) % 12) + 1;
-  String timeStr  = String(displayHour) + ":";
-  if (currentTime.Minute < 10) {
-    timeStr += "0";
+  String timeStr;
+  if (!watchy->timeValid()) {
+    timeStr = "--:--";
+  } else {
+    int displayHour = ((currentTime.Hour + 11) % 12) + 1;
+    timeStr         = String(displayHour) + ":";
+    if (currentTime.Minute < 10) {
+      timeStr += "0";
+    }
+    timeStr += String(currentTime.Minute);
   }
-  timeStr += String(currentTime.Minute);
 
   tmElements_t offsetTime =
       watchy->toLocalTime(watchy->unixtime() + dayScheduleOffset);
