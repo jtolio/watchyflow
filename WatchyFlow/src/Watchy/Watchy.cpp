@@ -234,6 +234,13 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
     app->tick(&watchy);
   }
 
+  // If an alarm queued a vibration, wake from sleep so the user can see and
+  // dismiss it.
+  if (sleeping_ && watchy.vibrateLength_ > 0) {
+    sleeping_    = false;
+    sleepChecks_ = 0;
+  }
+
   uint8_t watchDir = sensor_.getDirection();
 
   if (sleeping_ && watchDir == DIRECTION_DISP_DOWN) {
