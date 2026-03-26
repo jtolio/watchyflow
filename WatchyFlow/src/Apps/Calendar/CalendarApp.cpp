@@ -283,7 +283,7 @@ AppState CalendarApp::show(Watchy *watchy, Display *display) {
 
   String timeStr;
   if (!watchy->timeValid()) {
-    timeStr = "--:--";
+    timeStr = "-:--";
   } else {
     int displayHour = ((currentTime.Hour + 11) % 12) + 1;
     timeStr         = String(displayHour) + ":";

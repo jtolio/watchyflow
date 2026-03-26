@@ -342,7 +342,7 @@ void Watchy::queueVibrate(uint8_t intervalMs, uint8_t length) {
 uint64_t Watchy::queuedVibrate() {
   uint64_t btn = 0;
   if (vibrateIntervalMs_ > 0 && vibrateLength_ > 0) {
-    btn = vibrate(vibrateIntervalMs_, vibrateLength_);
+    btn                = vibrate(vibrateIntervalMs_, vibrateLength_);
     vibrateIntervalMs_ = 0;
     vibrateLength_     = 0;
   }
@@ -360,16 +360,40 @@ uint64_t Watchy::vibrate(uint8_t intervalMs, uint8_t length) {
     // Check if a button was pressed during this vibration step.
 #ifdef IS_WATCHY_V3
     // V3: buttons are active low with pullups.
-    if (digitalRead(MENU_BTN_PIN) == LOW) { digitalWrite(VIB_MOTOR_PIN, false); return MENU_BTN_MASK; }
-    if (digitalRead(BACK_BTN_PIN) == LOW) { digitalWrite(VIB_MOTOR_PIN, false); return BACK_BTN_MASK; }
-    if (digitalRead(UP_BTN_PIN) == LOW)   { digitalWrite(VIB_MOTOR_PIN, false); return UP_BTN_MASK; }
-    if (digitalRead(DOWN_BTN_PIN) == LOW) { digitalWrite(VIB_MOTOR_PIN, false); return DOWN_BTN_MASK; }
+    if (digitalRead(MENU_BTN_PIN) == LOW) {
+      digitalWrite(VIB_MOTOR_PIN, false);
+      return MENU_BTN_MASK;
+    }
+    if (digitalRead(BACK_BTN_PIN) == LOW) {
+      digitalWrite(VIB_MOTOR_PIN, false);
+      return BACK_BTN_MASK;
+    }
+    if (digitalRead(UP_BTN_PIN) == LOW) {
+      digitalWrite(VIB_MOTOR_PIN, false);
+      return UP_BTN_MASK;
+    }
+    if (digitalRead(DOWN_BTN_PIN) == LOW) {
+      digitalWrite(VIB_MOTOR_PIN, false);
+      return DOWN_BTN_MASK;
+    }
 #else
     // V2: buttons are active high.
-    if (digitalRead(MENU_BTN_PIN) == HIGH) { digitalWrite(VIB_MOTOR_PIN, false); return MENU_BTN_MASK; }
-    if (digitalRead(BACK_BTN_PIN) == HIGH) { digitalWrite(VIB_MOTOR_PIN, false); return BACK_BTN_MASK; }
-    if (digitalRead(UP_BTN_PIN) == HIGH)   { digitalWrite(VIB_MOTOR_PIN, false); return UP_BTN_MASK; }
-    if (digitalRead(DOWN_BTN_PIN) == HIGH) { digitalWrite(VIB_MOTOR_PIN, false); return DOWN_BTN_MASK; }
+    if (digitalRead(MENU_BTN_PIN) == HIGH) {
+      digitalWrite(VIB_MOTOR_PIN, false);
+      return MENU_BTN_MASK;
+    }
+    if (digitalRead(BACK_BTN_PIN) == HIGH) {
+      digitalWrite(VIB_MOTOR_PIN, false);
+      return BACK_BTN_MASK;
+    }
+    if (digitalRead(UP_BTN_PIN) == HIGH) {
+      digitalWrite(VIB_MOTOR_PIN, false);
+      return UP_BTN_MASK;
+    }
+    if (digitalRead(DOWN_BTN_PIN) == HIGH) {
+      digitalWrite(VIB_MOTOR_PIN, false);
+      return DOWN_BTN_MASK;
+    }
 #endif
   }
   if (motorOn) {
