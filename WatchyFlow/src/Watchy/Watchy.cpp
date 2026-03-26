@@ -103,18 +103,37 @@ void Watchy::sleep() {
   esp_deep_sleep_start();
 }
 
-bool connectWiFi(WatchySettings settings) {
-  for (int i = 0; i < settings.wifiNetworkCount; i++) {
-    int idxToUse = (i + lastSuccessfulWiFiIndex_) % settings.wifiNetworkCount;
+bool Watchy::connectWiFi() {
+  for (int i = 0; i < settings_.wifiNetworkCount; i++) {
+    int idxToUse = (i + lastSuccessfulWiFiIndex_) % settings_.wifiNetworkCount;
+    String connectionMessage = settings_.wifiNetworks[idxToUse].SSID;
+    connectionMessage += ": Connecting";
+    drawNotice(connectionMessage.c_str());
 
-    if (WL_CONNECT_FAILED == WiFi.begin(settings.wifiNetworks[idxToUse].SSID,
-                                        settings.wifiNetworks[idxToUse].Pass)) {
+    auto connectStatus = WiFi.begin(settings_.wifiNetworks[idxToUse].SSID,
+                                    settings_.wifiNetworks[idxToUse].Pass);
+
+    connectionMessage = settings_.wifiNetworks[idxToUse].SSID;
+    connectionMessage += ": Connect: ";
+    connectionMessage += connectStatus;
+    drawNotice(connectionMessage.c_str());
+
+    if (WL_CONNECT_FAILED == connectStatus) {
       continue;
     }
 
-    if (WL_CONNECTED != WiFi.waitForConnectResult()) {
+    auto waitStatus = WiFi.waitForConnectResult();
+
+    connectionMessage = settings_.wifiNetworks[idxToUse].SSID;
+    connectionMessage += ": Wait: ";
+    connectionMessage += waitStatus;
+    drawNotice(connectionMessage.c_str());
+
+    if (WL_CONNECTED != waitStatus) {
       WiFi.mode(WIFI_OFF);
       btStop();
+
+      delay(1000);
       continue;
     }
 
@@ -275,7 +294,7 @@ void Watchy::wakeup(WatchyApp *app, WatchySettings settings) {
 
   watchy.drawNotice("Connecting...");
 
-  if (connectWiFi(settings)) {
+  if (watchy.connectWiFi()) {
     watchy.drawNotice("Loading...   ");
 
     FetchState fetchResult = app->fetchNetwork(&watchy);
@@ -469,7 +488,7 @@ time_t Watchy::lastSuccessfulNetworkFetch() {
   return lastSuccessfulNetworkFetch_;
 }
 
-void Watchy::drawNotice(char *msg) {
+void Watchy::drawNotice(const char *msg) {
   LayoutBackground notice(
       LayoutBorder(
           LayoutPad(LayoutText(msg, NULL, foregroundColor()), 3, 3, 3, 3), true,

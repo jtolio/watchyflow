@@ -133,7 +133,8 @@ protected:
   void handleButton(WatchyApp *app, uint64_t btnMask);
 
   static bool syncNTP();
-  void drawNotice(char *msg);
+  void drawNotice(const char *msg);
+  bool connectWiFi();
 
   void updateScreen(WatchyApp *app, bool partialRefresh);
 
