@@ -2,12 +2,18 @@
   "MYSECRETKEY": {
     "identities": ["YOUR@EMAIL.CO"],
     "excluded-events": [],
-    "ical-urls": [
+    "cals": [
      "#comment 1",
      "https://calendar.google.com/calendar/ical/email1/private-key/basic.ics",
 
      "#comment 2",
      "https://calendar.google.com/calendar/ical/email2/private-key/basic.ics"
+
+     {
+        "type": "google",
+        "principal_key": "./keyfile.json",
+        "calendar_id": "user@domain.tld"
+     }
     ],
   }
 }

@@ -5,6 +5,8 @@ description = "Helper server for calendar processing on embedded devices"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "google-api-python-client>=2.193.0",
+    "google-auth>=2.49.1",
     "icalendar>=6.1.1",
     "pytest>=8.3.5",
     "pytest-cov>=6.0.0",

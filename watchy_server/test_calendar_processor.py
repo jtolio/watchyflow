@@ -98,7 +98,7 @@ class TestCalendarProcessor(unittest.TestCase):
             "STATUS": "CONFIRMED",
         }
 
-        result = self.processor.event_to_dict(event)
+        result = self.processor.event_to_dict(event, TIMEZONE)
 
         self.assertEqual(result["start"], int(now.timestamp()))
         self.assertEqual(result["end"], int(end.timestamp()))

@@ -20,6 +20,9 @@ from pytz import timezone
 import recurring_ical_events
 import requests
 
+from google.oauth2 import service_account
+from googleapiclient.discovery import build as google_build
+
 TIMEZONE = timezone("US/Eastern")
 ICAL_CACHE_TIME_SECS = 50 * 60
 HOURS_PAST = 1
@@ -58,9 +61,10 @@ class CalendarProcessor:
     @classmethod
     def precache(cls, cals):
         for account in cals.values():
-            for url in account.get("ical-urls", []):
-                if not url.startswith("#"):
-                    cls.fetch_calendar(url)
+            for url in account.get("cals", []):
+                if isinstance(url, str):
+                    if not url.startswith("#"):
+                        cls.fetch_calendar(url)
 
     def is_event_declined_by_user(self, event):
         if "ATTENDEE" not in event or not self.user_emails:
@@ -130,7 +134,7 @@ class CalendarProcessor:
 
     def get_events(
         self,
-        calendar_urls,
+        calendars,
         start_time,
         end_time=None,
         day_end_time=None,
@@ -148,54 +152,87 @@ class CalendarProcessor:
         added_events = set()
         event_edges = []
 
-        for url in calendar_urls:
-            if url.startswith("#"):
+        def handle_calendar_url(url, tz):
+            calendar = CalendarProcessor.fetch_calendar(
+                url, force_cache_miss=force_cache_miss
+            )
+
+            for event in recurring_ical_events.of(calendar).between(
+                start_time, max(end_time, day_end_time)
+            ):
+                if not self.has_required_fields(event):
+                    continue
+
+                if self.is_event_declined_by_user(event):
+                    continue
+
+                if "STATUS" in event and event["STATUS"] != "CONFIRMED":
+                    continue
+
+                yield self.event_to_dict(event, tz)
+
+        def handle_other_calendar(cal, tz):
+            assert cal["type"] == "google"
+            creds = service_account.Credentials.from_service_account_file(
+                cal["principal_key"],
+                scopes=["https://www.googleapis.com/auth/calendar.readonly"])
+            service = google_build("calendar", "v3", credentials=creds)
+            query = service.freebusy().query(body={
+                "timeMin": start_time.isoformat(),
+                "timeMax": max(end_time, day_end_time).isoformat(),
+                "items": [{"id": cal["calendar_id"]}]}).execute()
+            busy_slots = query["calendars"][cal["calendar_id"]]["busy"]
+            for slot in busy_slots:
+                start = datetime.datetime.fromisoformat(slot["start"])
+                end = datetime.datetime.fromisoformat(slot["end"])
+
+                yield {
+                    "summary": "hidden",
+                    "day": False,
+                    "start": self.convert_time(start, tz),
+                    "end": self.convert_time(end, tz),
+                    "column-end": self.convert_time(
+                        max(
+                            end, start + datetime.timedelta(minutes=MINIMUM_MINUTES_PER_COLUMN)
+                        ),
+                        tz,
+                    ),
+                }
+
+        def handle_calendar(cal):
+            if isinstance(cal, str):
+                gen = handle_calendar_url(cal, tz)
+            else:
+                gen = handle_other_calendar(cal, tz)
+
+            for event in gen:
+                if event["end"] <= event["start"]:
+                    continue
+
+                if not event["day"] and event["end"] > end_time_converted:
+                    continue
+
+                if event["summary"] in self.excluded_events:
+                    continue
+
+                event_key = repr(event)
+                if event_key in added_events:
+                    continue
+                added_events.add(event_key)
+
+                event_id = len(all_events)
+                event_edges.append((event["start"], "1", event["end"], event_id))
+                event_edges.append((event["column-end"], "0", 0, event_id))
+                del event["column-end"]
+                all_events.append(event)
+
+        for cal in calendars:
+            if isinstance(cal, str) and cal.startswith("#"):
                 continue
             try:
-                calendar = CalendarProcessor.fetch_calendar(
-                    url, force_cache_miss=force_cache_miss
-                )
+                handle_calendar(cal)
             except Exception as e:
-                logging.error(f"Error fetching calendar {url}: {e}")
-
-            try:
-                events = recurring_ical_events.of(calendar).between(
-                    start_time, max(end_time, day_end_time)
-                )
-
-                for event in events:
-                    if not self.has_required_fields(event):
-                        continue
-
-                    if self.is_event_declined_by_user(event):
-                        continue
-
-                    if "STATUS" in event and event["STATUS"] != "CONFIRMED":
-                        continue
-
-                    event = self.event_to_dict(event, tz)
-
-                    if event["end"] <= event["start"]:
-                        continue
-
-                    if not event["day"] and event["end"] > end_time_converted:
-                        continue
-
-                    if event["summary"] in self.excluded_events:
-                        continue
-
-                    event_key = repr(event)
-                    if event_key in added_events:
-                        continue
-                    added_events.add(event_key)
-
-                    event_id = len(all_events)
-                    event_edges.append((event["start"], "1", event["end"], event_id))
-                    event_edges.append((event["column-end"], "0", 0, event_id))
-                    del event["column-end"]
-                    all_events.append(event)
-            except Exception as e:
-                logging.error(f"Error processing calendar {url}: {e}")
+                logging.error(f"Error processing calendar {cal}: {e}")
 
         # python documentation crazily recommends that if you want to sort
         # by multiple fields in different directions, say one field ascending
@@ -276,7 +313,7 @@ class CalHandler(BaseHTTPRequestHandler):
 
         account = self.server.cals[key]
         emails = account.get("identities", [])
-        ical_urls = account.get("ical-urls", [])
+        cals = account.get("cals", [])
         excluded_events = account.get("excluded-events", [])
 
         tz_offset = (query.get("tz") or [None])[-1]
@@ -296,7 +333,7 @@ class CalHandler(BaseHTTPRequestHandler):
         )
         force_cache_miss = (query.get("force_cache_miss") or ["false"])[-1] == "true"
         all_events, columns = processor.get_events(
-            ical_urls, start, force_cache_miss=force_cache_miss, tz=tz
+            cals, start, force_cache_miss=force_cache_miss, tz=tz
         )
 
         self.send_response(200)
