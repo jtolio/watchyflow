@@ -177,14 +177,19 @@ class CalendarProcessor:
                 cal["principal_key"],
                 scopes=["https://www.googleapis.com/auth/calendar.readonly"])
             service = google_build("calendar", "v3", credentials=creds)
-            query = service.freebusy().query(body={
-                "timeMin": start_time.isoformat(),
-                "timeMax": max(end_time, day_end_time).isoformat(),
-                "items": [{"id": cal["calendar_id"]}]}).execute()
-            busy_slots = query["calendars"][cal["calendar_id"]]["busy"]
-            for slot in busy_slots:
-                start = datetime.datetime.fromisoformat(slot["start"])
-                end = datetime.datetime.fromisoformat(slot["end"])
+            query = service.events().list(
+                calendarId=cal["calendar_id"],
+                timeMin=start_time.isoformat(),
+                timeMax=max(end_time, day_end_time).isoformat(),
+                singleEvents=True,
+                orderBy="startTime").execute()
+            events = query.get("items", [])
+            for event in events:
+                if event.get("status") == "cancelled":
+                    continue
+
+                start = datetime.datetime.fromisoformat(event["start"]["dateTime"])
+                end = datetime.datetime.fromisoformat(event["end"]["dateTime"])
 
                 yield {
                     "summary": "hidden",
