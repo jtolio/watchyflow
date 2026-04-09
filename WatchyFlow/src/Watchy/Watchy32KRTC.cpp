@@ -16,15 +16,16 @@ void Watchy32KRTC::config(
   struct tm timeInfo;
   memset(&timeInfo, 0, sizeof(timeInfo));
 
+  struct timeval tv;
+  tv.tv_sec  = 0;
+  tv.tv_usec = 0;
+
   // Parse the time string
   if (strptime(datetime.c_str(), "%Y:%m:%d:%H:%M:%S", &timeInfo) == NULL) {
     // Failed to parse the time string
+  } else {
+    tv.tv_sec = mktime(&timeInfo);
   }
-
-  // Convert tm to timeval
-  struct timeval tv;
-  tv.tv_sec  = mktime(&timeInfo);
-  tv.tv_usec = 0;
 
   // Set the time using settimeofday
   if (settimeofday(&tv, NULL) != 0) {
